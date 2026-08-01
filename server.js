@@ -97,6 +97,32 @@ app.get("/super_admin.html", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "staff", "super_admin.html"));
 });
 
+/**
+ * KARSILAMA SAYFASI OTURUM ISTER.
+ *
+ * index.html statik klasorde durdugu icin herkese aciktı. Icinde veri
+ * yok - kartlarin gittigi sayfalarin hepsi zaten giris istiyor - ama
+ * oturumsuz bir ziyaretcinin "Mentor Kayitlari / HR Dashboard" yazan
+ * bir uygulama ekrani gormesi yaniltici: iceri girmis gibi hissettiriyor.
+ *
+ * Bu kontrol express.static'ten ONCE gelmeli, yoksa statik katman
+ * dosyayi sunar ve buraya hic ugranmaz.
+ */
+app.get(["/", "/index.html"], (req, res, next) => {
+  const session = staffAuth.readSession(req);
+
+  if (!session) {
+    return res.redirect("/login.html?next=%2Findex.html");
+  }
+
+  // Super admin'in kurulus verisi yok; kendi paneline gitsin.
+  if (session.isSuperAdmin) {
+    return res.redirect("/super_admin.html");
+  }
+
+  next();   // oturum var -> statik katman index.html'i sunsun
+});
+
 // --- 1 & 2. Herkese acik ve katilimci sayfalari ---
 app.use(express.static(path.join(__dirname, "public")));
 
