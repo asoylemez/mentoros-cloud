@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Mentorship Dashboard</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --navy: #1a2b5e;
+      --copper: #b5651d;
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --border: #dddddd;
+      --muted: #6b7280;
+      --soft: #eef1f8;
+      --green: #0f9f6e;
+      --red: #d9534f;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      padding: 0 24px 24px;
+      color: #1a1a1a;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 24px auto 0;
+    }
+
+    .app-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e6e8ef;
+      padding: 10px 0;
+    }
+
+    .app-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      color: #1a2b5e;
+      font-size: 16px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      color: var(--navy);
+      margin-bottom: 6px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    .language-control {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    .language-control label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .language-control select {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-family: inherit;
+      color: var(--navy);
+      font-weight: 700;
+      background: white;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 18px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    .stat-number {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .section-title {
+      color: var(--navy);
+      margin: 26px 0 12px;
+      font-size: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 16px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pair-title {
+      font-size: 16px;
+      color: #111827;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: capitalize;
+      display: inline-block;
+    }
+
+    .active, .approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .completed {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .paused, .cancelled {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    button {
+      background: var(--navy);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    button:hover { opacity: 0.92; }
+
+    .secondary-btn {
+      background: var(--soft);
+      color: var(--navy);
+    }
+
+    .mail-btn {
+      background: #0f766e;
+      border: 1px solid #0f766e;
+      color: #fff;
+    }
+    .mail-btn:hover:not(:disabled) { filter: brightness(1.15); }
+    .mail-btn:disabled { opacity: .6; cursor: default; }
+
+    .danger-btn {
+      background: #fff;
+      border: 1px solid #dc2626;
+      color: #dc2626;
+    }
+    .danger-btn:hover {
+      background: #fef2f2;
+    }
+
+    .green-btn {
+      background: var(--green);
+      color: white;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .empty {
+      background: white;
+      border: 1px dashed #cbd5e1;
+      color: var(--muted);
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 14px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .loading {
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 16px; }
+      h1 { font-size: 23px; }
+      .top-bar { align-items: stretch; }
+      .language-control { justify-content: space-between; width: 100%; }
+      .row { align-items: flex-start; }
+      .actions button { width: 100%; }
+    }
+
+    body {
+      padding-top: 0 !important;
+    }
+
+    /* ---------- Kapanis anketi ---------- */
+
+    .survey-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      border-top: 1px dashed #dfe3ee;
+    }
+
+    .survey-label { font-size: 13px; font-weight: 600; }
+
+    .survey-panel {
+      background: #f8fafc;
+      border: 1px solid #dbe2f3;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-top: 12px;
+    }
+
+    .survey-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      background: #eef1f8;
+      border-radius: 8px;
+      padding: 11px 14px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: #3a4055;
+    }
+
+    .survey-stats b { color: #1a2b5e; }
+
+    .survey-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .survey-col {
+      background: #fff;
+      border: 1px solid #e3e7f1;
+      border-radius: 9px;
+      padding: 14px 15px;
+    }
+
+    .survey-col h4 {
+      margin: 0 0 3px;
+      color: #1a2b5e;
+      font-size: 14.5px;
+    }
+
+    .survey-who { font-size: 12.5px; color: #6b7280; margin-bottom: 11px; }
+
+    .survey-state {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 9px;
+      margin-bottom: 10px;
+    }
+
+    .survey-state.completed { background: #e7f4ec; color: #2f7d4f; }
+    .survey-state.pending   { background: #fff4e5; color: #96601d; }
+    .survey-state.not_sent  { background: #eef0f4; color: #6b7280; }
+
+    .survey-sec {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #b5651d;
+      margin: 14px 0 7px;
+    }
+
+    .survey-q { margin-bottom: 10px; }
+
+    .survey-q .qq {
+      font-size: 12.5px;
+      color: #5b6172;
+      line-height: 1.45;
+      margin-bottom: 2px;
+    }
+
+    .survey-q .aa {
+      font-size: 13.5px;
+      color: #1f2430;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .survey-score {
+      display: inline-block;
+      background: #1a2b5e;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12.5px;
+      padding: 2px 9px;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 760px) {
+      .survey-cols { grid-template-columns: 1fr; }
+    }
+
+  </style>
+</head>
+
+<body>
+
+    <div class="app-header">
+      <div class="app-header-inner">
+        <div class="app-brand" onclick="window.location.href='/index.html?company=' + encodeURIComponent(COMPANY_ID)" style="cursor:pointer;">
+          <div style="
+            display:flex;
+            align-items:center;
+            gap:10px;
+          ">
+            <div style="
+              width:40px;
+              height:40px;
+              border-radius:12px;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              background:linear-gradient(135deg,#101b3f,#3657ff);
+              color:white;
+              font-weight:900;
+              font-size:20px;
+              flex-shrink:0;
+            ">
+              M
+            </div>
+
+            <div style="
+              font-size:22px;
+              font-weight:800;
+              color:#101b3f;
+              line-height:1;
+            ">
+              MentorOS
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      </div>
+
+      <div class="language-control">
+        <label for="languageSelect" data-i18n="languageLabel">Language</label>
+        <select id="languageSelect" onchange="setLanguage(this.value)">
+          <option value="en">English</option>
+          <option value="tr">Türkçe</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="errorBox"></div>
+    <div id="stats"><div class="loading" data-i18n="loadingDashboard">Loading dashboard...</div></div>
+
+    <h2 class="section-title" data-i18n="pendingApprovalsTitle">Eşleşme Talepleri</h2>
+    <div id="approvalList"></div>
+
+    <h2 class="section-title" data-i18n="activeMentorshipsTitle">Active Mentorships</h2>
+    <div id="mentorshipList"></div>
+  </div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+const COMPANY_ID = "default";   // tek kurulum - firma secimi yok
+const API_BASE_URL = window.location.origin;
+const API_KEY = "mentor-demo-key-2026";
+const SITE_BASE_URL = window.location.origin;
+
+let mentorships = [];
+let approvalRequests = [];
+let currentLanguage = localStorage.getItem("mentorAppLang") || "en";
+
+const translations = {
+  en: {
+    pageTitle: "HR Mentorship Dashboard",
+    subtitle: "Monitor mentorships, pending approvals and active mentor–mentee relationships.",
+    languageLabel: "Language",
+    loadingDashboard: "Loading dashboard...",
+    pendingApprovalsTitle: "Match Requests",
+    delete: "Delete",
+    deleteFailed: "Deletion failed",
+    confirmDeleteRequest: "Delete this match request? This cannot be undone.",
+    deleteRequestKeepsWorkspace: "Note: the workspace created from this request will NOT be deleted and keeps running.",
+    confirmDeleteMentorship: "Delete this mentorship? This cannot be undone.",
+    confirmDeleteAnyway: "Delete anyway?",
+    activeMentorshipsTitle: "Active Mentorships",
+    totalMentorships: "Total Mentorships",
+    activeMentorships: "Active Mentorships",
+    pendingApprovals: "Pending Approvals",
+    approvedRequests: "Approved Requests",
+    rejectedRequests: "Rejected Requests",
+    noApprovalRequests: "No approval requests yet.",
+    noMentorships: "No mentorships created yet.",
+    mentorApproval: "Mentor approval",
+    managerApproval: "Manager approval",
+    rejectedBy: "Declined by",
+    by_manager: "the manager",
+    by_mentor: "the mentor",
+    by_mentee: "the mentee",
+    reason_timing: "Timing isn't right at the moment",
+    reason_priority: "This isn't the current development priority",
+    reason_workload: "Workload doesn't allow it right now",
+    reason_capacity: "The mentor has no capacity for another mentee",
+    reason_not_my_area: "Not the mentor's area of expertise",
+    reason_different_mentor: "A different mentor would be a better fit",
+    reason_other: "Other",
+    waitingManager: "waiting for manager",
+    copyManagerLink: "Copy Manager Link",
+    emailManager: "Email Manager",
+    menteeApproval: "Mentee approval",
+    created: "Created",
+    nextMeeting: "Next Meeting",
+    notSet: "Not set",
+    closingDate: "Closing Date",
+    saveClosingDate: "Save",
+    closingDateHint: "The date the workspace closes for mentor and mentee. The page is never deleted and stays accessible.",
+    closingDateSaved: "Saved ✓",
+    closingDateCleared: "Cleared ✓",
+    closingDateSaveFailed: "Could not save the closing date",
+    saving: "Saving...",
+    copyMentorLink: "Copy Mentor Link",
+    copyMenteeLink: "Copy Mentee Link",
+    openMentorApproval: "Open Mentor Approval",
+    openMenteeApproval: "Open Mentee Approval",
+    openWorkspace: "Open Workspace",
+    surveyLabel: "Closure survey",
+    sendSurveyMentor: "Send Survey to Mentor",
+    sendSurveyMentee: "Send Survey to Mentee",
+    showAnswers: "Show Answers",
+    hideAnswers: "Hide Answers",
+    surveyNeedsSmtp: "Configure SMTP to send surveys.",
+    surveySending: "Sending...",
+    surveySent: "Survey sent to",
+    surveyResent: "Reminder sent to",
+    surveySendFailed: "The survey could not be sent",
+    surveyAlreadyDone: "This person has already completed the survey.",
+    surveyNoEmail: "No email address on file for this person.",
+    surveyLoading: "Loading answers...",
+    surveyLoadFailed: "Answers could not be loaded.",
+    surveyNotSent: "Not sent yet",
+    surveyPending: "Awaiting response",
+    surveyCompleted: "Completed",
+    surveySentAt: "Sent",
+    surveyCompletedAt: "Completed",
+    surveyNoAnswerYet: "This person has not completed the survey yet.",
+    surveyNotSentYet: "The survey has not been sent to this person yet.",
+    surveyStatsMeetings: "Meetings",
+    surveyStatsActions: "Actions completed",
+    surveyStatsPeriod: "Period",
+    surveyStatsNote: "Taken from the workspace — not asked in the survey.",
+    surveyLinkCopied: "Survey link copied.",
+    surveyCopyLink: "Copy link",
+    copied: "Copied!",
+    emailBoth: "Email Both",
+    emailWorkspace: "Email Workspace Link",
+    emailSending: "Sending…",
+    emailSent: "Sent ✓",
+    emailFailed: "Could not send email",
+    emailNotSent: "Not sent:",
+    whatToDo: "What to do:",
+    mentor: "Mentor",
+    mentee: "Mentee",
+    couldNotLoadMentorships: "Could not load mentorships.",
+    couldNotLoadApprovals: "Could not load approval requests.",
+    status: {
+      active: "active",
+      approved: "approved",
+      pending: "pending",
+      rejected: "rejected",
+      completed: "completed",
+      paused: "paused",
+      cancelled: "cancelled"
+    }
+  },
+  tr: {
+    pageTitle: "İK Mentorluk Paneli",
+    subtitle: "Mentorlukları, bekleyen onayları ve aktif mentor–mentee ilişkilerini takip edin.",
+    languageLabel: "Dil",
+    loadingDashboard: "Panel yükleniyor...",
+    pendingApprovalsTitle: "Eşleşme Talepleri",
+    delete: "Sil",
+    deleteFailed: "Silme başarısız",
+    confirmDeleteRequest: "Bu eşleşme talebini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+    deleteRequestKeepsWorkspace: "Not: Bu talepten oluşan çalışma alanı SİLİNMEZ, çalışmaya devam eder.",
+    confirmDeleteMentorship: "Bu mentorluk ilişkisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+    confirmDeleteAnyway: "Yine de silinsin mi?",
+    activeMentorshipsTitle: "Aktif Mentorluklar",
+    totalMentorships: "Toplam Mentorluk",
+    activeMentorships: "Aktif Mentorluk",
+    pendingApprovals: "Bekleyen Onay",
+    approvedRequests: "Onaylanan Talepler",
+    rejectedRequests: "Reddedilen Talepler",
+    noApprovalRequests: "Henüz onay talebi yok.",
+    noMentorships: "Henüz oluşturulmuş mentorluk yok.",
+    mentorApproval: "Mentor onayı",
+    managerApproval: "Yönetici onayı",
+    rejectedBy: "Reddeden:",
+    by_manager: "yönetici",
+    by_mentor: "mentor",
+    by_mentee: "mentee",
+    reason_timing: "Şu an zamanlaması uygun değil",
+    reason_priority: "Şu anki gelişim önceliği bu değil",
+    reason_workload: "İş yükü şu an buna izin vermiyor",
+    reason_capacity: "Mentorun yeni mentee için kapasitesi yok",
+    reason_other: "Diğer",
+    reason_not_my_area: "Mentorun uzmanlık alanı değil",
+    reason_different_mentor: "Farklı bir mentor daha uygun olur",
+    waitingManager: "yönetici bekleniyor",
+    copyManagerLink: "Yönetici Linkini Kopyala",
+    emailManager: "Yöneticiye E-posta",
+    menteeApproval: "Mentee onayı",
+    created: "Oluşturulma tarihi",
+    nextMeeting: "Sonraki görüşme",
+    notSet: "Belirlenmedi",
+    closingDate: "Kapanış Tarihi",
+    saveClosingDate: "Kaydet",
+    closingDateHint: "Çalışma alanının mentor ve mentee için kapanacağı tarih. Sayfa asla silinmez, istenildiğinde erişilebilir.",
+    closingDateSaved: "Kaydedildi ✓",
+    closingDateCleared: "Temizlendi ✓",
+    closingDateSaveFailed: "Kapanış tarihi kaydedilemedi",
+    saving: "Kaydediliyor...",
+    copyMentorLink: "Mentor Linkini Kopyala",
+    copyMenteeLink: "Mentee Linkini Kopyala",
+    openMentorApproval: "Mentor Onayını Aç",
+    openMenteeApproval: "Mentee Onayını Aç",
+    openWorkspace: "Workspace’i Aç",
+    surveyLabel: "Kapanış anketi",
+    sendSurveyMentor: "Mentore Anket Gönder",
+    sendSurveyMentee: "Mentee'ye Anket Gönder",
+    showAnswers: "Cevapları Göster",
+    hideAnswers: "Cevapları Gizle",
+    surveyNeedsSmtp: "Anket göndermek için SMTP ayarlayın.",
+    surveySending: "Gönderiliyor...",
+    surveySent: "Anket gönderildi:",
+    surveyResent: "Hatırlatma gönderildi:",
+    surveySendFailed: "Anket gönderilemedi",
+    surveyAlreadyDone: "Bu kişi anketi zaten doldurdu.",
+    surveyNoEmail: "Bu kişi için kayıtlı e-posta adresi yok.",
+    surveyLoading: "Cevaplar yükleniyor...",
+    surveyLoadFailed: "Cevaplar yüklenemedi.",
+    surveyNotSent: "Gönderilmedi",
+    surveyPending: "Cevap bekleniyor",
+    surveyCompleted: "Tamamlandı",
+    surveySentAt: "Gönderim",
+    surveyCompletedAt: "Tamamlanma",
+    surveyNoAnswerYet: "Bu kişi anketi henüz doldurmadı.",
+    surveyNotSentYet: "Bu kişiye anket henüz gönderilmedi.",
+    surveyStatsMeetings: "Görüşme",
+    surveyStatsActions: "Tamamlanan aksiyon",
+    surveyStatsPeriod: "Dönem",
+    surveyStatsNote: "Çalışma alanından alındı — ankette sorulmadı.",
+    surveyLinkCopied: "Anket linki kopyalandı.",
+    surveyCopyLink: "Linki kopyala",
+    copied: "Kopyalandı!",
+    emailBoth: "İkisine de E-posta Gönder",
+    emailWorkspace: "Çalışma Alanı Linkini Gönder",
+    emailSending: "Gönderiliyor…",
+    emailSent: "Gönderildi ✓",
+    emailFailed: "E-posta gönderilemedi",
+    emailNotSent: "Gönderilemeyenler:",
+    whatToDo: "Ne yapmalı:",
+    mentor: "Mentor",
+    mentee: "Mentee",
+    couldNotLoadMentorships: "Mentorluklar yüklenemedi.",
+    couldNotLoadApprovals: "Onay talepleri yüklenemedi.",
+    status: {
+      active: "aktif",
+      approved: "onaylandı",
+      pending: "bekliyor",
+      rejected: "reddedildi",
+      completed: "tamamlandı",
+      paused: "duraklatıldı",
+      cancelled: "iptal edildi"
+    }
+  }
+};
+
+function t(key) {
+  return translations[currentLanguage][key] || translations.en[key] || key;
+}
+
+function statusText(value) {
+  const status = String(value || "pending");
+  return (translations[currentLanguage].status && translations[currentLanguage].status[status]) || status;
+}
+
+function setLanguage(lang) {
+  currentLanguage = translations[lang] ? lang : "en";
+  localStorage.setItem("mentorAppLang", currentLanguage);
+  document.documentElement.lang = currentLanguage;
+  document.getElementById("languageSelect").value = currentLanguage;
+  applyTranslations();
+  renderStats();
+  renderApprovals();
+  renderMentorships();
+}
+
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    el.textContent = t(key);
+  });
+  document.title = t("pageTitle");
+}
+
+async function loadDashboard() {
+  // Butonlarin gosterilip gosterilmeyecegini belirler.
+  await checkSmtp();
+
+  try {
+    const mentorshipRes = await fetch(
+      `${API_BASE_URL}/mentorships?companyId=${COMPANY_ID}`,
+      { headers: { "x-api-key": API_KEY } }
+    );
+
+    const approvalsRes = await fetch(
+      `${API_BASE_URL}/match-requests?companyId=${COMPANY_ID}`,
+      { headers: { "x-api-key": API_KEY } }
+    );
+
+    if (!mentorshipRes.ok) throw new Error(t("couldNotLoadMentorships"));
+    if (!approvalsRes.ok) throw new Error(t("couldNotLoadApprovals"));
+
+    mentorships = await mentorshipRes.json();
+    approvalRequests = await approvalsRes.json();
+
+    renderStats();
+    renderApprovals();
+    renderMentorships();
+
+  } catch (error) {
+    document.getElementById("errorBox").innerHTML = `
+      <div class="error">${escapeHtml(error.message)}</div>
+    `;
+  }
+}
+
+function renderStats() {
+  const activeMentorships = mentorships.filter(m => m.status === "active").length;
+  const pendingApprovals = approvalRequests.filter(r => r.status === "pending").length;
+  const approvedRequests = approvalRequests.filter(r => r.status === "approved").length;
+  const rejectedRequests = approvalRequests.filter(r =>
+    r.mentorApproval === "rejected" || r.menteeApproval === "rejected" || r.status === "rejected"
+  ).length;
+
+  document.getElementById("stats").innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">${mentorships.length}</div>
+        <div class="stat-label">${t("totalMentorships")}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${activeMentorships}</div>
+        <div class="stat-label">${t("activeMentorships")}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${pendingApprovals}</div>
+        <div class="stat-label">${t("pendingApprovals")}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${approvedRequests}</div>
+        <div class="stat-label">${t("approvedRequests")}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${rejectedRequests}</div>
+        <div class="stat-label">${t("rejectedRequests")}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderApprovals() {
+  const container = document.getElementById("approvalList");
+
+  if (!approvalRequests.length) {
+    container.innerHTML = `<div class="empty">${t("noApprovalRequests")}</div>`;
+    return;
+  }
+
+  let html = "";
+
+  approvalRequests.forEach(req => {
+    const mentorLink = req.mentorLink || "#";
+    const menteeLink = req.menteeLink || "#";
+    const requestStatus = req.status || "pending";
+    const mentorApproval = req.mentorApproval || "pending";
+    const menteeApproval = req.menteeApproval || "pending";
+
+    // Yonetici kapisi: girilmisse ve henuz onaylamadiysa mentor/mentee
+    // e-postalari GONDERILEMEZ. IK yanlislikla once onlara gondermesin.
+    const managerApproval = req.managerApproval || "not_required";
+    const hasManager = managerApproval !== "not_required";
+    const gated = hasManager && managerApproval !== "approved";
+
+    html += `
+      <div class="card">
+        <div class="row">
+          <div class="pair-title">
+            <strong>${escapeHtml(req.mentorName || t("mentor"))}</strong>
+            →
+            ${escapeHtml(req.menteeName || t("mentee"))}
+          </div>
+          <span class="badge ${escapeHtml(requestStatus)}">${escapeHtml(statusText(requestStatus))}</span>
+        </div>
+
+        ${hasManager ? `
+          <div class="row">
+            <div class="muted">
+              ${t("managerApproval")}
+              ${req.managerName ? `<span style="color:#9ca3af"> · ${escapeHtml(req.managerName)}</span>` : ""}
+            </div>
+            <span class="badge ${escapeHtml(managerApproval)}">${escapeHtml(statusText(managerApproval))}</span>
+          </div>
+        ` : ""}
+
+        <div class="row">
+          <div class="muted">
+            ${t("mentorApproval")}
+            ${gated ? `<span style="color:#b5651d;font-size:12px"> · ${t("waitingManager")}</span>` : ""}
+          </div>
+          <span class="badge ${escapeHtml(mentorApproval)}">${escapeHtml(statusText(mentorApproval))}</span>
+        </div>
+
+        <div class="row">
+          <div class="muted">
+            ${t("menteeApproval")}
+            ${gated ? `<span style="color:#b5651d;font-size:12px"> · ${t("waitingManager")}</span>` : ""}
+          </div>
+          <span class="badge ${escapeHtml(menteeApproval)}">${escapeHtml(statusText(menteeApproval))}</span>
+        </div>
+
+        ${req.status === "rejected" && (req.rejectionCategory || req.rejectionNote) ? `
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;
+               padding:12px 14px;margin:10px 0;font-size:13px;line-height:1.55">
+            <div style="color:#b91c1c;font-weight:600;margin-bottom:4px">
+              ${t("rejectedBy")} ${escapeHtml(t("by_" + (req.rejectedBy || "mentee")))}
+            </div>
+            ${req.rejectionCategory ? `
+              <div style="color:#7f1d1d">${escapeHtml(t("reason_" + req.rejectionCategory))}</div>
+            ` : ""}
+            ${req.rejectionNote ? `
+              <div style="color:#991b1b;margin-top:6px;font-style:italic">
+                "${escapeHtml(req.rejectionNote)}"
+              </div>
+            ` : ""}
+          </div>
+        ` : ""}
+
+        <div class="row">
+          <div class="muted">${t("created")}</div>
+          <div>${formatDate(req.createdAt)}</div>
+        </div>
+
+        <div class="actions">
+          ${gated ? `
+            <button class="secondary-btn" onclick="copyText('${escapeJs(req.managerLink || "")}')">${t("copyManagerLink")}</button>
+            ${SMTP_READY ? `
+              <button class="mail-btn" style="background:#b5651d;border-color:#b5651d"
+                      onclick="emailApproval('${escapeJs(req.id)}', 'manager', this)">
+                ${t("emailManager")}
+              </button>
+            ` : ""}
+          ` : ""}
+          <button class="secondary-btn" onclick="copyText('${escapeJs(mentorLink)}')">${t("copyMentorLink")}</button>
+          <button class="secondary-btn" onclick="copyText('${escapeJs(menteeLink)}')">${t("copyMenteeLink")}</button>
+          ${SMTP_READY && !gated ? `
+            <button class="mail-btn" onclick="emailApproval('${escapeJs(req.id)}', 'both', this)">
+              ${t("emailBoth")}
+            </button>
+          ` : ""}
+          <button onclick="openLink('${escapeJs(mentorLink)}')">${t("openMentorApproval")}</button>
+          <button onclick="openLink('${escapeJs(menteeLink)}')">${t("openMenteeApproval")}</button>
+          ${req.mentorshipId ? `
+            <button class="green-btn" onclick="openWorkspace('${escapeJs(req.mentorshipId)}')">${t("openWorkspace")}</button>
+          ` : ""}
+          <button class="danger-btn"
+                  onclick="deleteRequest('${escapeJs(req.id)}', '${escapeJs(req.mentorName || "")} → ${escapeJs(req.menteeName || "")}', ${req.mentorshipId ? "true" : "false"})">
+            ${t("delete")}
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function renderMentorships() {
+  const container = document.getElementById("mentorshipList");
+
+  if (!mentorships.length) {
+    container.innerHTML = `<div class="empty">${t("noMentorships")}</div>`;
+    return;
+  }
+
+  let html = "";
+
+  mentorships.forEach(m => {
+    const mentorshipStatus = m.status || "active";
+
+    html += `
+      <div class="card">
+        <div class="row">
+          <div class="pair-title">
+            <strong>${escapeHtml(m.mentorName || t("mentor"))}</strong>
+            →
+            ${escapeHtml(m.menteeName || t("mentee"))}
+          </div>
+          <span class="badge ${escapeHtml(mentorshipStatus)}">${escapeHtml(statusText(mentorshipStatus))}</span>
+        </div>
+
+        <div class="row">
+          <div class="muted">${t("nextMeeting")}</div>
+          <div>${escapeHtml(m.nextMeetingDate || t("notSet"))}</div>
+        </div>
+
+        <div class="row">
+          <div class="muted">${t("closingDate")}</div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="date" id="closing-${escapeHtml(m.id)}" value="${escapeHtml(m.closingDate || "")}" />
+            <button onclick="saveClosingDate('${escapeJs(m.id)}', this)">${t("saveClosingDate")}</button>
+          </div>
+        </div>
+        <div class="muted" style="font-size:12px; margin-top:-6px; margin-bottom:4px;">${t("closingDateHint")}</div>
+
+        <div class="actions">
+          <button onclick="openWorkspace('${escapeJs(m.id)}')">${t("openWorkspace")}</button>
+          ${SMTP_READY ? `
+            <button class="mail-btn" onclick="emailWorkspace('${escapeJs(m.id)}', this)">
+              ${t("emailWorkspace")}
+            </button>
+          ` : ""}
+          <button class="danger-btn"
+                  onclick="deleteMentorship('${escapeJs(m.id)}', '${escapeJs(m.mentorName || "")} → ${escapeJs(m.menteeName || "")}')">
+            ${t("delete")}
+          </button>
+        </div>
+
+        <div class="survey-row">
+          <div class="muted survey-label">${t("surveyLabel")}</div>
+          <div class="actions" style="margin:0">
+            ${SMTP_READY ? `
+              <button onclick="sendSurvey('${escapeJs(m.id)}','mentor',this)">${t("sendSurveyMentor")}</button>
+              <button onclick="sendSurvey('${escapeJs(m.id)}','mentee',this)">${t("sendSurveyMentee")}</button>
+            ` : `<span class="muted" style="font-size:12px">${t("surveyNeedsSmtp")}</span>`}
+            <button onclick="showSurveyAnswers('${escapeJs(m.id)}')">${t("showAnswers")}</button>
+          </div>
+        </div>
+        <div id="surveyBox-${escapeHtml(m.id)}"></div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+/* ==================================================================
+   KAPANIS ANKETLERI
+
+   Gonderim ve sonuc goruntuleme. Cevaplari YALNIZCA bu ekran gosterir;
+   mentor ve mentee birbirinin cevabini goremez.
+   ================================================================== */
+
+/** Mentor veya mentee'ye anket gonderir. */
+async function sendSurvey(mentorshipId, role, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t("surveySending");
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/mentorships/${mentorshipId}/survey`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+      body: JSON.stringify({ role, language: currentLanguage })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      // Bilinen durumlar icin AÇIK mesaj ver; ham hata metni IK'ya
+      // bir sey anlatmaz.
+      if (data.code === "already_completed") throw new Error(t("surveyAlreadyDone"));
+      if (data.code === "no_email") throw new Error(t("surveyNoEmail"));
+
+      // SMTP hatasinda anket kaydi yine de olusmustur; linki verelim ki
+      // IK elle paylasabilsin.
+      if (data.surveyUrl) {
+        throw new Error(`${t("surveySendFailed")}: ${data.error}\n\n${data.surveyUrl}`);
+      }
+      throw new Error(`${t("surveySendFailed")}: ${data.error || res.status}`);
+    }
+
+    alert(`${data.reused ? t("surveyResent") : t("surveySent")} ${data.sentTo}`);
+
+    // Panel aciksa durumu tazele.
+    const box = document.getElementById(`surveyBox-${mentorshipId}`);
+    if (box && box.innerHTML.trim()) showSurveyAnswers(mentorshipId, true);
+
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+/** Cevap panelini acar/kapatir. */
+async function showSurveyAnswers(mentorshipId, forceOpen) {
+  const box = document.getElementById(`surveyBox-${mentorshipId}`);
+  if (!box) return;
+
+  if (box.innerHTML.trim() && !forceOpen) {
+    box.innerHTML = "";
+    return;
+  }
+
+  box.innerHTML = `<div class="survey-panel"><div class="muted">${t("surveyLoading")}</div></div>`;
+
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/mentorships/${mentorshipId}/surveys?language=${encodeURIComponent(currentLanguage)}`,
+      { headers: { "x-api-key": API_KEY } }
+    );
+
+    if (!res.ok) throw new Error();
+
+    const data = await res.json();
+    const s = data.stats || {};
+
+    const period = s.firstMeeting && s.lastMeeting
+      ? `${s.firstMeeting} → ${s.lastMeeting}` : "—";
+
+    box.innerHTML = `
+      <div class="survey-panel">
+        <div class="survey-stats">
+          <span><b>${s.meetingCount || 0}</b> ${escapeHtml(t("surveyStatsMeetings"))}</span>
+          <span><b>${s.doneActions || 0}/${s.totalActions || 0}</b> ${escapeHtml(t("surveyStatsActions"))}</span>
+          <span>${escapeHtml(t("surveyStatsPeriod"))}: <b>${escapeHtml(period)}</b></span>
+          <span class="muted" style="font-size:11.5px">${escapeHtml(t("surveyStatsNote"))}</span>
+        </div>
+
+        <div class="survey-cols">
+          ${surveyColumn(data.mentor, t("mentor"), data.mentorName)}
+          ${surveyColumn(data.mentee, t("mentee"), data.menteeName)}
+        </div>
+      </div>
+    `;
+
+  } catch {
+    box.innerHTML = `<div class="survey-panel"><div class="muted">${t("surveyLoadFailed")}</div></div>`;
+  }
+}
+
+/** Tek bir tarafin (mentor/mentee) cevap sutunu. */
+function surveyColumn(entry, roleLabel, personName) {
+  if (!entry) return "";
+
+  const stateText = {
+    completed: t("surveyCompleted"),
+    pending: t("surveyPending"),
+    not_sent: t("surveyNotSent")
+  }[entry.state] || entry.state;
+
+  let body = "";
+
+  if (entry.state === "not_sent") {
+    body = `<div class="muted" style="font-size:13px">${escapeHtml(t("surveyNotSentYet"))}</div>`;
+
+  } else if (entry.state === "pending") {
+    // Cevap yoksa en azindan linki ver - IK hatirlatirken elle
+    // paylasmak isteyebilir.
+    body = `
+      <div class="muted" style="font-size:13px;margin-bottom:9px">
+        ${escapeHtml(t("surveyNoAnswerYet"))}
+      </div>
+      <div class="muted" style="font-size:12px">
+        ${escapeHtml(t("surveySentAt"))}: ${escapeHtml(formatDate(entry.sentAt))}
+      </div>
+      <button style="margin-top:9px;font-size:12px;padding:6px 11px"
+              onclick="copyText('${escapeJs(entry.surveyUrl || "")}')">
+        ${escapeHtml(t("surveyCopyLink"))}
+      </button>`;
+
+  } else {
+    const def = entry.definition;
+    const answers = entry.answers || {};
+
+    body = `
+      <div class="muted" style="font-size:12px;margin-bottom:4px">
+        ${escapeHtml(t("surveyCompletedAt"))}: ${escapeHtml(formatDate(entry.completedAt))}
+      </div>
+      ${(def ? def.sections : []).map(section => `
+        <div class="survey-sec">${escapeHtml(section.title)}</div>
+        ${section.questions.map(q => renderAnswer(q, answers[q.id])).join("")}
+      `).join("")}`;
+  }
+
+  return `
+    <div class="survey-col">
+      <h4>${escapeHtml(roleLabel)}</h4>
+      <div class="survey-who">${escapeHtml(personName || entry.recipientName || "—")}</div>
+      <span class="survey-state ${escapeHtml(entry.state)}">${escapeHtml(stateText)}</span>
+      ${body}
+    </div>`;
+}
+
+/** Tek soru + cevabi. Cevaplanmamis soru "—" olarak gosterilir. */
+function renderAnswer(q, value) {
+  const empty = value === undefined || value === null || value === "";
+
+  let shown;
+  if (empty) {
+    shown = `<span class="muted">—</span>`;
+  } else if (q.type === "scale5") {
+    shown = `<span class="survey-score">${escapeHtml(String(value))}/5</span>`;
+  } else if (q.type === "nps") {
+    shown = `<span class="survey-score">${escapeHtml(String(value))}/10</span>`;
+  } else {
+    shown = escapeHtml(String(value));
+  }
+
+  return `
+    <div class="survey-q">
+      <div class="qq">${escapeHtml(q.q)}</div>
+      <div class="aa">${shown}</div>
+    </div>`;
+}
+
+/* ==================================================================
+   E-POSTA GONDERIMI
+
+   Butonlar SADECE SMTP yapilandirilmissa gorunur. Yapilandirilmamissa
+   IK bos bir butona basip hata almasin - buton hic cikmasin.
+   ================================================================== */
+
+let SMTP_READY = false;
+
+async function checkSmtp() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/email/status`, {
+      headers: { "x-api-key": API_KEY }
+    });
+    SMTP_READY = res.ok && (await res.json()).configured;
+  } catch {
+    SMTP_READY = false;
+  }
+}
+
+async function sendEmail(url, body, btn, okLabel) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t("emailSending");
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY
+      },
+      body: JSON.stringify({ ...body, lang: currentLanguage || "tr" })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      // Sunucu teshis dondurduyse IK'ya NE YAPACAGINI soyle.
+      const parts = [data.error || t("emailFailed")];
+      if (data.detail) parts.push(data.detail);
+      if (data.action) parts.push("\n" + t("whatToDo") + " " + data.action);
+      throw new Error(parts.join("\n"));
+    }
+
+    // Kismi basarisizlik: bazilari gitti, bazilari gitmedi.
+    if (data.failed && data.failed.length) {
+      const reasons = data.failed
+        .map(f => `${f.type || f.email}: ${f.reason}`)
+        .join("\n");
+
+      alert(`${data.message}\n\n${t("emailNotSent")}\n${reasons}`);
+      btn.textContent = original;
+      btn.disabled = false;
+      return;
+    }
+
+    btn.textContent = okLabel;
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+    }, 2500);
+
+  } catch (e) {
+    alert(e.message);
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+}
+
+function emailApproval(requestId, target, btn) {
+  sendEmail(
+    `${API_BASE_URL}/email/approval/${requestId}`,
+    { target },
+    btn,
+    t("emailSent")
+  );
+}
+
+function emailWorkspace(mentorshipId, btn) {
+  sendEmail(
+    `${API_BASE_URL}/email/workspace/${mentorshipId}`,
+    { target: "both" },
+    btn,
+    t("emailSent")
+  );
+}
+
+/* ==================================================================
+   SILME
+   Her silme ONAY ISTER. Geri alinamaz islemlerde ne kaybedilecegi
+   acikca yazilir - "emin misiniz?" tek basina yeterli degildir.
+   ================================================================== */
+
+async function deleteRequest(id, label, hasWorkspace) {
+  let message = `${t("confirmDeleteRequest")}\n\n${label}`;
+
+  if (hasWorkspace) {
+    message += `\n\n${t("deleteRequestKeepsWorkspace")}`;
+  }
+
+  if (!confirm(message)) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/match-request/${id}`, {
+      method: "DELETE",
+      headers: { "x-api-key": API_KEY }
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || t("deleteFailed"));
+
+    await loadDashboard();
+
+  } catch (e) {
+    alert(t("deleteFailed") + ": " + e.message);
+  }
+}
+
+async function deleteMentorship(id, label) {
+  if (!confirm(`${t("confirmDeleteMentorship")}\n\n${label}`)) return;
+
+  try {
+    let res = await fetch(`${API_BASE_URL}/mentorships/${id}`, {
+      method: "DELETE",
+      headers: { "x-api-key": API_KEY }
+    });
+
+    let data = await res.json();
+
+    // Sunucu toplanti notlarini uyardiysa IKINCI kez onay al.
+    // Kullanici ne kaybedecegini bilmeden silmemeli.
+    if (res.status === 409 && data.code === "has_meetings") {
+      if (!confirm(`${data.warning}\n\n${t("confirmDeleteAnyway")}`)) return;
+
+      res = await fetch(`${API_BASE_URL}/mentorships/${id}?force=true`, {
+        method: "DELETE",
+        headers: { "x-api-key": API_KEY }
+      });
+      data = await res.json();
+    }
+
+    if (!res.ok) throw new Error(data.error || t("deleteFailed"));
+
+    await loadDashboard();
+
+  } catch (e) {
+    alert(t("deleteFailed") + ": " + e.message);
+  }
+}
+
+async function saveClosingDate(id, btn) {
+  const input = document.getElementById("closing-" + id);
+  const value = input ? input.value : "";
+  const original = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = t("saving");
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/mentorships/${id}/closing-date`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+      body: JSON.stringify({ closingDate: value })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || t("closingDateSaveFailed"));
+
+    // Yerel state'i guncelle ki liste yeniden cizilirse dogru gorunsun.
+    const ms = mentorships.find(m => m.id === id);
+    if (ms) ms.closingDate = data.closingDate;
+
+    btn.textContent = value ? t("closingDateSaved") : t("closingDateCleared");
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1600);
+
+  } catch (e) {
+    alert(t("closingDateSaveFailed") + ": " + e.message);
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+}
+
+function openWorkspace(id) {
+  // Calisma alani artik TOKEN ister. Linki sunucudan alalim -
+  // frontend'in token uretmesi mumkun degil (ve olmamali).
+  const ms = (mentorships || []).find(m => m.id === id);
+
+  if (ms && ms.workspaceUrl) {
+    window.open(ms.workspaceUrl, "_blank");
+  } else {
+    alert("Calisma alani baglantisi bulunamadi. Sayfayi yenileyip tekrar deneyin.");
+  }
+}
+
+function openLink(url) {
+  window.open(url, "_blank");
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text);
+  alert(t("copied"));
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+
+  return d.toLocaleDateString(currentLanguage === "tr" ? "tr-TR" : "en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeJs(value) {
+  return String(value || "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("'", "\\'")
+    .replaceAll('"', "&quot;");
+}
+
+setLanguage(currentLanguage);
+loadDashboard();
+
+
+</script>
+
+
+<script>
+/* ==================================================================
+   LISANS UYARI BANDI
+
+   Deneme suresi bitmeden IK'nin haberi olmali. Surenin dolmasini
+   surpriz olarak yasamak, calisma gununu bolen bir kesinti demektir.
+   ================================================================== */
+(async function licenseBanner() {
+  try {
+    const res = await fetch("/license-status");
+    if (!res.ok) return;
+    const s = await res.json();
+
+    if (s.state === "trial" || s.state === "licensed") return;
+
+    const isTr = (localStorage.getItem("mentorAppLang") || "en") === "tr";
+
+    const M = {
+      trial_expiring: {
+        tr: [`Deneme süreniz ${s.trialDaysLeft} gün içinde doluyor.`,
+             "Kesintisiz devam etmek için yönetici panelinden lisans anahtarınızı girin."],
+        en: [`Your trial ends in ${s.trialDaysLeft} day${s.trialDaysLeft === 1 ? "" : "s"}.`,
+             "Enter your license key in the admin panel to continue without interruption."]
+      },
+      trial_expired: {
+        tr: ["20 günlük deneme süresi doldu — yeni eşleştirme duraklatıldı.",
+             "Mevcut çalışma alanlarınız ve toplantı notlarınız erişilebilir durumda."],
+        en: ["The 20-day trial has ended — new matching is paused.",
+             "Your existing workspaces and meeting notes remain accessible."]
+      },
+      license_expired: {
+        tr: ["Lisans süresi doldu — yeni eşleştirme duraklatıldı.",
+             "Verileriniz erişilebilir durumda. Tedarikçinizle iletişime geçin."],
+        en: ["The license has expired — new matching is paused.",
+             "Your data remains accessible. Please contact your supplier."]
+      },
+      invalid_license: {
+        tr: ["Lisans anahtarı doğrulanamıyor.",
+             "Yönetici panelinden anahtarı yeniden girin."],
+        en: ["The license key cannot be verified.",
+             "Re-enter the key in the admin panel."]
+      }
+    };
+
+    const m = (M[s.state] || M.trial_expired)[isTr ? "tr" : "en"];
+    const urgent = s.state !== "trial_expiring";
+
+    const bar = document.createElement("div");
+    bar.style.cssText = `
+      background:${urgent ? "#fef2f2" : "#fffbeb"};
+      border-bottom:1px solid ${urgent ? "#fecaca" : "#fde68a"};
+      color:${urgent ? "#991b1b" : "#92400e"};
+      padding:11px 20px;font-size:13.5px;line-height:1.5;
+      font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+      display:flex;align-items:center;gap:12px;flex-wrap:wrap;`;
+
+    bar.innerHTML =
+      `<span><strong>${m[0]}</strong> ${m[1]}</span>` +
+      `<a href="/admin.html" style="margin-left:auto;color:inherit;font-weight:600;
+         white-space:nowrap">${isTr ? "Yönetici paneli →" : "Admin panel →"}</a>`;
+
+    document.body.insertBefore(bar, document.body.firstChild);
+  } catch { /* banda ulasilamadi - sessiz gec */ }
+})();
+</script>
+
+</body>
+</html>

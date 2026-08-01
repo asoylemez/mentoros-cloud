@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Your Company Mentor Registration</title>
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f4f5f7;
+      min-height: 100vh;
+      padding: 0 1rem 2rem;
+      color: #1a1a1a;
+    }
+
+    :root {
+      --navy: #1a2b5e;
+      --navy-light: #eef1f8;
+      --copper: #b5651d;
+      --copper-light: #f5ede4;
+      --border: #e0e0e0;
+      --text-muted: #6b7280;
+      --text-hint: #9ca3af;
+      --bg-surface: #ffffff;
+      --bg-page: #f4f5f7;
+      --green-bg: #eaf3de;
+      --green-text: #27500a;
+      --amber-bg: #faeeda;
+      --amber-text: #633806;
+    }
+
+    .app-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e6e8ef;
+      padding: 10px 0;
+    }
+
+    .app-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      color: #1a2b5e;
+      font-size: 16px;
+    }
+
+    .page-wrap {
+      max-width: 680px;
+      margin: 24px auto 0;
+    }
+
+    .form-header {
+      background: var(--navy);
+      border-radius: 12px 12px 0 0;
+      padding: 1.5rem 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-icon {
+      width: 38px; height: 38px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .form-header h1 { color: #fff; font-size: 18px; font-weight: 600; }
+    .form-header p { color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 3px; }
+
+    .progress-bar { height: 4px; background: rgba(255,255,255,0.2); }
+    .progress-fill {
+      height: 100%;
+      background: var(--copper);
+      transition: width 0.4s ease;
+      width: 20%;
+    }
+
+    .form-body {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 1.75rem;
+    }
+
+    .step { display: none; }
+    .step.active { display: block; }
+
+    .step-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--copper);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 1rem;
+    }
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
+
+    .field { margin-bottom: 1.25rem; }
+    .field > label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1a1a1a;
+      background: #fff;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(26,43,94,0.08);
+    }
+    .field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .field-row { grid-template-columns: 1fr; } }
+
+    .tag-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .tag {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: #fff;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .tag:hover { border-color: var(--navy); color: var(--navy); }
+    .tag.selected { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .tag.copper-tag { border-color: var(--border); }
+    .tag.copper-tag.selected { background: var(--copper); border-color: var(--copper); color: #fff; }
+
+    .capacity-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 6px; }
+    .cap-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cap-card:hover { border-color: var(--navy); }
+    .cap-card.selected { background: var(--copper-light); border-color: var(--copper); }
+    .cap-card .cap-num { font-size: 22px; font-weight: 600; color: var(--copper); }
+    .cap-card .cap-label { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+    .format-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+    .format-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.15s;
+    }
+    .format-card:hover { border-color: var(--navy); }
+    .format-card.selected { background: var(--navy-light); border-color: var(--navy); }
+    .format-card svg { flex-shrink: 0; color: #9ca3af; }
+    .format-card.selected svg { color: var(--navy); }
+    .format-card span { font-size: 13px; color: var(--text-muted); }
+    .format-card.selected span { color: var(--navy); font-weight: 500; }
+
+    .avail-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 6px; }
+    .avail-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .avail-card:hover { border-color: var(--navy); }
+    .avail-card.selected { background: var(--navy-light); border-color: var(--navy); }
+    .avail-icon {
+      width: 30px; height: 30px;
+      margin: 0 auto 6px;
+      background: #f3f4f6;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .avail-card.selected .avail-icon { background: rgba(26,43,94,0.1); }
+    .avail-title { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+    .avail-card.selected .avail-title { color: var(--navy); }
+    .avail-sub { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+    .slider-wrap { margin-top: 8px; }
+    .slider-row { display: flex; align-items: center; gap: 12px; }
+    .slider-row input[type=range] {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      accent-color: var(--navy);
+      cursor: pointer;
+    }
+    .slider-val { font-size: 14px; font-weight: 600; color: var(--navy); min-width: 80px; text-align: right; }
+    .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-hint); margin-top: 4px; }
+
+    .char-count { font-size: 11px; color: var(--text-hint); text-align: right; margin-top: 4px; }
+    .divider { height: 1px; background: #f0f0f0; margin: 1.5rem 0; }
+
+    .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 1.75rem; }
+    .btn {
+      padding: 9px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn-back { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-back:hover { background: #f9fafb; }
+    .btn-next { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .btn-next:hover { opacity: 0.88; }
+    .btn-submit { background: var(--copper); border-color: var(--copper); color: #fff; }
+    .btn-submit:hover { opacity: 0.88; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .success-wrap {
+      display: none;
+      text-align: center;
+      padding: 2.5rem 1rem;
+    }
+    .success-icon {
+      width: 60px; height: 60px;
+      background: var(--navy-light);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.25rem;
+    }
+    .success-wrap h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+    .success-wrap p { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 360px; margin: 0 auto; }
+  
+
+    .language-switcher {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 0.75rem;
+    }
+    .language-switcher select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-family: inherit;
+      background: white;
+      color: var(--navy);
+      font-weight: 600;
+    }
+
+    body {
+      padding-top: 0 !important;
+    }
+
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-header-inner">
+      
+    <div class="app-brand">
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+        ">
+          <div style="
+            width:40px;
+            height:40px;
+            border-radius:12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:linear-gradient(135deg,#101b3f,#3657ff);
+            color:white;
+            font-weight:900;
+            font-size:20px;
+            flex-shrink:0;
+          ">
+            M
+          </div>
+
+          <div style="
+            font-size:22px;
+            font-weight:800;
+            color:#101b3f;
+            line-height:1;
+          ">
+            MentorOS
+          </div>
+        </div>  
+    </div>
+
+  </div>
+</div>  
+
+<div class="page-wrap"><div class="language-switcher"><select id="languageSelect" onchange="setLanguage(this.value)"><option value="en">English</option><option value="tr">Türkçe</option></select></div>
+<div class="form-header">
+<div class="header-icon">
+<svg fill="none" height="20" stroke="white" stroke-width="1.5" viewbox="0 0 20 20" width="20">
+<circle cx="10" cy="6" r="3"></circle>
+<path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6"></path>
+<circle cx="15" cy="5" r="2"></circle>
+<path d="M17.5 10c1.38.92 2.5 2.36 2.5 4"></path>
+</svg>
+</div>
+<div>
+<h1 data-i18n="headerTitle">Mentor registration form</h1>
+<p data-i18n="headerSubtitle">Your Company Mentoring Program — E&amp;A</p>
+</div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+<div class="form-body">
+<div class="step active" id="step1">
+<div class="step-label" data-i18n="step1Label">Step 1 / 5 — Personal information</div>
+<div class="section-title" data-i18n="step1Title">Let's get to know you</div>
+<div class="section-sub" data-i18n="step1Sub">Enter your basic details. This information will be used during the matching process.</div>
+<div class="field-row">
+<div class="field">
+<label data-i18n="fullName" for="fullName">Full name</label>
+<input data-i18n-placeholder="phFullName" id="fullName" placeholder="e.g. Jane Smith" type="text"/>
+</div>
+<div class="field">
+<label data-i18n="email" for="email">Your Company email</label>
+<input data-i18n-placeholder="phEmail" id="email" placeholder="j.smith@example.com" type="email"/>
+</div>
+</div>
+<div class="field-row">
+<div class="field">
+<label data-i18n="role" for="role">Current title / role</label>
+<input data-i18n-placeholder="phRole" id="role" placeholder="e.g. Commercial Director" type="text"/>
+</div>
+<div class="field">
+<label data-i18n="band" for="band">Level / band</label>
+<select id="band">
+<option data-i18n="select" value="">Select...</option>
+<option data-i18n="item_band_6">Band 6</option>
+<option data-i18n="item_band_7">Band 7</option>
+<option data-i18n="item_band_8">Band 8</option>
+<option data-i18n="item_band_9">Band 9</option>
+<option data-i18n="item_band_10">Band 10</option>
+<option data-i18n="item_band_11">Band 11+</option>
+</select>
+</div>
+</div>
+<div class="field">
+<label data-i18n="tenure" for="tenure">Total tenure at Your Company</label>
+<select id="tenure">
+<option data-i18n="select" value="">Select...</option>
+<option data-i18n="item_less_than_2_years">Less than 2 years</option>
+<option data-i18n="item_2_4_years">2–4 years</option>
+<option data-i18n="item_5_7_years">5–7 years</option>
+<option data-i18n="item_8_10_years">8–10 years</option>
+<option data-i18n="item_10_years">10+ years</option>
+</select>
+</div>
+<div class="btn-row">
+<button class="btn btn-next" data-i18n="continue" onclick="goStep(2)">Continue →</button>
+</div>
+</div>
+<div class="step" id="step2">
+<div class="step-label" data-i18n="step2Label">Step 2 / 5 — Expertise &amp; career background</div>
+<div class="section-title" data-i18n="step2Title">Where does your experience lie?</div>
+<div class="section-sub" data-i18n="step2Sub">You can select multiple areas. This is the primary basis for mentee matching.</div>
+<div class="field">
+<label data-i18n="functionalAreas">Functional areas of expertise</label>
+<div class="tag-group" id="funcTags">
+<span class="tag" data-i18n="item_commercial_sales" data-value="Commercial / Sales" onclick="toggleTag(this)">Commercial / Sales</span>
+<span class="tag" data-i18n="item_marketing" data-value="Marketing" onclick="toggleTag(this)">Marketing</span>
+<span class="tag" data-i18n="item_finance_p_l" data-value="Finance &amp; P&amp;L" onclick="toggleTag(this)">Finance &amp; P&amp;L</span>
+<span class="tag" data-i18n="item_supply_chain" data-value="Supply Chain" onclick="toggleTag(this)">Supply Chain</span>
+<span class="tag" data-i18n="item_hr_people" data-value="HR &amp; People" onclick="toggleTag(this)">HR &amp; People</span>
+<span class="tag" data-i18n="item_operations" data-value="Operations" onclick="toggleTag(this)">Operations</span>
+<span class="tag" data-i18n="item_legal_compliance" data-value="Legal &amp; Compliance" onclick="toggleTag(this)">Legal &amp; Compliance</span>
+<span class="tag" data-i18n="item_digital_it" data-value="Digital &amp; IT" onclick="toggleTag(this)">Digital &amp; IT</span>
+<span class="tag" data-i18n="item_strategy" data-value="Strategy" onclick="toggleTag(this)">Strategy</span>
+<span class="tag" data-i18n="item_general_management" data-value="General Management" onclick="toggleTag(this)">General Management</span>
+<span class="tag" data-i18n="item_r_d_innovation" data-value="R&amp;D / Innovation" onclick="toggleTag(this)">R&amp;D / Innovation</span>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="industries">Industries worked in (including pre-Your Company)</label>
+<div class="tag-group" id="industryTags">
+<span class="tag copper-tag" data-i18n="item_fmcg_cpg" data-value="FMCG / CPG" onclick="toggleTag(this,'copper')">FMCG / CPG</span>
+<span class="tag copper-tag" data-i18n="item_retail" data-value="Retail" onclick="toggleTag(this,'copper')">Retail</span>
+<span class="tag copper-tag" data-i18n="item_technology" data-value="Technology" onclick="toggleTag(this,'copper')">Technology</span>
+<span class="tag copper-tag" data-i18n="item_manufacturing" data-value="Manufacturing" onclick="toggleTag(this,'copper')">Manufacturing</span>
+<span class="tag copper-tag" data-i18n="item_financial_services" data-value="Financial services" onclick="toggleTag(this,'copper')">Financial services</span>
+<span class="tag copper-tag" data-i18n="item_consulting" data-value="Consulting" onclick="toggleTag(this,'copper')">Consulting</span>
+<span class="tag copper-tag" data-i18n="item_healthcare" data-value="Healthcare" onclick="toggleTag(this,'copper')">Healthcare</span>
+<span class="tag copper-tag" data-i18n="item_energy" data-value="Energy" onclick="toggleTag(this,'copper')">Energy</span>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="careerBio" for="careerBio">Career summary — briefly describe your professional journey</label>
+<textarea data-i18n-placeholder="phCareer" id="careerBio" maxlength="300" oninput="updateChar('careerBio','careerCount',300)" placeholder="e.g. I have 12 years in FMCG. I spent my first 5 years in sales, then transitioned to marketing. For the past 3 years I've been Commercial Director for Turkey..."></textarea>
+<div class="char-count" id="careerCount">0 / 300</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-back" data-i18n="back" onclick="goStep(1)">← Back</button>
+<button class="btn btn-next" data-i18n="continue" onclick="goStep(3)">Continue →</button>
+</div>
+</div>
+<div class="step" id="step3">
+<div class="step-label" data-i18n="step3Label">Step 3 / 5 — Competencies</div>
+<div class="section-title" data-i18n="step3Title">Where do you feel strongest?</div>
+<div class="section-sub" data-i18n="step3Sub">Select the areas where you feel confident guiding others.</div>
+<div class="field">
+<label data-i18n="behavioural">Behavioural competencies</label>
+<div class="tag-group" id="behaviouralTags">
+<span class="tag" data-i18n="item_leadership_development" data-value="Leadership development" onclick="toggleTag(this)">Leadership development</span>
+<span class="tag" data-i18n="item_coaching_feedback" data-value="Coaching &amp; feedback" onclick="toggleTag(this)">Coaching &amp; feedback</span>
+<span class="tag" data-i18n="item_team_management" data-value="Team management" onclick="toggleTag(this)">Team management</span>
+<span class="tag" data-i18n="item_communication_influence" data-value="Communication &amp; influence" onclick="toggleTag(this)">Communication &amp; influence</span>
+<span class="tag" data-i18n="item_change_management" data-value="Change management" onclick="toggleTag(this)">Change management</span>
+<span class="tag" data-i18n="item_career_planning" data-value="Career planning" onclick="toggleTag(this)">Career planning</span>
+<span class="tag" data-i18n="item_cross_cultural_working" data-value="Cross-cultural working" onclick="toggleTag(this)">Cross-cultural working</span>
+<span class="tag" data-i18n="item_psychological_safety" data-value="Psychological safety" onclick="toggleTag(this)">Psychological safety</span>
+<span class="tag" data-i18n="item_resilience_wellbeing" data-value="Resilience &amp; wellbeing" onclick="toggleTag(this)">Resilience &amp; wellbeing</span>
+<span class="tag" data-i18n="item_inclusion_diversity" data-value="Inclusion &amp; diversity" onclick="toggleTag(this)">Inclusion &amp; diversity</span>
+<span class="tag" data-i18n="item_negotiation_persuasion" data-value="Negotiation &amp; persuasion" onclick="toggleTag(this)">Negotiation &amp; persuasion</span>
+<span class="tag" data-i18n="item_confidence_visibility" data-value="Confidence &amp; visibility" onclick="toggleTag(this)">Confidence &amp; visibility</span>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="technical">Technical competencies</label>
+<div class="tag-group" id="technicalTags">
+<span class="tag copper-tag" data-i18n="item_p_l_financial_acumen" data-value="P&amp;L / financial acumen" onclick="toggleTag(this,'copper')">P&amp;L / financial acumen</span>
+<span class="tag copper-tag" data-i18n="item_strategy_development" data-value="Strategy development" onclick="toggleTag(this,'copper')">Strategy development</span>
+<span class="tag copper-tag" data-i18n="item_customer_negotiation" data-value="Customer negotiation" onclick="toggleTag(this,'copper')">Customer negotiation</span>
+<span class="tag copper-tag" data-i18n="item_data_analytics" data-value="Data &amp; analytics" onclick="toggleTag(this,'copper')">Data &amp; analytics</span>
+<span class="tag copper-tag" data-i18n="item_digital_transformation" data-value="Digital transformation" onclick="toggleTag(this,'copper')">Digital transformation</span>
+<span class="tag copper-tag" data-i18n="item_project_management" data-value="Project management" onclick="toggleTag(this,'copper')">Project management</span>
+<span class="tag copper-tag" data-i18n="item_procurement_tendering" data-value="Procurement &amp; tendering" onclick="toggleTag(this,'copper')">Procurement &amp; tendering</span>
+<span class="tag copper-tag" data-i18n="item_presenting_storytelling" data-value="Presenting &amp; storytelling" onclick="toggleTag(this,'copper')">Presenting &amp; storytelling</span>
+<span class="tag copper-tag" data-i18n="item_talent_management" data-value="Talent management" onclick="toggleTag(this,'copper')">Talent management</span>
+<span class="tag copper-tag" data-i18n="item_category_shopper" data-value="Category &amp; shopper" onclick="toggleTag(this,'copper')">Category &amp; shopper</span>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="extraComp" for="extraComp">Anything not listed above you'd like to add?</label>
+<textarea data-i18n-placeholder="phExtra" id="extraComp" placeholder="e.g. 'I have hands-on experience advising colleagues through international transfers and relocation.'" style="min-height:60px"></textarea>
+</div>
+<div class="btn-row">
+<button class="btn btn-back" data-i18n="back" onclick="goStep(2)">← Back</button>
+<button class="btn btn-next" data-i18n="continue" onclick="goStep(4)">Continue →</button>
+</div>
+</div>
+<div class="step" id="step4">
+<div class="step-label" data-i18n="step4Label">Step 4 / 5 — Mentoring preferences</div>
+<div class="section-title" data-i18n="step4Title">How would you like to mentor?</div>
+<div class="section-sub" data-i18n="step4Sub">These details are critical for accurate matching.</div>
+<div class="field">
+<label data-i18n="capacity">How many mentees can you take on at once?</label>
+<div class="capacity-row" id="capacityCards">
+<div class="cap-card" onclick="selectOne(this,'.cap-card')">
+<div class="cap-num">1</div>
+<div class="cap-label">person</div>
+</div>
+<div class="cap-card" onclick="selectOne(this,'.cap-card')">
+<div class="cap-num">2</div>
+<div class="cap-label">people</div>
+</div>
+<div class="cap-card" onclick="selectOne(this,'.cap-card')">
+<div class="cap-num">3+</div>
+<div class="cap-label">people</div>
+</div>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="hours">How much time can you commit per month?</label>
+<div class="slider-wrap">
+<div class="slider-row">
+<input id="hoursSlider" max="8" min="1" oninput="updateHoursLabel()" step="1" type="range" value="2"/>
+<div class="slider-val" id="hoursVal">2 hrs / month</div>
+</div>
+<div class="slider-labels"><span>1 hr</span><span>8 hrs</span></div>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="menteeLevels">Which levels would you prefer to mentor?</label>
+<div class="tag-group" id="menteeLevelTags">
+<span class="tag" data-i18n="item_new_joiners" data-value="New joiners" onclick="toggleTag(this)">New joiners</span>
+<span class="tag" data-i18n="item_mid_level_band_6_8" data-value="Mid-level (Band 6–8)" onclick="toggleTag(this)">Mid-level (Band 6–8)</span>
+<span class="tag" data-i18n="item_senior_band_9_10" data-value="Senior (Band 9–10)" onclick="toggleTag(this)">Senior (Band 9–10)</span>
+<span class="tag" data-i18n="item_first_time_managers" data-value="First-time managers" onclick="toggleTag(this)">First-time managers</span>
+<span class="tag" data-i18n="item_experienced_leaders" data-value="Experienced leaders" onclick="toggleTag(this)">Experienced leaders</span>
+<span class="tag" data-i18n="item_no_preference" data-value="No preference" onclick="toggleTag(this)">No preference</span>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="formats">Preferred mentoring format</label>
+<div class="format-grid" id="formatCards">
+<div class="format-card" data-value="Video call" onclick="this.classList.toggle('selected')">
+<svg fill="none" height="18" stroke="currentColor" stroke-width="1.5" viewbox="0 0 18 18" width="18">
+<rect height="10" rx="2" width="14" x="2" y="3"></rect>
+<path d="M6 16h6"></path><path d="M9 13v3"></path>
+</svg>
+<span data-i18n="item_video_call">Video call</span>
+</div>
+<div class="format-card" data-value="Written / async" onclick="this.classList.toggle('selected')">
+<svg fill="none" height="18" stroke="currentColor" stroke-width="1.5" viewbox="0 0 18 18" width="18">
+<path d="M4 4h10v8H9l-4 3V4z"></path>
+</svg>
+<span data-i18n="item_written_async">Written / async</span>
+</div>
+<div class="format-card" data-value="In person" onclick="this.classList.toggle('selected')">
+<svg fill="none" height="18" stroke="currentColor" stroke-width="1.5" viewbox="0 0 18 18" width="18">
+<circle cx="9" cy="8" r="3"></circle>
+<path d="M3 17c0-3.314 2.686-6 6-6s6 2.686 6 6"></path>
+</svg>
+<span data-i18n="item_in_person">In person</span>
+</div>
+<div class="format-card" data-value="Flexible / mixed" onclick="this.classList.toggle('selected')">
+<svg fill="none" height="18" stroke="currentColor" stroke-width="1.5" viewbox="0 0 18 18" width="18">
+<path d="M9 2a7 7 0 1 1 0 14A7 7 0 0 1 9 2z"></path>
+<path d="M9 5v4l3 2"></path>
+</svg>
+<span data-i18n="item_flexible_mixed">Flexible / mixed</span>
+</div>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="languages">Languages you can mentor in</label>
+<div class="tag-group" id="languageTags">
+<span class="tag" data-i18n="item_english" data-value="English" onclick="toggleTag(this)">English</span>
+<span class="tag" data-i18n="item_turkish" data-value="Turkish" onclick="toggleTag(this)">Turkish</span>
+<span class="tag" data-i18n="item_german" data-value="German" onclick="toggleTag(this)">German</span>
+<span class="tag" data-i18n="item_french" data-value="French" onclick="toggleTag(this)">French</span>
+<span class="tag" data-i18n="item_spanish" data-value="Spanish" onclick="toggleTag(this)">Spanish</span>
+<span class="tag" data-i18n="item_russian" data-value="Russian" onclick="toggleTag(this)">Russian</span>
+<span class="tag" data-i18n="item_arabic" data-value="Arabic" onclick="toggleTag(this)">Arabic</span>
+<span class="tag" data-i18n="item_other" data-value="Other" onclick="toggleTag(this)">Other</span>
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-back" data-i18n="back" onclick="goStep(3)">← Back</button>
+<button class="btn btn-next" data-i18n="continue" onclick="goStep(5)">Continue →</button>
+</div>
+</div>
+<div class="step" id="step5">
+<div class="step-label" data-i18n="step5Label">Step 5 / 5 — Motivation &amp; availability</div>
+<div class="section-title" data-i18n="step5Title">A few final questions</div>
+<div class="section-sub" data-i18n="step5Sub">This helps us improve matching quality and understand what drives you.</div>
+<div class="field">
+<label data-i18n="availability">Current availability</label>
+<div class="avail-grid" id="availabilityCards">
+<div class="avail-card" data-value="Available" onclick="selectOne(this,'.avail-card')">
+<div class="avail-icon">
+<svg fill="none" height="16" stroke="#27500a" stroke-width="1.5" viewbox="0 0 16 16" width="16">
+<circle cx="8" cy="8" r="6"></circle><path d="M5 8l2 2 4-4"></path>
+</svg>
+</div>
+<div class="avail-title" data-i18n="available">Available</div>
+<div class="avail-sub" data-i18n="availableSub">Ready to take a mentee</div>
+</div>
+<div class="avail-card" data-value="Soon" onclick="selectOne(this,'.avail-card')">
+<div class="avail-icon">
+<svg fill="none" height="16" stroke="#633806" stroke-width="1.5" viewbox="0 0 16 16" width="16">
+<circle cx="8" cy="8" r="6"></circle><path d="M8 4v4l3 2"></path>
+</svg>
+</div>
+<div class="avail-title" data-i18n="soon">Soon</div>
+<div class="avail-sub" data-i18n="soonSub">Within 1–2 months</div>
+</div>
+<div class="avail-card" data-value="At capacity" onclick="selectOne(this,'.avail-card')">
+<div class="avail-icon">
+<svg fill="none" height="16" stroke="#9ca3af" stroke-width="1.5" viewbox="0 0 16 16" width="16">
+<circle cx="8" cy="8" r="6"></circle>
+<path d="M6 6l4 4M10 6l-4 4"></path>
+</svg>
+</div>
+<div class="avail-title" data-i18n="atCapacity">At capacity</div>
+<div class="avail-sub" data-i18n="capacitySub">Not available now</div>
+</div>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="motivation">Why do you want to be a mentor?</label>
+<div class="tag-group" id="motivationTags">
+<span class="tag" data-i18n="item_giving_back" data-value="Giving back" onclick="toggleTag(this)">Giving back</span>
+<span class="tag" data-i18n="item_gaining_new_perspectives" data-value="Gaining new perspectives" onclick="toggleTag(this)">Gaining new perspectives</span>
+<span class="tag" data-i18n="item_developing_my_leadership" data-value="Developing my leadership" onclick="toggleTag(this)">Developing my leadership</span>
+<span class="tag" data-i18n="item_strengthening_the_organisation" data-value="Strengthening the organisation" onclick="toggleTag(this)">Strengthening the organisation</span>
+<span class="tag" data-i18n="item_personal_growth" data-value="Personal growth" onclick="toggleTag(this)">Personal growth</span>
+</div>
+</div>
+<div class="divider"></div>
+<div class="field">
+<label data-i18n="mentorMsg" for="mentorMsg">Message to your future mentee <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+<textarea data-i18n-placeholder="phMsg" id="mentorMsg" maxlength="400" oninput="updateChar('mentorMsg','msgCount',400)" placeholder="e.g. 'I value open-mindedness and curiosity. I'm especially happy to share experience around career transitions and international moves.'"></textarea>
+<div class="char-count" id="msgCount">0 / 400</div>
+</div>
+<div class="field">
+<label data-i18n="visibility">Visibility preference</label>
+<div class="tag-group" id="visibilityTags">
+<span class="tag" data-i18n="item_visible_to_hr_only" data-value="Visible to HR only" onclick="toggleTag(this)">Visible to HR only</span>
+<span class="tag" data-i18n="item_visible_to_managers_too" data-value="Visible to managers too" onclick="toggleTag(this)">Visible to managers too</span>
+<span class="tag" data-i18n="item_visible_during_matching_only" data-value="Visible during matching only" onclick="toggleTag(this)">Visible during matching only</span>
+</div>
+</div>
+<div class="field">
+<label data-i18n="kvkkTitle">Data protection (KVKK / GDPR)</label>
+<div style="background:#f7f8fb;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:6px;">
+<p data-i18n="kvkkText" style="font-size:12.5px;color:var(--text-muted);line-height:1.6;margin:0 0 10px;">Your personal data (name, email, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.</p>
+<label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+<input type="checkbox" id="kvkkConsent" style="width:18px;height:18px;margin-top:1px;flex-shrink:0;accent-color:var(--navy);"/>
+<span data-i18n="kvkkConsentLabel" style="font-size:13px;color:#1a1a1a;line-height:1.5;">I have read the above and consent to my personal data being processed for this purpose.</span>
+</label>
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-back" data-i18n="back" onclick="goStep(4)">← Back</button>
+<button class="btn btn-submit" data-i18n="submit" id="submitBtn" onclick="submitForm()">Complete registration ✓</button>
+</div>
+</div>
+<div class="success-wrap" id="successWrap">
+<div class="success-icon">
+<svg fill="none" height="28" stroke="#1a2b5e" stroke-width="2" viewbox="0 0 28 28" width="28">
+<circle cx="14" cy="14" r="11"></circle>
+<path d="M9 14l3 3 7-7"></path>
+</svg>
+</div>
+<h2 data-i18n="successTitle">Registration complete!</h2>
+<p data-i18n="successText">Your mentor profile has been created and added to the Your Company Mentoring Program pool. HR or a manager will be able to find you during the matching process.</p>
+</div>
+</div>
+</div>
+<div id="inviteError" style="display:none;position:fixed;inset:0;z-index:9999;
+     background:#f4f5f7;align-items:center;justify-content:center;text-align:center;padding:24px">
+  <div style="max-width:420px">
+    <div style="font-size:44px;margin-bottom:12px">🔒</div>
+    <h2 style="margin:0 0 10px;color:#1a2b5e" id="ieTitle">Geçersiz davet bağlantısı</h2>
+    <p style="color:#666;line-height:1.6" id="ieText">
+      Bu bağlantı geçersiz veya artık kullanılamıyor.
+      Lütfen İnsan Kaynakları ekibinden güncel bir davet bağlantısı isteyin.
+    </p>
+  </div>
+</div>
+
+<script>
+
+  // ------------------------------------------------------------------
+  // DAVET TOKEN'I
+  //
+  // Bu sayfa GIRIS GEREKTIRMEZ ve paylasimli API anahtari TASIMAZ.
+  // Sadece IK'nin urettigi davet token'ini kullanir; bu token yalnizca
+  // "bu firmaya mentor ekle" yetkisi verir, baska hicbir sey gostermez.
+  // ------------------------------------------------------------------
+  const params = new URLSearchParams(window.location.search);
+  const INVITE = params.get("invite") || "";
+  const API_BASE_URL = window.location.origin;
+
+  let COMPANY_ID = "";
+  let COMPANY_NAME = "";
+  const progressMap = { 1: '20%', 2: '40%', 3: '60%', 4: '80%', 5: '100%' };
+
+  // ------------------------------------------------------------------
+  // Sayfa acilirken daveti dogrula.
+  // Gecersizse formu hic gosterme.
+  // ------------------------------------------------------------------
+  (async function validateInvite() {
+    const fail = () => {
+      const box = document.getElementById("inviteError");
+      if (box) box.style.display = "flex";
+      const isTr = (localStorage.getItem("mentorAppLang") || "en") === "tr";
+      if (!isTr) {
+        document.getElementById("ieTitle").textContent = "Invalid invitation link";
+        document.getElementById("ieText").textContent =
+          "This link is invalid or no longer usable. " +
+          "Please ask your HR team for a current invitation link.";
+      }
+    };
+
+    if (!INVITE) return fail();
+
+    try {
+      const res = await fetch(`${window.location.origin}/public/invite/${INVITE}`);
+      if (!res.ok) return fail();
+
+      const data = await res.json();
+      COMPANY_ID = data.companyId;
+      COMPANY_NAME = data.companyName;
+
+      // Firma adini basliga yaz
+      document.querySelectorAll("[data-company-name]").forEach(el => {
+        el.textContent = COMPANY_NAME;
+      });
+    } catch {
+      fail();
+    }
+  })();
+
+
+  const translations = {
+    "en": {
+        "headerTitle": "Mentor registration form",
+        "headerSubtitle": "Your Company Mentoring Program — E&A",
+        "step1Label": "Step 1 / 5 — Personal information",
+        "step1Title": "Let's get to know you",
+        "step1Sub": "Enter your basic details. This information will be used during the matching process.",
+        "fullName": "Full name",
+        "email": "Your Company email",
+        "role": "Current title / role",
+        "band": "Level / band",
+        "country": "Country of residence",
+        "region": "Region / segment",
+        "tenure": "Total tenure at Your Company",
+        "step2Label": "Step 2 / 5 — Expertise & career background",
+        "step2Title": "Where does your experience lie?",
+        "step2Sub": "You can select multiple areas. This is the primary basis for mentee matching.",
+        "functionalAreas": "Functional areas of expertise",
+        "industries": "Industries worked in (including pre-Your Company)",
+        "careerBio": "Career summary — briefly describe your professional journey",
+        "step3Label": "Step 3 / 5 — Competencies",
+        "step3Title": "Where do you feel strongest?",
+        "step3Sub": "Select the areas where you feel confident guiding others.",
+        "behavioural": "Behavioural competencies",
+        "technical": "Technical competencies",
+        "extraComp": "Anything not listed above you'd like to add?",
+        "step4Label": "Step 4 / 5 — Mentoring preferences",
+        "step4Title": "How would you like to mentor?",
+        "step4Sub": "These details are critical for accurate matching.",
+        "capacity": "How many mentees can you take on at once?",
+        "hours": "How much time can you commit per month?",
+        "menteeLevels": "Which levels would you prefer to mentor?",
+        "formats": "Preferred mentoring format",
+        "languages": "Languages you can mentor in",
+        "step5Label": "Step 5 / 5 — Motivation & availability",
+        "step5Title": "A few final questions",
+        "step5Sub": "This helps us improve matching quality and understand what drives you.",
+        "availability": "Current availability",
+        "motivation": "Why do you want to be a mentor?",
+        "mentorMsg": "Message to your future mentee",
+        "optional": "(optional)",
+        "visibility": "Visibility preference",
+        "submit": "Complete registration ✓",
+        "continue": "Continue →",
+        "back": "← Back",
+        "saving": "Saving...",
+        "person": "person",
+        "people": "people",
+        "hrsMonth": "hrs / month",
+        "hr": "hr",
+        "successTitle": "Registration complete!",
+        "successText": "Your mentor profile has been created and added to the Your Company Mentoring Program pool. HR or a manager will be able to find you during the matching process.",
+        "available": "Available",
+        "soon": "Soon",
+        "atCapacity": "At capacity",
+        "availableSub": "Ready to take a mentee",
+        "soonSub": "Within 1–2 months",
+        "capacitySub": "Not available now",
+        "pageTitle": "Your Company Mentor Registration",
+        "select": "Select...",
+        "phFullName": "e.g. Jane Smith",
+        "phEmail": "j.smith@example.com",
+        "phRole": "e.g. Commercial Director",
+        "phCareer": "e.g. I have 12 years in FMCG. I spent my first 5 years in sales, then transitioned to marketing. For the past 3 years I've been Commercial Director for Turkey...",
+        "phExtra": "e.g. 'I have hands-on experience advising colleagues through international transfers and relocation.'",
+        "phMsg": "e.g. 'I value open-mindedness and curiosity. I'm especially happy to share experience around career transitions and international moves.'",
+        "validateName": "Please enter the mentor full name.",
+        "validateEmail": "Please enter the your company email address.",
+        "validateRole": "Please enter the current title / role.",
+        "validateArea": "Please select at least one functional area of expertise.",
+        "validateComp": "Please select or add at least one competency.",
+        "validateCapacity": "Please select mentor capacity.",
+        "validateAvailability": "Please select current availability.",
+        "saveFail": "Failed to save mentor profile",
+        "saveError": "Error saving mentor profile: "
+    },
+    "tr": {
+        "pageTitle": "Şirketiniz Mentor Kayıt Formu",
+        "headerTitle": "Mentor kayıt formu",
+        "headerSubtitle": "Şirketiniz Mentorluk Programı",
+        "step1Label": "Adım 1 / 5 — Kişisel bilgiler",
+        "step1Title": "Sizi tanıyalım",
+        "step1Sub": "Temel bilgilerinizi girin. Bu bilgiler eşleştirme sürecinde kullanılacaktır.",
+        "fullName": "Ad Soyad",
+        "email": "Şirket e-postası",
+        "role": "Mevcut unvan / rol",
+        "band": "Seviye / band",
+        "country": "Yaşadığınız ülke",
+        "region": "Bölge / segment",
+        "tenure": "Şirkette toplam çalışma süresi",
+        "step2Label": "Adım 2 / 5 — Uzmanlık ve kariyer geçmişi",
+        "step2Title": "Deneyiminiz hangi alanlarda?",
+        "step2Sub": "Birden fazla alan seçebilirsiniz. Bu bilgiler mentee eşleştirmesinin ana temelini oluşturur.",
+        "functionalAreas": "Uzmanlık fonksiyon alanları",
+        "industries": "Uzman olduğunuz sektörler",
+        "careerBio": "Kariyer özeti — profesyonel yolculuğunuzu kısaca anlatın",
+        "step3Label": "Adım 3 / 5 — Yetkinlikler",
+        "step3Title": "Hangi alanlarda daha güçlüsünüz?",
+        "step3Sub": "Başkalarına rehberlik ederken kendinizi güçlü hissettiğiniz alanları seçin.",
+        "behavioural": "Davranışsal yetkinlikler",
+        "technical": "Teknik yetkinlikler",
+        "extraComp": "Yukarıda olmayan eklemek istediğiniz bir yetkinlik var mı?",
+        "step4Label": "Adım 4 / 5 — Mentorluk tercihleri",
+        "step4Title": "Nasıl mentorluk yapmak istersiniz?",
+        "step4Sub": "Bu bilgiler doğru eşleştirme için kritiktir.",
+        "capacity": "Aynı anda kaç mentee ile çalışabilirsiniz?",
+        "hours": "Ayda ne kadar zaman ayırabilirsiniz?",
+        "menteeLevels": "Hangi seviyedeki kişilere mentorluk yapmak istersiniz?",
+        "formats": "Tercih edilen mentorluk formatı",
+        "languages": "Mentorluk yapabileceğiniz diller",
+        "step5Label": "Adım 5 / 5 — Motivasyon ve uygunluk",
+        "step5Title": "Son birkaç soru",
+        "step5Sub": "Bu bilgiler eşleştirme kalitesini artırmamıza ve motivasyonunuzu anlamamıza yardımcı olur.",
+        "availability": "Mevcut uygunluk",
+        "motivation": "Neden mentor olmak istiyorsunuz?",
+        "mentorMsg": "Gelecekteki mentee’nize mesajınız",
+        "optional": "(isteğe bağlı)",
+        "visibility": "Görünürlük tercihi",
+        "submit": "Kaydı tamamla ✓",
+        "continue": "Devam et →",
+        "back": "← Geri",
+        "saving": "Kaydediliyor...",
+        "person": "kişi",
+        "people": "kişi",
+        "hrsMonth": "saat / ay",
+        "hr": "saat",
+        "successTitle": "Kayıt tamamlandı!",
+        "successText": "Mentor profiliniz oluşturuldu ve Şirketiniz Mentorluk Programı havuzuna eklendi. HR veya yöneticiler eşleştirme sürecinde sizi bulabilecek.",
+        "available": "Available",
+        "soon": "Soon",
+        "atCapacity": "At capacity",
+        "availableSub": "Mentee almaya hazırım",
+        "soonSub": "1–2 ay içinde",
+        "capacitySub": "Şu anda uygun değilim",
+        "select": "Seçiniz...",
+        "phFullName": "örn. Jane Smith",
+        "phEmail": "j.smith@example.com",
+        "phRole": "örn. Ticari Direktör",
+        "phCareer": "örn. FMCG alanında 12 yıllık deneyimim var. İlk 5 yılımı satışta geçirdim, sonra pazarlamaya geçtim. Son 3 yıldır Türkiye Ticari Direktörü olarak çalışıyorum...",
+        "phExtra": "örn. 'Uluslararası transfer ve taşınma süreçlerinde çalışma arkadaşlarıma rehberlik etme konusunda deneyimim var.'",
+        "phMsg": "örn. 'Açık fikirliliğe ve meraka değer veririm. Kariyer geçişleri ve uluslararası görevler konusunda deneyimlerimi paylaşmaktan memnun olurum.'",
+        "validateName": "Lütfen mentorun adını ve soyadını girin.",
+        "validateEmail": "Lütfen şirket e-posta adresini girin.",
+        "validateRole": "Lütfen mevcut unvan / rol bilgisini girin.",
+        "validateArea": "Lütfen en az bir uzmanlık alanı seçin.",
+        "validateComp": "Lütfen en az bir yetkinlik seçin veya ekleyin.",
+        "validateCapacity": "Lütfen mentor kapasitesini seçin.",
+        "validateAvailability": "Lütfen mevcut uygunluk durumunu seçin.",
+        "saveFail": "Mentor profili kaydedilemedi",
+        "saveError": "Mentor profili kaydedilirken hata oluştu: "
+    }
+};
+
+  const optionTranslations = {
+    "en": {
+        "item_band_6": "Band 6",
+        "item_band_7": "Band 7",
+        "item_band_8": "Band 8",
+        "item_band_9": "Band 9",
+        "item_band_10": "Band 10",
+        "item_band_11": "Band 11+",
+        "item_belgium": "Belgium",
+        "item_france": "France",
+        "item_germany": "Germany",
+        "item_italy": "Italy",
+        "item_netherlands": "Netherlands",
+        "item_poland": "Poland",
+        "item_russia": "Russia",
+        "item_spain": "Spain",
+        "item_turkey": "Turkey",
+        "item_united_kingdom": "United Kingdom",
+        "item_other_e_a": "Other E&A",
+        "item_e_a_western_europe": "E&A — Western Europe",
+        "item_e_a_eastern_europe": "E&A — Eastern Europe",
+        "item_e_a_turkey_mena": "E&A — Turkey & MENA",
+        "item_e_a_africa": "E&A — Africa",
+        "item_global_cross_regional": "Global / Cross-regional",
+        "item_less_than_2_years": "Less than 2 years",
+        "item_2_4_years": "2–4 years",
+        "item_5_7_years": "5–7 years",
+        "item_8_10_years": "8–10 years",
+        "item_10_years": "10+ years",
+        "item_commercial_sales": "Commercial / Sales",
+        "item_marketing": "Marketing",
+        "item_finance_p_l": "Finance & P&L",
+        "item_supply_chain": "Supply Chain",
+        "item_hr_people": "HR & People",
+        "item_operations": "Operations",
+        "item_legal_compliance": "Legal & Compliance",
+        "item_digital_it": "Digital & IT",
+        "item_strategy": "Strategy",
+        "item_general_management": "General Management",
+        "item_r_d_innovation": "R&D / Innovation",
+        "item_fmcg_cpg": "FMCG / CPG",
+        "item_retail": "Retail",
+        "item_technology": "Technology",
+        "item_manufacturing": "Manufacturing",
+        "item_financial_services": "Financial services",
+        "item_consulting": "Consulting",
+        "item_healthcare": "Healthcare",
+        "item_energy": "Energy",
+        "item_leadership_development": "Leadership development",
+        "item_coaching_feedback": "Coaching & feedback",
+        "item_team_management": "Team management",
+        "item_communication_influence": "Communication & influence",
+        "item_change_management": "Change management",
+        "item_career_planning": "Career planning",
+        "item_cross_cultural_working": "Cross-cultural working",
+        "item_psychological_safety": "Psychological safety",
+        "item_resilience_wellbeing": "Resilience & wellbeing",
+        "item_inclusion_diversity": "Inclusion & diversity",
+        "item_negotiation_persuasion": "Negotiation & persuasion",
+        "item_confidence_visibility": "Confidence & visibility",
+        "item_p_l_financial_acumen": "P&L / financial acumen",
+        "item_strategy_development": "Strategy development",
+        "item_customer_negotiation": "Customer negotiation",
+        "item_data_analytics": "Data & analytics",
+        "item_digital_transformation": "Digital transformation",
+        "item_project_management": "Project management",
+        "item_procurement_tendering": "Procurement & tendering",
+        "item_presenting_storytelling": "Presenting & storytelling",
+        "item_talent_management": "Talent management",
+        "item_category_shopper": "Category & shopper",
+        "item_new_joiners": "New joiners",
+        "item_mid_level_band_6_8": "Mid-level (Band 6–8)",
+        "item_senior_band_9_10": "Senior (Band 9–10)",
+        "item_first_time_managers": "First-time managers",
+        "item_experienced_leaders": "Experienced leaders",
+        "item_no_preference": "No preference",
+        "item_video_call": "Video call",
+        "item_written_async": "Written / async",
+        "item_in_person": "In person",
+        "item_flexible_mixed": "Flexible / mixed",
+        "item_english": "English",
+        "item_turkish": "Turkish",
+        "item_german": "German",
+        "item_french": "French",
+        "item_spanish": "Spanish",
+        "item_russian": "Russian",
+        "item_arabic": "Arabic",
+        "item_other": "Other",
+        "item_giving_back": "Giving back",
+        "item_gaining_new_perspectives": "Gaining new perspectives",
+        "item_developing_my_leadership": "Developing my leadership",
+        "item_strengthening_the_organisation": "Strengthening the organisation",
+        "item_personal_growth": "Personal growth",
+        "item_visible_to_hr_only": "Visible to HR only",
+        "item_visible_to_managers_too": "Visible to managers too",
+        "item_visible_during_matching_only": "Visible during matching only"
+    },
+    "tr": {
+        "item_band_6": "Band 6",
+        "item_band_7": "Band 7",
+        "item_band_8": "Band 8",
+        "item_band_9": "Band 9",
+        "item_band_10": "Band 10",
+        "item_band_11": "Band 11+",
+        "item_belgium": "Belçika",
+        "item_france": "Fransa",
+        "item_germany": "Almanya",
+        "item_italy": "İtalya",
+        "item_netherlands": "Hollanda",
+        "item_poland": "Polonya",
+        "item_russia": "Rusya",
+        "item_spain": "İspanya",
+        "item_turkey": "Türkiye",
+        "item_united_kingdom": "Birleşik Krallık",
+        "item_other_e_a": "Diğer E&A",
+        "item_e_a_western_europe": "E&A — Batı Avrupa",
+        "item_e_a_eastern_europe": "E&A — Doğu Avrupa",
+        "item_e_a_turkey_mena": "E&A — Türkiye & MENA",
+        "item_e_a_africa": "E&A — Afrika",
+        "item_global_cross_regional": "Global / Bölgeler arası",
+        "item_less_than_2_years": "2 yıldan az",
+        "item_2_4_years": "2–4 yıl",
+        "item_5_7_years": "5–7 yıl",
+        "item_8_10_years": "8–10 yıl",
+        "item_10_years": "10+ yıl",
+        "item_commercial_sales": "Ticari / Satış",
+        "item_marketing": "Pazarlama",
+        "item_finance_p_l": "Finans & P&L",
+        "item_supply_chain": "Tedarik Zinciri",
+        "item_hr_people": "İK & İnsan",
+        "item_operations": "Operasyon",
+        "item_legal_compliance": "Hukuk & Uyum",
+        "item_digital_it": "Dijital & IT",
+        "item_strategy": "Strateji",
+        "item_general_management": "Genel Yönetim",
+        "item_r_d_innovation": "Ar-Ge / İnovasyon",
+        "item_fmcg_cpg": "FMCG / CPG",
+        "item_retail": "Perakende",
+        "item_technology": "Teknoloji",
+        "item_manufacturing": "Üretim",
+        "item_financial_services": "Finansal hizmetler",
+        "item_consulting": "Danışmanlık",
+        "item_healthcare": "Sağlık",
+        "item_energy": "Enerji",
+        "item_leadership_development": "Liderlik gelişimi",
+        "item_coaching_feedback": "Koçluk & geri bildirim",
+        "item_team_management": "Ekip yönetimi",
+        "item_communication_influence": "İletişim & etkileme",
+        "item_change_management": "Değişim yönetimi",
+        "item_career_planning": "Kariyer planlama",
+        "item_cross_cultural_working": "Kültürler arası çalışma",
+        "item_psychological_safety": "Psikolojik güvenlik",
+        "item_resilience_wellbeing": "Dayanıklılık & iyi oluş",
+        "item_inclusion_diversity": "Kapsayıcılık & çeşitlilik",
+        "item_negotiation_persuasion": "Müzakere & ikna",
+        "item_confidence_visibility": "Özgüven & görünürlük",
+        "item_p_l_financial_acumen": "P&L / finansal bakış",
+        "item_strategy_development": "Strateji geliştirme",
+        "item_customer_negotiation": "Müşteri müzakeresi",
+        "item_data_analytics": "Veri & analitik",
+        "item_digital_transformation": "Dijital dönüşüm",
+        "item_project_management": "Proje yönetimi",
+        "item_procurement_tendering": "Satın alma & ihale",
+        "item_presenting_storytelling": "Sunum & hikâyeleştirme",
+        "item_talent_management": "Yetenek yönetimi",
+        "item_category_shopper": "Kategori & müşteri davranışı",
+        "item_new_joiners": "Yeni başlayanlar",
+        "item_mid_level_band_6_8": "Orta seviye (Band 6–8)",
+        "item_senior_band_9_10": "Kıdemli (Band 9–10)",
+        "item_first_time_managers": "İlk kez yönetici olanlar",
+        "item_experienced_leaders": "Deneyimli liderler",
+        "item_no_preference": "Tercihim yok",
+        "item_video_call": "Video görüşme",
+        "item_written_async": "Yazılı / asenkron",
+        "item_in_person": "Yüz yüze",
+        "item_flexible_mixed": "Esnek / karma",
+        "item_english": "İngilizce",
+        "item_turkish": "Türkçe",
+        "item_german": "Almanca",
+        "item_french": "Fransızca",
+        "item_spanish": "İspanyolca",
+        "item_russian": "Rusça",
+        "item_arabic": "Arapça",
+        "item_other": "Diğer",
+        "item_giving_back": "Katkı sağlamak",
+        "item_gaining_new_perspectives": "Yeni bakış açıları kazanmak",
+        "item_developing_my_leadership": "Liderliğimi geliştirmek",
+        "item_strengthening_the_organisation": "Organizasyonu güçlendirmek",
+        "item_personal_growth": "Kişisel gelişim",
+        "item_visible_to_hr_only": "Sadece HR görebilsin",
+        "item_visible_to_managers_too": "Yöneticiler de görebilsin",
+        "item_visible_during_matching_only": "Sadece eşleştirme sırasında görünsün"
+    }
+};
+  Object.assign(translations.en, optionTranslations.en);
+  Object.assign(translations.tr, optionTranslations.tr);
+
+  // KVKK / veri koruma metinleri
+  Object.assign(translations.en, {
+    kvkkTitle: "Data protection (KVKK / GDPR)",
+    kvkkText: "Your personal data (name, email, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.",
+    kvkkConsentLabel: "I have read the above and consent to my personal data being processed for this purpose.",
+    validateKvkk: "Please confirm the data-protection consent to continue."
+  });
+  Object.assign(translations.tr, {
+    kvkkTitle: "Kişisel verilerin korunması (KVKK)",
+    kvkkText: "Kişisel verilerin (ad, e-posta vb.) yalnızca kurum içi mentorluk eşleştirmesi amacıyla, KVKK kapsamında işlenir. Verilerin yapay zekâ eşleştirmesinde anonimleştirilerek kullanılır.",
+    kvkkConsentLabel: "Yukarıdaki bilgilendirmeyi okudum ve kişisel verilerimin bu amaçla işlenmesini onaylıyorum.",
+    validateKvkk: "Devam etmek için KVKK onayını işaretle."
+  });
+
+
+  let currentLang = localStorage.getItem("mentorAppLang") || "en";
+
+  function t(key) {
+    return (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+  }
+
+  function setLanguage(lang) {
+    currentLang = lang || "en";
+    localStorage.setItem("mentorAppLang", currentLang);
+    applyTranslations();
+  }
+
+  function applyTranslations() {
+    document.documentElement.lang = currentLang;
+    document.title = t('pageTitle');
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect) languageSelect.value = currentLang;
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (key) el.textContent = t(key);
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (key) el.setAttribute('placeholder', t(key));
+    });
+
+    const mentorMsgLabel = document.querySelector('label[for="mentorMsg"]');
+    if (mentorMsgLabel) {
+      mentorMsgLabel.innerHTML = `${t('mentorMsg')} <span style="font-weight:400;color:#9ca3af">${t('optional')}</span>`;
+    }
+
+    const capLabels = document.querySelectorAll('.cap-label');
+    if (capLabels[0]) capLabels[0].textContent = t('person');
+    if (capLabels[1]) capLabels[1].textContent = t('people');
+    if (capLabels[2]) capLabels[2].textContent = t('people');
+
+    const availTitles = document.querySelectorAll('.avail-title');
+    if (availTitles[0]) availTitles[0].textContent = t('available');
+    if (availTitles[1]) availTitles[1].textContent = t('soon');
+    if (availTitles[2]) availTitles[2].textContent = t('atCapacity');
+
+    const availSubs = document.querySelectorAll('.avail-sub');
+    if (availSubs[0]) availSubs[0].textContent = t('availableSub');
+    if (availSubs[1]) availSubs[1].textContent = t('soonSub');
+    if (availSubs[2]) availSubs[2].textContent = t('capacitySub');
+
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn && !submitBtn.disabled) submitBtn.textContent = t('submit');
+
+    updateHoursLabel();
+  }
+
+
+
+  function updateHoursLabel() {
+    const slider = document.getElementById('hoursSlider');
+    const hoursVal = document.getElementById('hoursVal');
+    if (slider && hoursVal) {
+      hoursVal.textContent = slider.value + ' ' + t('hrsMonth');
+    }
+    const labels = document.querySelectorAll('.slider-labels span');
+    if (labels[0]) labels[0].textContent = '1 ' + t('hr');
+    if (labels[1]) labels[1].textContent = '8 ' + t('hr');
+  }
+
+  function goStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('step' + n);
+    if (target) target.classList.add('active');
+    document.getElementById('progress').style.width = progressMap[n] || '20%';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function toggleTag(el) {
+    el.classList.toggle('selected');
+  }
+
+  function selectOne(el, selector) {
+    const parent = el.parentElement;
+    parent.querySelectorAll(selector).forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function updateChar(inputId, countId, max) {
+    const len = document.getElementById(inputId).value.length;
+    document.getElementById(countId).textContent = len + ' / ' + max;
+  }
+
+  function getSelectedTagsById(id) {
+    const container = document.getElementById(id);
+    if (!container) return [];
+    return [...container.querySelectorAll('.tag.selected')].map(t => t.dataset.value || t.textContent.trim());
+  }
+
+  function getSelectedFormats() {
+    const container = document.getElementById('formatCards');
+    if (!container) return [];
+    return [...container.querySelectorAll('.format-card.selected')].map(c => c.dataset.value || c.querySelector('span').textContent.trim());
+  }
+
+  function getCapacity() {
+    const sel = document.querySelector('#capacityCards .cap-card.selected');
+    if (!sel) return '';
+    const rawValue = sel.querySelector('.cap-num').textContent.trim();
+    return rawValue === '3+' ? 3 : Number(rawValue);
+  }
+
+  function getAvailability() {
+    const sel = document.querySelector('#availabilityCards .avail-card.selected');
+    return sel ? (sel.dataset.value || sel.querySelector('.avail-title').textContent.trim()) : '';
+  }
+
+  function collectFormData() {
+    const fullName = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const role = document.getElementById('role').value.trim();
+    const band = document.getElementById('band').value;
+    const tenure = document.getElementById('tenure').value;
+
+    const functionalAreas = getSelectedTagsById('funcTags');
+    const industries = getSelectedTagsById('industryTags');
+    const behaviouralCompetencies = getSelectedTagsById('behaviouralTags');
+    const technicalCompetencies = getSelectedTagsById('technicalTags');
+    const menteeLevels = getSelectedTagsById('menteeLevelTags');
+    const languages = getSelectedTagsById('languageTags');
+    const motivations = getSelectedTagsById('motivationTags');
+    const visibilityPreference = getSelectedTagsById('visibilityTags');
+
+    const careerBio = document.getElementById('careerBio').value.trim();
+    const additionalCompetencies = document.getElementById('extraComp').value.trim();
+    const messageToMentee = document.getElementById('mentorMsg').value.trim();
+    const availability = getAvailability();
+    const capacity = getCapacity();
+    const hoursPerMonth = Number(document.getElementById('hoursSlider').value);
+
+    const combinedSkills = [
+      ...functionalAreas,
+      ...behaviouralCompetencies,
+      ...technicalCompetencies,
+      additionalCompetencies
+    ].filter(Boolean);
+
+    const mentorProfile = [
+      careerBio,
+      additionalCompetencies,
+      messageToMentee
+    ].filter(Boolean).join('\n\n');
+
+    const status = availability === 'At capacity' ? 'inactive' : 'active';
+
+    return {
+      fullName,
+      email,
+      role,
+      band,
+      tenure,
+
+      functionalAreas,
+      industries,
+      careerBio,
+
+      behaviouralCompetencies,
+      technicalCompetencies,
+      additionalCompetencies,
+
+      skills: combinedSkills,
+      competencyDescription: combinedSkills.join(', '),
+      experienceAreas: functionalAreas,
+      mentorProfile,
+
+      capacity,
+      hoursPerMonth,
+      menteeLevels,
+      formats: getSelectedFormats(),
+      languages,
+
+      availability,
+      motivations,
+      messageToMentee,
+      visibilityPreference,
+
+      activeMenteeCount: 0,
+      status,
+      kvkkConsent: document.getElementById('kvkkConsent') ? document.getElementById('kvkkConsent').checked : false,
+      submittedAt: new Date().toISOString()
+    };
+  }
+
+  function validateForm(data) {
+    if (!data.fullName) return t('validateName');
+    if (!data.email) return t('validateEmail');
+    if (!data.role) return t('validateRole');
+    if (data.functionalAreas.length === 0) return t('validateArea');
+    if (data.behaviouralCompetencies.length === 0 && data.technicalCompetencies.length === 0 && !data.additionalCompetencies) {
+      return t('validateComp');
+    }
+    if (!data.capacity) return t('validateCapacity');
+    if (!data.availability) return t('validateAvailability');
+    if (!data.kvkkConsent) return t('validateKvkk');
+    return '';
+  }
+
+  async function submitForm() {
+    const submitBtn = document.getElementById('submitBtn');
+    const data = collectFormData();
+    const validationError = validateForm(data);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    try {
+      submitBtn.disabled = true;
+      submitBtn.textContent = t('saving');
+
+      const response = await fetch(`${API_BASE_URL}/public/invite/${INVITE}/mentors`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || t('saveFail'));
+      }
+
+      console.log('Saved mentor:', result);
+
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('successWrap').style.display = 'block';
+      document.getElementById('progress').style.width = '100%';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (error) {
+      alert(t('saveError') + error.message);
+      console.error(error);
+      submitBtn.disabled = false;
+      submitBtn.textContent = t('submit');
+    }
+  }
+
+  applyTranslations();
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guided Mentoring Session</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f5f7;
+      color: #111827;
+      padding: 2rem 1rem;
+    }
+
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: #1a2b5e;
+      color: white;
+      padding: 1.5rem;
+      border-radius: 16px;
+      margin-bottom: 1rem;
+    }
+
+    .header h1 {
+      margin: 0 0 0.4rem;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .step {
+      border: 1px solid #e5e7eb;
+      background: white;
+      border-radius: 12px;
+      padding: 0.9rem;
+      text-align: center;
+      font-weight: 700;
+      color: #6b7280;
+      cursor: pointer;
+    }
+
+    .step.active {
+      background: #1a2b5e;
+      color: white;
+      border-color: #1a2b5e;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 130px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 1rem;
+      font: inherit;
+      resize: vertical;
+    }
+
+    button {
+      background: #b5651d;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 0.75rem;
+    }
+
+    .btn-secondary {
+      background: #1a2b5e;
+    }
+
+    .ai-box {
+      background: #f8fafc;
+      border: 1px solid #dbe2f3;
+      border-radius: 14px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .section-title {
+      color: #b5651d;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+    }
+
+    ul {
+      margin-left: 1.25rem;
+      line-height: 1.7;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: #111827;
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>Guided Mentoring Session</h1>
+      <p>AI-guided flow for building trust, setting goals, identifying challenges and creating action plans.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step active" onclick="setStep('getting_to_know', this)">1. Know Each Other</div>
+      <div class="step" onclick="setStep('goal_setting', this)">2. Goals</div>
+      <div class="step" onclick="setStep('challenges', this)">3. Challenges</div>
+      <div class="step" onclick="setStep('action_plan', this)">4. Action Plan</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Current step</div>
+      <h2 id="stepTitle">Getting to know each other</h2>
+      <p id="stepHelp">Start by capturing strengths, communication preferences and motivation.</p>
+
+      <textarea id="userInput" placeholder="Write notes from the mentor/mentee discussion here..."></textarea>
+
+      <button id="generateBtn" onclick="generateAI()">Generate AI Guidance</button>
+      <button class="btn-secondary" onclick="copyOutput()">Copy Output</button>
+
+      <div id="aiResult"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = window.location.origin;
+    const ACCESS_TOKEN = new URLSearchParams(window.location.search).get("token") || "";
+
+    let currentStep = "getting_to_know";
+    let previousAnswers = {};
+    let lastOutputText = "";
+
+    const stepMeta = {
+      getting_to_know: {
+        title: "Getting to know each other",
+        help: "Start by capturing strengths, communication preferences and motivation."
+      },
+      goal_setting: {
+        title: "Goal setting",
+        help: "Define what the mentee wants to achieve in the next 3 months."
+      },
+      challenges: {
+        title: "Anticipating challenges",
+        help: "Identify potential blockers and how mentor and mentee can overcome them."
+      },
+      action_plan: {
+        title: "Action plan and next steps",
+        help: "Turn the discussion into clear actions, owners and deadlines."
+      }
+    };
+
+    function setStep(step, el) {
+      currentStep = step;
+
+      document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+      el.classList.add("active");
+
+      document.getElementById("stepTitle").textContent = stepMeta[step].title;
+      document.getElementById("stepHelp").textContent = stepMeta[step].help;
+      document.getElementById("userInput").value = "";
+      document.getElementById("aiResult").innerHTML = "";
+    }
+
+    async function generateAI() {
+      const input = document.getElementById("userInput").value.trim();
+      const btn = document.getElementById("generateBtn");
+      const result = document.getElementById("aiResult");
+
+      if (!input) {
+        alert("Please write meeting notes or discussion input first.");
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = "Generating...";
+
+        result.innerHTML = `
+          <div class="ai-box">
+            AI is preparing structured guidance...
+          </div>
+        `;
+
+        const response = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/guided-session?token=${ACCESS_TOKEN}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+                      },
+          body: JSON.stringify({
+            step: currentStep,
+            mentorshipId: new URLSearchParams(window.location.search).get("mentorshipId") || "",
+            mentorName: new URLSearchParams(window.location.search).get("mentor") || "",
+            menteeName: new URLSearchParams(window.location.search).get("mentee") || "",
+            userInput: input,
+            previousAnswers
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "AI guidance failed.");
+        }
+
+        previousAnswers[currentStep] = {
+          input,
+          output: data
+        };
+
+        renderAI(data);
+
+      } catch (error) {
+        result.innerHTML = `
+          <div class="ai-box">
+            Error: ${escapeHtml(error.message)}
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Generate AI Guidance";
+      }
+    }
+
+    function renderAI(data) {
+      const questions = data.questions || [];
+      const structured = data.structuredData || {};
+
+      lastOutputText = `
+AI Message:
+${data.aiMessage || ""}
+
+Questions:
+${questions.join("\n")}
+
+Structured Data:
+${JSON.stringify(structured, null, 2)}
+`;
+
+      document.getElementById("aiResult").innerHTML = `
+        <div class="ai-box">
+          <div class="section-title">AI Guidance</div>
+          <p>${escapeHtml(data.aiMessage || "")}</p>
+
+          <div class="section-title">Suggested Questions</div>
+          <ul>
+            ${questions.map(q => `<li>${escapeHtml(q)}</li>`).join("")}
+          </ul>
+
+          <div class="section-title">Structured Output</div>
+          <pre>${escapeHtml(JSON.stringify(structured, null, 2))}</pre>
+        </div>
+      `;
+    }
+
+    function copyOutput() {
+      if (!lastOutputText) {
+        alert("No AI output to copy yet.");
+        return;
+      }
+
+      navigator.clipboard.writeText(lastOutputText.trim());
+      alert("Copied!");
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>

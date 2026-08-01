@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yönetici Paneli — MentorOS Cloud</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e6e8ec;
+    --muted: #8b93a1;
+    --accent: #c96442;
+    --ok: #3fb950;
+    --err: #f85149;
+    --warn: #d29922;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  header { margin-bottom: 32px; }
+  h1 { margin: 0 0 6px; font-size: 24px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 14px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .card-sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 16px 0 6px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  input::placeholder { color: #555c69; }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .hint a { color: var(--accent); }
+
+  button {
+    padding: 10px 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: #3d444f; }
+  button:disabled { opacity: .5; cursor: default; }
+
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+  .row { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+
+  /* Durum rozeti */
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--muted);
+  }
+  .dot.ok  { background: var(--ok);  box-shadow: 0 0 8px var(--ok); }
+  .dot.err { background: var(--err); box-shadow: 0 0 8px var(--err); }
+  .dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  .status-text { flex: 1; }
+  .status-title { font-weight: 500; font-size: 14px; }
+  .status-detail { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  /* Sonuç kutusu */
+  .result {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+  }
+  .result.show { display: block; }
+  .result.ok  { background: rgba(63,185,80,.1);  border: 1px solid rgba(63,185,80,.35); }
+  .result.err { background: rgba(248,81,73,.08); border: 1px solid rgba(248,81,73,.35); }
+  .result-title { font-weight: 600; margin-bottom: 4px; }
+  .result-detail { color: var(--muted); font-size: 13px; }
+  .result-action {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .result-action strong { color: var(--warn); }
+
+  .devkey-warn {
+    display: none;
+    background: rgba(210,153,34,.10);
+    border: 1px solid rgba(210,153,34,.45);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .devkey-warn.show { display: block; }
+  .devkey-warn strong { color: var(--warn); }
+
+  .provider-fields { display: none; }
+  .provider-fields.active { display: block; }
+
+  /* Kullanım */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .stat-value { font-size: 20px; font-weight: 600; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Denetim */
+  .audit-entry {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .audit-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    background: var(--panel-2);
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .audit-head:hover { background: #232833; }
+  .audit-op { font-weight: 500; flex: 1; }
+  .audit-meta { color: var(--muted); font-size: 12px; }
+  .audit-body {
+    display: none;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .audit-body.open { display: block; }
+  .audit-body pre {
+    margin: 0;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 320px;
+    overflow-y: auto;
+    color: #b8c0cc;
+  }
+  .audit-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  mark {
+    background: rgba(201,100,66,.25);
+    color: var(--accent);
+    padding: 0 3px;
+    border-radius: 3px;
+  }
+
+  .empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+
+  /* Giriş ekranı */
+  #login {
+    max-width: 380px;
+    margin: 15vh auto;
+    padding: 0 24px;
+  }
+  .login-err {
+    color: var(--err);
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+  .login-err.show { display: block; }
+
+  .privacy-note {
+    background: rgba(201,100,66,.07);
+    border: 1px solid rgba(201,100,66,.25);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .privacy-note strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ============ GİRİŞ ============ -->
+<div id="login">
+  <h1 style="margin-bottom:8px" data-i18n="loginTitle">Yönetici Girişi</h1>
+  <p class="sub" style="margin-bottom:24px" data-i18n="loginSub">MentorOS yapay zeka ayarları</p>
+
+  <label for="pw" data-i18n="pwLabel">Yönetici şifresi</label>
+  <input type="password" id="pw" autocomplete="current-password" autofocus>
+
+  <div class="row">
+    <button class="primary" id="loginBtn" style="width:100%" data-i18n="loginBtn">Giriş</button>
+  </div>
+
+  <div class="login-err" id="loginErr"></div>
+</div>
+
+<!-- ============ PANEL ============ -->
+<div class="wrap" id="panel" style="display:none">
+
+  <header style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+    <div>
+      <h1 data-i18n="title">Yönetici Paneli</h1>
+      <div class="sub" data-i18n="subtitle">Yapay zeka bağlantısı ve gizlilik denetimi</div>
+    </div>
+    <select id="lang" style="width:auto;padding:7px 10px;font-size:13px">
+      <option value="tr">Türkçe</option>
+      <option value="en">English</option>
+    </select>
+  </header>
+
+  <!-- Durum -->
+  <div class="card">
+    <div class="status">
+      <span class="dot" id="statusDot"></span>
+      <div class="status-text">
+        <div class="status-title" id="statusTitle">Yükleniyor…</div>
+        <div class="status-detail" id="statusDetail"></div>
+      </div>
+      <button id="testBtn" data-i18n="testBtn">Bağlantıyı Test Et</button>
+    </div>
+    <div class="result" id="testResult"></div>
+  </div>
+
+  <div class="devkey-warn" id="devKeyWarn"></div>
+
+  <!-- Lisans -->
+  <div class="card" id="licenseCard">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span class="dot" id="licDot"></span>
+      <h2 data-i18n="licTitle" style="margin:0">Lisans</h2>
+    </div>
+    <div class="card-sub" id="licSummary"></div>
+
+    <div id="licBanner" class="result" style="display:none"></div>
+
+    <label for="licKey" data-i18n="licKeyLabel">Lisans anahtarı</label>
+    <input type="text" id="licKey" placeholder="MENTOROS-..." autocomplete="off"
+           spellcheck="false" style="font-family:Consolas,monospace;font-size:12px">
+    <div class="hint" data-i18n="licHint">
+      Tedarikçinizden aldığınız anahtarın tamamını yapıştırın.
+    </div>
+
+    <div class="row">
+      <button class="primary" id="licSaveBtn" data-i18n="licActivate">Etkinleştir</button>
+    </div>
+
+    <div class="result" id="licResult"></div>
+  </div>
+
+  <!-- Bağlantı -->
+  <div class="card">
+    <h2 data-i18n="connTitle">Claude Bağlantısı</h2>
+    <div class="card-sub" data-i18n="connSub">
+      Kurumunuzun kendi Claude erişimini bağlayın. Kimlik bilgileri
+      şifrelenerek saklanır ve bu ekrana bir daha gösterilmez.
+    </div>
+
+    <label for="provider" data-i18n="providerLabel">Bağlantı yöntemi</label>
+    <select id="provider">
+      <option value="anthropic" data-i18n="provAnthropic">Anthropic API anahtarı — en basit</option>
+      <option value="bedrock" data-i18n="provBedrock">AWS Bedrock — veri AWS hesabınızda kalır</option>
+      <option value="vertex" data-i18n="provVertex">Google Cloud — veri GCP hesabınızda kalır</option>
+    </select>
+
+    <!-- Anthropic -->
+    <div class="provider-fields active" data-provider="anthropic">
+      <label for="anthropicApiKey" data-i18n="apiKeyLabel">API anahtarı</label>
+      <input type="password" id="anthropicApiKey" placeholder="sk-ant-…" autocomplete="off">
+      <div class="hint" id="hintAnthropic">
+        Anahtar yoksa:
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">
+          console.anthropic.com → Settings → API Keys → Create Key
+        </a>
+        <br>Bu, Claude.ai aboneliğinden ayrı bir şeydir; kullandığınız kadar ödersiniz.
+      </div>
+    </div>
+
+    <!-- Bedrock -->
+    <div class="provider-fields" data-provider="bedrock">
+      <label for="awsRegion" data-i18n="awsRegionLabel">AWS bölgesi</label>
+      <input type="text" id="awsRegion" placeholder="eu-central-1">
+
+      <label for="awsAccessKeyId">Access Key ID</label>
+      <input type="password" id="awsAccessKeyId" placeholder="AKIA…" autocomplete="off">
+
+      <label for="awsSecretAccessKey">Secret Access Key</label>
+      <input type="password" id="awsSecretAccessKey" autocomplete="off">
+
+      <div class="hint" id="hintBedrock">
+        AWS konsolunda <strong>Bedrock → Model access</strong> bölümünden
+        Anthropic modellerine erişim izni almış olmanız gerekir.
+      </div>
+    </div>
+
+    <!-- Vertex -->
+    <div class="provider-fields" data-provider="vertex">
+      <label for="gcpProject" data-i18n="gcpProjectLabel">Google Cloud proje kimliği</label>
+      <input type="text" id="gcpProject" placeholder="sirket-projesi-123">
+
+      <label for="gcpRegion" data-i18n="gcpRegionLabel">Bölge</label>
+      <input type="text" id="gcpRegion" placeholder="europe-west1">
+
+      <div class="hint" id="hintVertex">
+        Sunucuda önce şu komutun çalıştırılmış olması gerekir:
+        <code>gcloud auth application-default login</code>
+      </div>
+    </div>
+
+    <label for="model" data-i18n="modelLabel">Model</label>
+    <select id="model">
+      <option value="claude-sonnet-5">claude-sonnet-5 — dengeli, önerilen</option>
+      <option value="claude-opus-4-8">claude-opus-4-8 — daha güçlü, daha pahalı</option>
+      <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 — hızlı, ucuz</option>
+    </select>
+
+    <div class="row">
+      <button class="primary" id="saveBtn" data-i18n="saveBtn">Kaydet ve Test Et</button>
+    </div>
+
+    <div class="result" id="saveResult"></div>
+  </div>
+
+  <!-- Sifre -->
+  <div class="card">
+    <h2 data-i18n="pwTitle">Sign-in Password</h2>
+    <div class="card-sub" data-i18n="pwSub">
+      Used for both the application and this admin panel.
+    </div>
+
+    <div class="devkey-warn show" id="pwDefaultWarn" style="display:none">
+      <strong data-i18n="pwWarnTitle">You are using the default password</strong>
+      <span data-i18n="pwWarnBody">
+        Anyone on your network who knows this product can sign in and see mentee
+        names, emails and development needs. Please set your own password.
+      </span>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label for="pwCurrent" data-i18n="pwCurrent">Current password</label>
+        <input type="password" id="pwCurrent" autocomplete="current-password">
+      </div>
+      <div>
+        <label for="pwNew" data-i18n="pwNew">New password</label>
+        <input type="password" id="pwNew" autocomplete="new-password">
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="primary" id="pwSaveBtn" data-i18n="pwSave">Change Password</button>
+    </div>
+
+    <div class="result" id="pwResult"></div>
+  </div>
+
+  <!-- E-posta sunucusu -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span class="dot" id="smtpDot"></span>
+      <h2 data-i18n="smtpTitle" style="margin:0">E-posta Sunucusu (SMTP)</h2>
+    </div>
+    <div class="card-sub" data-i18n="smtpSub">
+      Davet ve onay bağlantılarının e-posta ile gönderilebilmesi için kurumsal
+      e-posta sunucusu bilgileri. E-postalar doğrudan sizin sunucunuzdan gider.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 120px auto;gap:12px;align-items:end">
+      <div>
+        <label for="smtpHost" data-i18n="smtpHost">Sunucu (host)</label>
+        <input type="text" id="smtpHost" placeholder="smtp.firma.com">
+      </div>
+      <div>
+        <label for="smtpPort" data-i18n="smtpPort">Port</label>
+        <input type="number" id="smtpPort" placeholder="587">
+      </div>
+      <label style="display:flex;align-items:center;gap:7px;margin:0 0 10px;
+                    white-space:nowrap;cursor:pointer">
+        <input type="checkbox" id="smtpSecure" style="width:auto;margin:0">
+        <span data-i18n="smtpSsl">SSL (465)</span>
+      </label>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label for="smtpUser" data-i18n="smtpUser">Kullanıcı</label>
+        <input type="text" id="smtpUser" placeholder="ik@firma.com" autocomplete="off">
+      </div>
+      <div>
+        <label for="smtpPassword" data-i18n="smtpPassword">Şifre</label>
+        <input type="password" id="smtpPassword" autocomplete="new-password">
+      </div>
+      <div>
+        <label for="smtpFromName" data-i18n="smtpFromName">Gönderen adı</label>
+        <input type="text" id="smtpFromName" placeholder="İK">
+      </div>
+      <div>
+        <label for="smtpFromEmail" data-i18n="smtpFromEmail">Gönderen e-posta</label>
+        <input type="email" id="smtpFromEmail" placeholder="ik@firma.com">
+      </div>
+    </div>
+
+    <div class="hint" id="smtpHint"></div>
+
+    <div class="row">
+      <button class="primary" id="smtpSaveBtn" data-i18n="smtpSave">Kaydet</button>
+      <button id="smtpTestBtn" data-i18n="smtpTest">Bağlantıyı Test Et</button>
+    </div>
+
+    <div class="result" id="smtpResult"></div>
+  </div>
+
+  <!-- Kullanım -->
+  <div class="card">
+    <h2 data-i18n="usageTitle">Kullanım</h2>
+    <div class="card-sub" data-i18n="usageSub">Sunucu açıldığından beri</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="sCalls">–</div>
+        <div class="stat-label" data-i18n="statCalls">çağrı</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="sFailed">–</div>
+        <div class="stat-label" data-i18n="statFailed">başarısız</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="sTokens">–</div>
+        <div class="stat-label" data-i18n="statTokens">token</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="sAvg">–</div>
+        <div class="stat-label" data-i18n="statAvg">ort. süre</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Denetim -->
+  <div class="card">
+    <h2 data-i18n="auditTitle">Gizlilik Denetimi</h2>
+    <div class="card-sub" data-i18n="auditSub">
+      Yapay zekaya gönderilen her metin burada kayıtlıdır.
+    </div>
+
+    <div class="privacy-note" id="privacyNote">
+      <strong>Bu neden önemli?</strong> KVKK denetiminde "yapay zekaya ne
+      gönderiyorsunuz?" sorusuna tahminle değil kanıtla cevap verebilirsiniz.
+      Bir kaydı açıp maskelenmiş alanları (<mark>[ISIM]</mark>,
+      <mark>[EPOSTA]</mark>, <mark>M1</mark>) gözle doğrulayın — gerçek
+      isimler dışarı çıkmıyor.
+    </div>
+
+    <div class="row" style="margin-top:0;margin-bottom:16px">
+      <button id="refreshAudit" data-i18n="refreshBtn">Yenile</button>
+    </div>
+
+    <div id="auditList"><div class="empty">Henüz kayıt yok.</div></div>
+  </div>
+
+  <div class="row">
+    <button id="logoutBtn" data-i18n="logoutBtn">Çıkış</button>
+  </div>
+</div>
+
+<script>
+let TOKEN = sessionStorage.getItem("adminToken") || "";
+
+const $ = id => document.getElementById(id);
+
+/* ==================================================================
+   DIL  (uygulamanin geri kalaniyla ayni localStorage anahtari:
+   "mentorAppLang" -> dil secimi sayfalar arasi korunur)
+   ================================================================== */
+
+const T = {
+  tr: {
+    title: "Yönetici Paneli",
+    subtitle: "Yapay zeka bağlantısı ve gizlilik denetimi",
+    loginTitle: "Yönetici Girişi",
+    loginSub: "MentorOS yapay zeka ayarları",
+    pwLabel: "Yönetici şifresi",
+    loginBtn: "Giriş",
+    loginChecking: "Kontrol ediliyor…",
+    testBtn: "Bağlantıyı Test Et",
+    testing: "Test ediliyor…",
+    connTitle: "Claude Bağlantısı",
+    connSub: "Kurumunuzun kendi Claude erişimini bağlayın. Kimlik bilgileri şifrelenerek saklanır ve bu ekrana bir daha gösterilmez.",
+    providerLabel: "Bağlantı yöntemi",
+    provAnthropic: "Anthropic API anahtarı — en basit",
+    provBedrock: "AWS Bedrock — veri AWS hesabınızda kalır",
+    provVertex: "Google Cloud — veri GCP hesabınızda kalır",
+    apiKeyLabel: "API anahtarı",
+    awsRegionLabel: "AWS bölgesi",
+    gcpProjectLabel: "Google Cloud proje kimliği",
+    gcpRegionLabel: "Bölge",
+    modelLabel: "Model",
+    saveBtn: "Kaydet ve Test Et",
+    saving: "Kaydediliyor…",
+    usageTitle: "Kullanım",
+    usageSub: "Sunucu açıldığından beri",
+    statCalls: "çağrı",
+    statFailed: "başarısız",
+    statTokens: "token",
+    statAvg: "ort. süre",
+    auditTitle: "Gizlilik Denetimi",
+    auditSub: "Yapay zekaya gönderilen her metin burada kayıtlıdır.",
+    refreshBtn: "Yenile",
+    logoutBtn: "Çıkış",
+    statusConfigured: "Bağlantı yapılandırıldı",
+    statusNot: "Bağlantı henüz kurulmadı",
+    statusTemp: "Geçici anahtarla çalışıyor",
+    statusTempDetail: "Kurumunuzun kendi Claude erişimi henüz bağlanmadı.",
+    statusNotDetail: "Aşağıdaki formdan kurumunuzun Claude erişimini bağlayın.",
+    auditEmpty: "Henüz kayıt yok. Bir eşleştirme çalıştırın.",
+    auditSentLabel: "Yapay zekaya gönderilen tam metin:",
+    errorTitle: "Hata",
+    whatToDo: "Ne yapmalı:",
+    hintAnthropic: 'Anahtar yoksa: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com → Settings → API Keys → Create Key</a><br>Bu, Claude.ai aboneliğinden ayrı bir şeydir; kullandığınız kadar ödersiniz.',
+    hintBedrock: "AWS konsolunda <strong>Bedrock → Model access</strong> bölümünden Anthropic modellerine erişim izni almış olmanız gerekir.",
+    hintVertex: "Sunucuda önce şu komutun çalıştırılmış olması gerekir: <code>gcloud auth application-default login</code>",
+    licTitle: "Lisans",
+    licKeyLabel: "Lisans anahtarı",
+    licHint: "Tedarikçinizden aldığınız anahtarın tamamını yapıştırın.",
+    licActivate: "Etkinleştir",
+    licActivating: "Doğrulanıyor…",
+    licNeedKey: "Lütfen lisans anahtarını yapıştırın.",
+
+    licTrialSummary: d => `Deneme sürümü — ${d} gün kaldı`,
+    licTrialTitle: d => `Deneme sürümü: ${d} gün kaldı`,
+    licTrialDetail: "Tüm özellikler açık. Süre dolduğunda yeni eşleştirme durur; mevcut çalışma alanlarınız ve toplantı notlarınız erişilebilir kalır.",
+
+    licExpiringTitle: d => `Deneme süreniz ${d} gün içinde doluyor`,
+    licExpiringDetail: "Kesintisiz devam etmek için tedarikçinizden lisans anahtarı isteyin ve buraya girin.",
+
+    licExpiredSummary: "Süre doldu — yeni eşleştirme duraklatıldı",
+    licExpiredTitle: "20 günlük deneme süresi doldu",
+    licExpiredDetail: "Mevcut mentorluklarınız, çalışma alanlarınız ve toplantı notlarınız erişilebilir durumda. Yeni eşleştirme yapabilmek için lisans anahtarınızı girin.",
+
+    licLicExpiredTitle: "Lisans süresi doldu",
+    licLicExpiredDetail: "Verileriniz erişilebilir durumda. Yenilenmiş bir anahtar için tedarikçinizle iletişime geçin.",
+
+    licInvalidSummary: "Geçersiz lisans anahtarı",
+    licInvalidTitle: "Kayıtlı lisans anahtarı doğrulanamıyor",
+    licInvalidDetail: "Anahtarı yeniden girin veya tedarikçinizden yeni bir anahtar isteyin.",
+
+    licPerpetual: c => `Lisanslı — ${c} (süresiz)`,
+    licUntil: (c, d, n) => `Lisanslı — ${c} · ${d} tarihine kadar (${n} gün)`,
+
+    licClockTitle: "Sistem saati uyarısı:",
+    licClockDetail: "Bu bilgisayarın saati geriye alınmış görünüyor. Deneme süresi hesabı en erken kayıtlı tarihe göre yapılır.",
+
+    devKeyWarn: '<strong>Dikkat:</strong> Sistem şu anda <strong>tedarikçinin geçici anahtarıyla</strong> çalışıyor — bu anahtar sunucudaki <code>.env</code> dosyasından geliyor, kurumunuza ait değil. Kullanım ücreti kuruma değil tedarikçiye yansır. Aşağıdaki formdan <strong>kurumunuzun kendi Claude erişimini</strong> bağlayın; bağladığınız anda geçici anahtar devre dışı kalır.',
+    pwTitle: "Giriş Şifresi",
+    pwSub: "Hem uygulama hem bu yönetici paneli için kullanılır.",
+    pwWarnTitle: "Varsayılan şifreyi kullanıyorsunuz",
+    pwWarnBody: "Ağınızdaki bu ürünü tanıyan herkes giriş yapıp mentee isimlerini, e-postalarını ve gelişim ihtiyaçlarını görebilir. Lütfen kendi şifrenizi belirleyin.",
+    pwCurrent: "Mevcut şifre",
+    pwNew: "Yeni şifre",
+    pwSave: "Şifreyi Değiştir",
+    pwChanged: "Şifre değiştirildi",
+    pwChangedDetail: "Bundan sonra yeni şifreyi kullanın — hem uygulama hem bu panel için.",
+    smtpTitle: "E-posta Sunucusu (SMTP)",
+    smtpSub: "Davet ve onay bağlantılarının e-posta ile gönderilebilmesi için kurumsal e-posta sunucusu bilgileri. E-postalar doğrudan sizin sunucunuzdan gider; içerik hiçbir üçüncü tarafa ulaşmaz.",
+    smtpHost: "Sunucu (host)",
+    smtpPort: "Port",
+    smtpSsl: "SSL (465)",
+    smtpUser: "Kullanıcı",
+    smtpPassword: "Şifre",
+    smtpFromName: "Gönderen adı",
+    smtpFromEmail: "Gönderen e-posta",
+    smtpSave: "Kaydet",
+    smtpTest: "Bağlantıyı Test Et",
+    smtpTesting: "Test e-postası gönderiliyor…",
+    smtpHint: 'Port 587 için SSL kutusu <b>kapalı</b> olmalı (STARTTLS kullanılır). Port 465 için <b>açık</b>. Office 365 / Google Workspace kullanıyorsanız normal şifre yerine <b>uygulama şifresi</b> gerekebilir.',
+    privacyNote: '<strong>Bu neden önemli?</strong> KVKK denetiminde "yapay zekaya ne gönderiyorsunuz?" sorusuna tahminle değil kanıtla cevap verebilirsiniz. Bir kaydı açıp maskelenmiş alanları (<mark>[ISIM]</mark>, <mark>[EPOSTA]</mark>, <mark>M1</mark>) gözle doğrulayın — gerçek isimler dışarı çıkmıyor.'
+  },
+  en: {
+    title: "Admin Panel",
+    subtitle: "AI connection and privacy audit",
+    loginTitle: "Admin Login",
+    loginSub: "MentorOS AI settings",
+    pwLabel: "Admin password",
+    loginBtn: "Sign in",
+    loginChecking: "Checking…",
+    testBtn: "Test Connection",
+    testing: "Testing…",
+    connTitle: "Claude Connection",
+    connSub: "Connect your organisation's own Claude access. Credentials are stored encrypted and never shown on this screen again.",
+    providerLabel: "Connection method",
+    provAnthropic: "Anthropic API key — simplest",
+    provBedrock: "AWS Bedrock — data stays in your AWS account",
+    provVertex: "Google Cloud — data stays in your GCP account",
+    apiKeyLabel: "API key",
+    awsRegionLabel: "AWS region",
+    gcpProjectLabel: "Google Cloud project ID",
+    gcpRegionLabel: "Region",
+    modelLabel: "Model",
+    saveBtn: "Save and Test",
+    saving: "Saving…",
+    usageTitle: "Usage",
+    usageSub: "Since the server started",
+    statCalls: "calls",
+    statFailed: "failed",
+    statTokens: "tokens",
+    statAvg: "avg. time",
+    auditTitle: "Privacy Audit",
+    auditSub: "Every text sent to the AI is logged here.",
+    refreshBtn: "Refresh",
+    logoutBtn: "Sign out",
+    statusConfigured: "Connection configured",
+    statusNot: "Not connected yet",
+    statusTemp: "Running on a temporary key",
+    statusTempDetail: "Your organisation's own Claude access is not connected yet.",
+    statusNotDetail: "Use the form below to connect your organisation's Claude access.",
+    auditEmpty: "No records yet. Run a matching first.",
+    auditSentLabel: "Full text sent to the AI:",
+    errorTitle: "Error",
+    whatToDo: "What to do:",
+    hintAnthropic: 'No key yet? <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com → Settings → API Keys → Create Key</a><br>This is separate from a Claude.ai subscription; you pay for what you use.',
+    hintBedrock: "You must first request access to Anthropic models in the AWS console under <strong>Bedrock → Model access</strong>.",
+    hintVertex: "Run this command on the server first: <code>gcloud auth application-default login</code>",
+    licTitle: "Lisans",
+    licKeyLabel: "Lisans anahtarı",
+    licHint: "Tedarikçinizden aldığınız anahtarın tamamını yapıştırın.",
+    licActivate: "Etkinleştir",
+    licActivating: "Doğrulanıyor…",
+    licNeedKey: "Lütfen lisans anahtarını yapıştırın.",
+
+    licTrialSummary: d => `Deneme sürümü — ${d} gün kaldı`,
+    licTrialTitle: d => `Deneme sürümü: ${d} gün kaldı`,
+    licTrialDetail: "Tüm özellikler açık. Süre dolduğunda yeni eşleştirme durur; mevcut çalışma alanlarınız ve toplantı notlarınız erişilebilir kalır.",
+
+    licExpiringTitle: d => `Deneme süreniz ${d} gün içinde doluyor`,
+    licExpiringDetail: "Kesintisiz devam etmek için tedarikçinizden lisans anahtarı isteyin ve buraya girin.",
+
+    licExpiredSummary: "Süre doldu — yeni eşleştirme duraklatıldı",
+    licExpiredTitle: "20 günlük deneme süresi doldu",
+    licExpiredDetail: "Mevcut mentorluklarınız, çalışma alanlarınız ve toplantı notlarınız erişilebilir durumda. Yeni eşleştirme yapabilmek için lisans anahtarınızı girin.",
+
+    licLicExpiredTitle: "Lisans süresi doldu",
+    licLicExpiredDetail: "Verileriniz erişilebilir durumda. Yenilenmiş bir anahtar için tedarikçinizle iletişime geçin.",
+
+    licInvalidSummary: "Geçersiz lisans anahtarı",
+    licInvalidTitle: "Kayıtlı lisans anahtarı doğrulanamıyor",
+    licInvalidDetail: "Anahtarı yeniden girin veya tedarikçinizden yeni bir anahtar isteyin.",
+
+    licPerpetual: c => `Lisanslı — ${c} (süresiz)`,
+    licUntil: (c, d, n) => `Lisanslı — ${c} · ${d} tarihine kadar (${n} gün)`,
+
+    licClockTitle: "Sistem saati uyarısı:",
+    licClockDetail: "Bu bilgisayarın saati geriye alınmış görünüyor. Deneme süresi hesabı en erken kayıtlı tarihe göre yapılır.",
+
+    devKeyWarn: '<strong>Warning:</strong> The system is currently running on a <strong>supplier\'s temporary key</strong> — it comes from the <code>.env</code> file on the server and does not belong to your organisation. Usage is billed to the supplier, not to you. Connect <strong>your own Claude access</strong> using the form below; the temporary key is bypassed the moment you do.',
+    pwTitle: "Sign-in Password",
+    pwSub: "Used for both the application and this admin panel.",
+    pwWarnTitle: "You are using the default password",
+    pwWarnBody: "Anyone on your network who knows this product can sign in and see mentee names, emails and development needs. Please set your own password.",
+    pwCurrent: "Current password",
+    pwNew: "New password",
+    pwSave: "Change Password",
+    pwChanged: "Password changed",
+    pwChangedDetail: "Use the new password from now on — for both the app and this panel.",
+    smtpTitle: "Email Server (SMTP)",
+    smtpSub: "Your corporate email server details, so invitation and approval links can be sent by email. Emails are sent directly from your own server; no third party sees the content.",
+    smtpHost: "Server (host)",
+    smtpPort: "Port",
+    smtpSsl: "SSL (465)",
+    smtpUser: "Username",
+    smtpPassword: "Password",
+    smtpFromName: "Sender name",
+    smtpFromEmail: "Sender email",
+    smtpSave: "Save",
+    smtpTest: "Test Connection",
+    smtpTesting: "Sending test email…",
+    smtpHint: 'For port 587 leave SSL <b>unchecked</b> (STARTTLS is used). For port 465 check it. With Office 365 / Google Workspace you may need an <b>app password</b> rather than the normal one.',
+    licTitle: "License",
+    licKeyLabel: "License key",
+    licHint: "Paste the full key you received from your supplier.",
+    licActivate: "Activate",
+    licActivating: "Verifying…",
+    licNeedKey: "Please paste the license key.",
+
+    licTrialSummary: d => `Trial — ${d} day${d === 1 ? "" : "s"} remaining`,
+    licTrialTitle: d => `Trial: ${d} day${d === 1 ? "" : "s"} remaining`,
+    licTrialDetail: "All features are available. When the trial ends, new matching pauses — your existing workspaces and meeting notes stay accessible.",
+
+    licExpiringTitle: d => `Your trial ends in ${d} day${d === 1 ? "" : "s"}`,
+    licExpiringDetail: "To continue without interruption, request a license key from your supplier and enter it here.",
+
+    licExpiredSummary: "Expired — new matching is paused",
+    licExpiredTitle: "The 20-day trial has ended",
+    licExpiredDetail: "Your existing mentorships, workspaces and meeting notes remain accessible. Enter your license key to resume matching.",
+
+    licLicExpiredTitle: "The license has expired",
+    licLicExpiredDetail: "Your data remains accessible. Contact your supplier for a renewed key.",
+
+    licInvalidSummary: "Invalid license key",
+    licInvalidTitle: "The stored license key cannot be verified",
+    licInvalidDetail: "Re-enter the key, or ask your supplier for a new one.",
+
+    licPerpetual: c => `Licensed — ${c} (perpetual)`,
+    licUntil: (c, d, n) => `Licensed — ${c} · until ${d} (${n} days)`,
+
+    licClockTitle: "System clock warning:",
+    licClockDetail: "This machine's clock appears to have been set back. The trial is calculated from the earliest recorded date.",
+
+    privacyNote: '<strong>Why this matters:</strong> In a data-protection audit you can answer "what do you send to the AI?" with evidence rather than guesswork. Open a record and verify the masked fields (<mark>[ISIM]</mark>, <mark>[EPOSTA]</mark>, <mark>M1</mark>) with your own eyes — real names never leave the building.'
+  }
+};
+
+let LANG = localStorage.getItem("mentorAppLang") || "en";
+const t = (k, ...args) => {
+  const v = (T[LANG] && T[LANG][k]) || T.tr[k] || k;
+  return typeof v === "function" ? v(...args) : v;
+};
+
+const HTML_KEYS = ["hintAnthropic", "hintBedrock", "hintVertex", "privacyNote", "devKeyWarn", "smtpHint"];
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.getElementById("lang").value = LANG;
+
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+
+  HTML_KEYS.forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.innerHTML = t(k);
+  });
+
+  // Panel açıksa dinamik içeriği de yeniden çiz
+  if (TOKEN && $("panel").style.display === "block") {
+    loadStatus().catch(() => {});
+    loadAudit().catch(() => {});
+  }
+}
+
+document.getElementById("lang").onchange = e => {
+  LANG = e.target.value;
+  localStorage.setItem("mentorAppLang", LANG);
+  applyLang();
+};
+
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-token": TOKEN,
+      ...(options.headers || {})
+    }
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401 && TOKEN) {
+    sessionStorage.removeItem("adminToken");
+    location.reload();
+    return;
+  }
+
+  if (!res.ok) throw new Error(data.error || "İstek başarısız");
+  return data;
+}
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* ---------- Giriş ---------- */
+
+async function login() {
+  const btn = $("loginBtn");
+  const err = $("loginErr");
+
+  btn.disabled = true;
+  btn.textContent = t("loginChecking");
+  err.classList.remove("show");
+
+  try {
+    const res = await fetch("/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: $("pw").value })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Giriş başarısız");
+
+    TOKEN = data.token;
+    sessionStorage.setItem("adminToken", TOKEN);
+    showPanel();
+
+  } catch (e) {
+    err.textContent = e.message;
+    err.classList.add("show");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t("loginBtn");
+  }
+}
+
+$("loginBtn").onclick = login;
+$("pw").onkeydown = e => { if (e.key === "Enter") login(); };
+
+$("logoutBtn").onclick = async () => {
+  try { await api("/admin/logout", { method: "POST" }); } catch {}
+  sessionStorage.removeItem("adminToken");
+  location.reload();
+};
+
+/* ---------- Panel ---------- */
+
+async function showPanel() {
+  $("login").style.display = "none";
+  $("panel").style.display = "block";
+  await loadStatus();
+  await loadAudit();
+}
+
+async function loadStatus() {
+  const data = await api("/admin/status");
+  const ai = data.ai;
+
+  // Form alanlarını doldur
+  $("provider").value = ai.provider;
+  $("model").value = ai.model;
+  $("awsRegion").value = ai.awsRegion || "";
+  $("gcpProject").value = ai.gcpProject || "";
+  $("gcpRegion").value = ai.gcpRegion || "";
+
+  // Kayıtlı anahtarları MASKELİ göster (gerçek değer asla dönmez)
+  $("anthropicApiKey").placeholder = ai.anthropicApiKeyMasked || "sk-ant-…";
+  $("awsAccessKeyId").placeholder = ai.awsAccessKeyIdMasked || "AKIA…";
+
+  syncProviderFields();
+
+  // Gelistirici anahtariyla mi calisiyor?
+  const warnBox = $("devKeyWarn");
+  warnBox.innerHTML = t("devKeyWarn");
+  warnBox.classList.toggle("show", !!ai.usingDeveloperKey);
+
+  // Durum rozeti
+  // Gelistirici anahtari "yesil" gosterilmez - yaniltici olurdu.
+  const dot = $("statusDot");
+  dot.className = "dot " + (
+    !ai.configured ? "err" : (ai.usingDeveloperKey ? "warn" : "ok")
+  );
+
+  $("statusTitle").textContent = !ai.configured
+    ? t("statusNot")
+    : (ai.usingDeveloperKey ? t("statusTemp") : t("statusConfigured"));
+
+  $("statusDetail").textContent = !ai.configured
+    ? t("statusNotDetail")
+    : (ai.usingDeveloperKey
+        ? t("statusTempDetail")
+        : `${ai.provider} / ${ai.model}` +
+          (ai.provider === "anthropic" && ai.anthropicApiKeyMasked
+            ? ` · ${ai.anthropicApiKeyMasked}` : ""));
+
+  // Lisans
+  if (data.license) renderLicense(data.license);
+
+  // Varsayilan sifre uyarisi
+  if (data.auth) {
+    $("pwDefaultWarn").style.display = data.auth.usingDefaultPassword ? "block" : "none";
+  }
+
+  // E-posta sunucusu
+  if (data.smtp) renderSmtp(data.smtp);
+
+  // Kullanım
+  const u = data.usage;
+  $("sCalls").textContent = u.totalCalls;
+  $("sFailed").textContent = u.failedCalls;
+  $("sTokens").textContent = (u.inputTokens + u.outputTokens).toLocaleString(LANG === "en" ? "en-GB" : "tr-TR");
+  $("sAvg").textContent = u.avgDurationMs ? `${(u.avgDurationMs / 1000).toFixed(1)}s` : "–";
+}
+
+function syncProviderFields() {
+  const p = $("provider").value;
+  document.querySelectorAll(".provider-fields").forEach(el => {
+    el.classList.toggle("active", el.dataset.provider === p);
+  });
+}
+$("provider").onchange = syncProviderFields;
+
+/* ---------- Kaydet ---------- */
+
+function showResult(el, r) {
+  el.className = "result show " + (r.ok ? "ok" : "err");
+  el.innerHTML = `
+    <div class="result-title">${r.ok ? "✓" : "✕"} ${esc(r.title)}</div>
+    <div class="result-detail">${esc(r.detail || "")}</div>
+    ${r.action ? `<div class="result-action"><strong>${t("whatToDo")}</strong> ${esc(r.action)}</div>` : ""}
+  `;
+}
+
+$("saveBtn").onclick = async () => {
+  const btn = $("saveBtn");
+  btn.disabled = true;
+  btn.textContent = t("saving");
+
+  try {
+    await api("/admin/ai-config", {
+      method: "PUT",
+      body: JSON.stringify({
+        provider: $("provider").value,
+        model: $("model").value,
+        anthropicApiKey: $("anthropicApiKey").value,
+        awsRegion: $("awsRegion").value,
+        awsAccessKeyId: $("awsAccessKeyId").value,
+        awsSecretAccessKey: $("awsSecretAccessKey").value,
+        gcpProject: $("gcpProject").value,
+        gcpRegion: $("gcpRegion").value
+      })
+    });
+
+    // Girilen sırları formdan temizle
+    ["anthropicApiKey", "awsAccessKeyId", "awsSecretAccessKey"]
+      .forEach(id => { $(id).value = ""; });
+
+    btn.textContent = t("testing");
+    const result = await api("/admin/test-connection", {
+      method: "POST",
+      body: JSON.stringify({ lang: LANG })
+    });
+
+    showResult($("saveResult"), result);
+    await loadStatus();
+    await loadAudit();      // yeni cagri kaydini hemen goster
+
+  } catch (e) {
+    showResult($("saveResult"), { ok: false, title: t("errorTitle"), detail: e.message });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t("saveBtn");
+  }
+};
+
+$("testBtn").onclick = async () => {
+  const btn = $("testBtn");
+  btn.disabled = true;
+  btn.textContent = "Test ediliyor…";
+
+  try {
+    showResult($("testResult"), await api("/admin/test-connection", {
+      method: "POST",
+      body: JSON.stringify({ lang: LANG })
+    }));
+    await loadStatus();
+    await loadAudit();
+  } catch (e) {
+    showResult($("testResult"), { ok: false, title: t("errorTitle"), detail: e.message });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t("testBtn");
+  }
+};
+
+/* ---------- Lisans ---------- */
+
+function renderLicense(lic) {
+  const dot = $("licDot");
+  const summary = $("licSummary");
+  const banner = $("licBanner");
+
+  $("licKey").value = "";
+  $("licKey").placeholder = lic.keyMasked || "MENTOROS-...";
+
+  const show = (cls, title, detail) => {
+    banner.className = "result show " + cls;
+    banner.innerHTML =
+      `<div class="result-title">${esc(title)}</div>` +
+      (detail ? `<div class="result-detail">${esc(detail)}</div>` : "");
+  };
+
+  banner.style.display = "";
+
+  switch (lic.state) {
+    case "licensed":
+      dot.className = "dot ok";
+      summary.textContent = lic.perpetual
+        ? t("licPerpetual", lic.company)
+        : t("licUntil", lic.company, (lic.expiresAt || "").slice(0, 10), lic.daysLeft);
+      banner.style.display = "none";
+      break;
+
+    case "trial":
+      dot.className = "dot ok";
+      summary.textContent = t("licTrialSummary", lic.trialDaysLeft);
+      show("ok", t("licTrialTitle", lic.trialDaysLeft), t("licTrialDetail"));
+      break;
+
+    case "trial_expiring":
+      dot.className = "dot warn";
+      summary.textContent = t("licTrialSummary", lic.trialDaysLeft);
+      show("err", t("licExpiringTitle", lic.trialDaysLeft), t("licExpiringDetail"));
+      break;
+
+    case "trial_expired":
+      dot.className = "dot err";
+      summary.textContent = t("licExpiredSummary");
+      show("err", t("licExpiredTitle"), t("licExpiredDetail"));
+      break;
+
+    case "license_expired":
+      dot.className = "dot err";
+      summary.textContent = t("licExpiredSummary");
+      show("err", t("licLicExpiredTitle"), t("licLicExpiredDetail"));
+      break;
+
+    case "invalid_license":
+      dot.className = "dot err";
+      summary.textContent = t("licInvalidSummary");
+      show("err", t("licInvalidTitle"), t("licInvalidDetail"));
+      break;
+  }
+
+  // Saat geri alinmis olabilir - sessizce gecme.
+  if (lic.clockWarning) {
+    banner.style.display = "";
+    banner.innerHTML +=
+      `<div class="result-action"><strong>${esc(t("licClockTitle"))}</strong> ` +
+      `${esc(t("licClockDetail"))}</div>`;
+  }
+}
+
+$("licSaveBtn").onclick = async () => {
+  const btn = $("licSaveBtn");
+  const key = $("licKey").value.trim();
+
+  if (!key) {
+    showResult($("licResult"), { ok: false, title: t("licNeedKey") });
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = t("licActivating");
+
+  try {
+    const data = await api("/admin/license", {
+      method: "PUT",
+      body: JSON.stringify({ key, lang: LANG })
+    });
+
+    renderLicense(data.license);
+    showResult($("licResult"), { ok: true, title: data.message });
+
+  } catch (e) {
+    showResult($("licResult"), { ok: false, title: t("errorTitle"), detail: e.message });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t("licActivate");
+  }
+};
+
+/* ---------- Sifre ---------- */
+
+$("pwSaveBtn").onclick = async () => {
+  const btn = $("pwSaveBtn");
+  btn.disabled = true;
+
+  try {
+    await api("/change-password", {
+      method: "POST",
+      body: JSON.stringify({
+        currentPassword: $("pwCurrent").value,
+        newPassword: $("pwNew").value
+      })
+    });
+
+    $("pwCurrent").value = "";
+    $("pwNew").value = "";
+    $("pwDefaultWarn").style.display = "none";
+
+    showResult($("pwResult"), { ok: true, title: t("pwChanged"), detail: t("pwChangedDetail") });
+
+  } catch (e) {
+    showResult($("pwResult"), { ok: false, title: t("errorTitle"), detail: e.message });
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+/* ---------- E-posta sunucusu (SMTP) ---------- */
+
+function renderSmtp(smtp) {
+  $("smtpHost").value = smtp.host || "";
+  $("smtpPort").value = smtp.port || 587;
+  $("smtpSecure").checked = !!smtp.secure;
+  $("smtpUser").value = smtp.user || "";
+  $("smtpFromName").value = smtp.fromName || "";
+  $("smtpFromEmail").value = smtp.fromEmail || "";
+
+  // Kayitli sifre asla geri donmez - sadece maskeli gosterilir.
+  $("smtpPassword").placeholder = smtp.passwordMasked || "";
+
+  $("smtpDot").className = "dot " + (smtp.configured ? "ok" : "err");
+}
+
+$("smtpSaveBtn").onclick = async () => {
+  const btn = $("smtpSaveBtn");
+  btn.disabled = true;
+
+  try {
+    const data = await api("/admin/smtp-config", {
+      method: "PUT",
+      body: JSON.stringify({
+        host: $("smtpHost").value,
+        port: $("smtpPort").value,
+        secure: $("smtpSecure").checked,
+        user: $("smtpUser").value,
+        password: $("smtpPassword").value,
+        fromName: $("smtpFromName").value,
+        fromEmail: $("smtpFromEmail").value
+      })
+    });
+
+    $("smtpPassword").value = "";          // sirri formda birakma
+    renderSmtp(data.smtp);
+
+    showResult($("smtpResult"), {
+      ok: true,
+      title: data.message,
+      detail: LANG === "en"
+        ? "Now use 'Test Connection' to verify."
+        : "Şimdi 'Bağlantıyı Test Et' ile doğrulayın."
+    });
+
+  } catch (e) {
+    showResult($("smtpResult"), { ok: false, title: t("errorTitle"), detail: e.message });
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$("smtpTestBtn").onclick = async () => {
+  const btn = $("smtpTestBtn");
+  btn.disabled = true;
+  btn.textContent = t("smtpTesting");
+
+  try {
+    showResult($("smtpResult"), await api("/admin/test-smtp", {
+      method: "POST",
+      body: JSON.stringify({ lang: LANG })
+    }));
+  } catch (e) {
+    showResult($("smtpResult"), { ok: false, title: t("errorTitle"), detail: e.message });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t("smtpTest");
+  }
+};
+
+/* ---------- Denetim ---------- */
+
+function highlight(text) {
+  return esc(text).replace(
+    /\[(ISIM|EPOSTA|TELEFON|KIMLIK|LINK|KULLANICI)\]|\bM\d+\b/g,
+    m => `<mark>${m}</mark>`
+  );
+}
+
+async function loadAudit() {
+  const data = await api("/admin/audit?limit=25");
+  const list = $("auditList");
+
+  if (!data.entries.length) {
+    list.innerHTML = `<div class="empty">${t("auditEmpty")}</div>`;
+    return;
+  }
+
+  list.innerHTML = data.entries.map((e, i) => {
+    const time = new Date(e.timestamp).toLocaleString(LANG === "en" ? "en-GB" : "tr-TR");
+    const dur = e.durationMs ? `${(e.durationMs / 1000).toFixed(1)}s` : "";
+    const tok = e.inputTokens ? `${e.inputTokens}→${e.outputTokens} tok` : "";
+
+    return `
+      <div class="audit-entry">
+        <div class="audit-head" onclick="document.getElementById('ab${i}').classList.toggle('open')">
+          <span class="dot ${e.ok ? "ok" : "err"}"></span>
+          <span class="audit-op">${esc(e.operation)}</span>
+          <span class="audit-meta">${esc(time)} · ${esc(dur)} ${tok ? "· " + esc(tok) : ""}</span>
+        </div>
+        <div class="audit-body" id="ab${i}">
+          <div class="audit-label">${t("auditSentLabel")}</div>
+          <pre>${highlight(e.promptSent || "")}</pre>
+          ${e.error ? `<div class="audit-label" style="margin-top:12px;color:var(--err)">Hata: ${esc(e.error)}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+$("refreshAudit").onclick = async () => {
+  await loadAudit();
+  await loadStatus();
+};
+
+/* ---------- Başlat ---------- */
+
+applyLang();
+
+/**
+ * Kullanici baska sekmede eslestirme yapip bu sekmeye donunce panel
+ * bayat veri gostermesin. Onceden manuel "Yenile" gerekiyordu ve
+ * istatistik ile liste birbirini tutmuyordu.
+ */
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" &&
+      TOKEN && $("panel").style.display === "block") {
+    loadStatus().catch(() => {});
+    loadAudit().catch(() => {});
+  }
+});
+
+if (TOKEN) {
+  api("/admin/status").then(showPanel).catch(() => {
+    sessionStorage.removeItem("adminToken");
+  });
+}
+</script>
+</body>
+</html>

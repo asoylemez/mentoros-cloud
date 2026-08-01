@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mentorluk Anketi</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f4f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #1f2430;
+    }
+
+    .topbar {
+      background: #ffffff;
+      border-bottom: 1px solid #e4e6ee;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: #1a2b5e;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px;
+    }
+
+    .brand { font-weight: 700; color: #1a2b5e; font-size: 16px; }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 26px 16px 60px; }
+
+    .header {
+      background: #1a2b5e;
+      color: #fff;
+      border-radius: 12px 12px 0 0;
+      padding: 26px 28px;
+    }
+
+    .header h1 { margin: 0 0 7px; font-size: 22px; }
+    .header p { margin: 0; opacity: 0.9; font-size: 14px; line-height: 1.6; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e4e6ee;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 24px 28px 28px;
+    }
+
+    .privacy {
+      background: #f0f7f2;
+      border: 1px solid #c9e3d2;
+      border-radius: 9px;
+      padding: 13px 15px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #2c5c3e;
+      margin: 0 0 22px;
+    }
+
+    .section { margin-bottom: 26px; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #b5651d;
+      margin-bottom: 14px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid #eceef4;
+    }
+
+    .q { margin-bottom: 20px; }
+
+    .q-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a2b5e;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .q-hint {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 9px;
+      line-height: 1.5;
+    }
+
+    .optional {
+      font-weight: 400;
+      color: #9aa1b1;
+      font-size: 13px;
+    }
+
+    /* --- 1-5 olcek --- */
+
+    .scale {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .scale button {
+      background: #fff;
+      border: 1px solid #d6dae6;
+      border-radius: 9px;
+      padding: 11px 4px 9px;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: center;
+      transition: all 0.12s;
+    }
+
+    .scale button:hover { border-color: #1a2b5e; }
+
+    .scale button.on {
+      background: #1a2b5e;
+      border-color: #1a2b5e;
+      color: #fff;
+    }
+
+    .scale .num { font-size: 17px; font-weight: 700; display: block; }
+    .scale .lbl { font-size: 10.5px; line-height: 1.3; display: block; margin-top: 3px; opacity: 0.85; }
+
+    /* --- 0-10 --- */
+
+    .nps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+    .nps button {
+      flex: 1 1 52px;
+      background: #fff;
+      border: 1px solid #d6dae6;
+      border-radius: 8px;
+      padding: 11px 0;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .nps button:hover { border-color: #1a2b5e; }
+    .nps button.on { background: #1a2b5e; border-color: #1a2b5e; color: #fff; }
+
+    /* --- secenek --- */
+
+    .choice { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+    .choice button {
+      background: #fff;
+      border: 1px solid #d6dae6;
+      border-radius: 9px;
+      padding: 11px 20px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .choice button:hover { border-color: #1a2b5e; }
+    .choice button.on { background: #1a2b5e; border-color: #1a2b5e; color: #fff; }
+
+    textarea {
+      width: 100%;
+      min-height: 96px;
+      padding: 12px 13px;
+      border: 1px solid #d6dae6;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 14.5px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      color: #1f2430;
+    }
+
+    textarea:focus { border-color: #1a2b5e; box-shadow: 0 0 0 3px rgba(26,43,94,0.07); }
+
+    .submit {
+      width: 100%;
+      background: #b5651d;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .submit:hover { background: #9d5518; }
+    .submit:disabled { background: #b9bdc9; cursor: not-allowed; }
+
+    .note {
+      background: #fffbf5;
+      border: 1px solid #f3e0c8;
+      border-radius: 9px;
+      padding: 13px 15px;
+      color: #8a5a2b;
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+
+    .state {
+      background: #fff;
+      border: 1px solid #e4e6ee;
+      border-radius: 12px;
+      padding: 44px 30px;
+      text-align: center;
+    }
+
+    .state h2 { color: #1a2b5e; margin: 0 0 10px; font-size: 20px; }
+    .state p { color: #5b6172; font-size: 14.5px; line-height: 1.65; margin: 0; }
+
+    .tick {
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      background: #e7f4ec;
+      color: #2f7d4f;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 16px;
+    }
+
+    @media (max-width: 560px) {
+      .card, .header { padding-left: 18px; padding-right: 18px; }
+      .scale { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+      .scale .lbl { display: none; }
+      .scale button { padding: 13px 2px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="logo">M</div>
+    <div class="brand">MentorOS</div>
+  </div>
+
+  <div class="wrap">
+    <div id="loading" class="state">
+      <p>Yükleniyor…</p>
+    </div>
+
+    <div id="app" style="display:none">
+      <div class="header">
+        <h1 id="title">—</h1>
+        <p id="intro"></p>
+      </div>
+      <div class="card">
+        <div class="privacy" id="privacy"></div>
+        <div id="questions"></div>
+        <button class="submit" id="submitBtn" onclick="submitSurvey()">—</button>
+        <div class="note" id="requiredNote" style="display:none"></div>
+      </div>
+    </div>
+
+    <div id="done" class="state" style="display:none">
+      <div class="tick">✓</div>
+      <h2 id="doneTitle">—</h2>
+      <p id="doneText"></p>
+    </div>
+
+    <div id="invalid" class="state" style="display:none">
+      <h2 id="invalidTitle">—</h2>
+      <p id="invalidText"></p>
+    </div>
+  </div>
+
+  <script>
+
+    /* ==================================================================
+       ANKET SAYFASI
+
+       Giris GEREKTIRMEZ - kimlik dogrulamasi yalnizca URL'deki token
+       ile yapilir. Token o kisinin anketini acar; karsi tarafin
+       cevaplarina bu sayfadan ULASILAMAZ.
+
+       Sayfanin dili anketin kendi dilidir (IK gonderirken secer).
+       Boylece sorularla cevaplar hep ayni dilde kalir.
+       ================================================================== */
+
+    const API = window.location.origin;
+    const TOKEN = new URLSearchParams(window.location.search).get("token") || "";
+
+    let DEF = null;          // anket tanimi (bolumler + sorular)
+    let LANG = "tr";
+    const ANSWERS = {};
+
+    const TEXT = {
+      tr: {
+        loading: "Yükleniyor…",
+        submit: "Anketi Gönder",
+        sending: "Gönderiliyor…",
+        optional: "(isteğe bağlı)",
+        doneTitle: "Teşekkür ederiz",
+        doneText: "Cevaplarınız kaydedildi. Katkınız programı geliştirmemize yardımcı oluyor.",
+        alreadyTitle: "Bu anket zaten dolduruldu",
+        alreadyText: "Bu bağlantı ile daha önce anket gönderilmiş. Cevaplarınız kayıtlı.",
+        invalidTitle: "Geçersiz bağlantı",
+        invalidText: "Bu anket bağlantısı geçerli değil. Lütfen e-postanızdaki bağlantıyı kullanın veya İnsan Kaynakları ile iletişime geçin.",
+        missing: "Lütfen zorunlu soruları cevaplayın. Eksik olanlar yukarıda işaretlendi.",
+        failed: "Anket gönderilemedi. Lütfen tekrar deneyin.",
+        withWhom: "Mentorluk süreciniz:"
+      },
+      en: {
+        loading: "Loading…",
+        submit: "Submit Survey",
+        sending: "Submitting…",
+        optional: "(optional)",
+        doneTitle: "Thank you",
+        doneText: "Your answers have been saved. Your input helps us improve the programme.",
+        alreadyTitle: "This survey has already been completed",
+        alreadyText: "A response has already been submitted using this link. Your answers are on record.",
+        invalidTitle: "Invalid link",
+        invalidText: "This survey link is not valid. Please use the link in your email or contact Human Resources.",
+        missing: "Please answer the required questions. The missing ones are highlighted above.",
+        failed: "The survey could not be submitted. Please try again.",
+        withWhom: "Your mentoring relationship:"
+      }
+    };
+
+    function t(key) { return (TEXT[LANG] || TEXT.tr)[key] || key; }
+
+    function escapeHtml(text) {
+      return String(text == null ? "" : text)
+        .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    }
+
+    /* ---------------------------------------------------------------- */
+
+    async function load() {
+      if (!TOKEN) return showInvalid();
+
+      try {
+        const res = await fetch(`${API}/public/survey/${encodeURIComponent(TOKEN)}`);
+        if (!res.ok) return showInvalid();
+
+        const data = await res.json();
+
+        LANG = data.language === "en" ? "en" : "tr";
+        document.documentElement.lang = LANG;
+
+        if (data.status === "completed") {
+          return showDone(t("alreadyTitle"), t("alreadyText"));
+        }
+
+        DEF = data.definition;
+        render(data);
+
+      } catch {
+        showInvalid();
+      }
+    }
+
+    function render(data) {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("app").style.display = "";
+
+      document.title = DEF.title;
+      document.getElementById("title").textContent = DEF.title;
+
+      const who = data.otherName
+        ? `<br><span style="opacity:0.85">${escapeHtml(t("withWhom"))} ${escapeHtml(data.otherName)}</span>`
+        : "";
+      document.getElementById("intro").innerHTML = escapeHtml(DEF.intro) + who;
+
+      document.getElementById("privacy").textContent = DEF.privacy;
+      document.getElementById("submitBtn").textContent = t("submit");
+      document.getElementById("requiredNote").textContent = t("missing");
+
+      document.getElementById("questions").innerHTML =
+        DEF.sections.map(renderSection).join("");
+    }
+
+    function renderSection(section) {
+      return `
+        <div class="section">
+          <div class="section-title">${escapeHtml(section.title)}</div>
+          ${section.questions.map(renderQuestion).join("")}
+        </div>`;
+    }
+
+    function renderQuestion(q) {
+      const optional = q.optional
+        ? ` <span class="optional">${escapeHtml(t("optional"))}</span>` : "";
+
+      const hint = q.hint
+        ? `<div class="q-hint">${escapeHtml(q.hint)}</div>` : "";
+
+      let control = "";
+
+      if (q.type === "scale5") {
+        const labels = SCALE_LABELS[LANG];
+        control = `<div class="scale" id="c_${q.id}">` +
+          [1,2,3,4,5].map(n => `
+            <button type="button" data-v="${n}" onclick="pick('${q.id}',${n},this)">
+              <span class="num">${n}</span>
+              <span class="lbl">${escapeHtml(labels[n-1])}</span>
+            </button>`).join("") +
+          `</div>`;
+
+      } else if (q.type === "nps") {
+        control = `<div class="nps" id="c_${q.id}">` +
+          Array.from({length: 11}, (_, n) => `
+            <button type="button" data-v="${n}" onclick="pick('${q.id}',${n},this)">${n}</button>`
+          ).join("") +
+          `</div>`;
+
+      } else if (q.type === "choice") {
+        control = `<div class="choice" id="c_${q.id}">` +
+          (q.options || []).map(opt => `
+            <button type="button" data-v="${escapeHtml(opt)}"
+                    onclick="pick('${q.id}', this.dataset.v, this)">${escapeHtml(opt)}</button>`
+          ).join("") +
+          `</div>`;
+
+      } else {
+        control = `<textarea id="c_${q.id}" oninput="ANSWERS['${q.id}']=this.value"></textarea>`;
+      }
+
+      return `
+        <div class="q" id="q_${q.id}">
+          <div class="q-text">${escapeHtml(q.q)}${optional}</div>
+          ${hint}
+          ${control}
+        </div>`;
+    }
+
+    const SCALE_LABELS = {
+      tr: ["Hiç katılmıyorum", "Katılmıyorum", "Kararsızım", "Katılıyorum", "Tamamen katılıyorum"],
+      en: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"]
+    };
+
+    /** Puan/secenek secimi. Ayni gruptaki diger butonlarin isaretini kaldirir. */
+    function pick(id, value, button) {
+      ANSWERS[id] = value;
+
+      const group = button.parentElement;
+      group.querySelectorAll("button").forEach(b => b.classList.remove("on"));
+      button.classList.add("on");
+
+      // Eksik isareti verilmisse kaldir.
+      const block = document.getElementById(`q_${id}`);
+      if (block) block.style.background = "";
+    }
+
+    /* ---------------------------------------------------------------- */
+
+    async function submitSurvey() {
+      const btn = document.getElementById("submitBtn");
+      const note = document.getElementById("requiredNote");
+
+      // Zorunlu sorulari kontrol et. Eksikleri ISARETLE - kullanici
+      // uzun bir formda hangisini atladigini aramak zorunda kalmasin.
+      const missing = [];
+
+      DEF.sections.forEach(section => {
+        section.questions.forEach(q => {
+          if (q.optional) return;
+          const value = ANSWERS[q.id];
+          const empty = value === undefined || value === null ||
+                        (typeof value === "string" && !value.trim());
+          if (empty) missing.push(q.id);
+        });
+      });
+
+      document.querySelectorAll(".q").forEach(el => { el.style.background = ""; });
+
+      if (missing.length) {
+        missing.forEach(id => {
+          const el = document.getElementById(`q_${id}`);
+          if (el) {
+            el.style.background = "#fff7f7";
+            el.style.borderRadius = "9px";
+            el.style.padding = "10px";
+            el.style.margin = "-10px -10px 10px";
+          }
+        });
+
+        note.style.display = "";
+        document.getElementById(`q_${missing[0]}`)
+          .scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+
+      note.style.display = "none";
+      btn.disabled = true;
+      btn.textContent = t("sending");
+
+      try {
+        const res = await fetch(`${API}/public/survey/${encodeURIComponent(TOKEN)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers: ANSWERS })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          if (data.code === "already_completed") {
+            return showDone(t("alreadyTitle"), t("alreadyText"));
+          }
+          throw new Error(data.error || t("failed"));
+        }
+
+        showDone(t("doneTitle"), t("doneText"));
+
+      } catch (error) {
+        alert(error.message || t("failed"));
+        btn.disabled = false;
+        btn.textContent = t("submit");
+      }
+    }
+
+    function showDone(title, text) {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("app").style.display = "none";
+      document.getElementById("invalid").style.display = "none";
+      document.getElementById("done").style.display = "";
+      document.getElementById("doneTitle").textContent = title;
+      document.getElementById("doneText").textContent = text;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showInvalid() {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("app").style.display = "none";
+      document.getElementById("invalid").style.display = "";
+      document.getElementById("invalidTitle").textContent = t("invalidTitle");
+      document.getElementById("invalidText").textContent = t("invalidText");
+    }
+
+    load();
+
+  </script>
+</body>
+</html>

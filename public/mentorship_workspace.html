@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mentorship Workspace</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a2b5e;
+      --navy-soft: #eef1f8;
+      --copper: #b5651d;
+      --green: #0f9f6e;
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 1rem 2rem;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 24px auto 0;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--navy), #273f86);
+      color: white;
+      padding: 2rem;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+
+        .app-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e6e8ef;
+      padding: 10px 0;
+    }
+
+    .app-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      color: #1a2b5e;
+      font-size: 16px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .header p { opacity: 0.9; }
+
+    .badge {
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      background: rgba(255,255,255,0.16);
+      color: white;
+      text-transform: capitalize;
+    }
+
+    .workspace-actions {
+      margin-top: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      background: rgba(255,255,255,0.12);
+      padding: 0.9rem 1rem;
+      border-radius: 16px;
+    }
+
+    .workspace-id {
+      font-size: 0.95rem;
+      opacity: 0.95;
+      font-weight: 700;
+    }
+
+    .copy-link-btn {
+      background: white;
+      color: var(--navy);
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      color: var(--navy);
+      margin-bottom: 1rem;
+    }
+
+    .people {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .person-box {
+      background: var(--navy-soft);
+      border-radius: 16px;
+      padding: 1rem;
+      border: 1px solid #dbe2f3;
+    }
+
+    .person-box small {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+      font-weight: 700;
+    }
+
+    .person-box strong {
+      display: block;
+      font-size: 1.05rem;
+      color: var(--navy);
+      margin-bottom: 0.2rem;
+    }
+
+    .person-box span {
+      font-size: 0.9rem;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
+    .info-row {
+      border-top: 1px solid var(--line);
+      padding-top: 1rem;
+      margin-top: 1rem;
+    }
+
+    .info-row strong {
+      display: block;
+      margin-bottom: 0.4rem;
+      color: var(--navy);
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      background: #f3f4f6;
+      color: #374151;
+      padding: 0.45rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      border: 1px solid var(--line);
+    }
+
+    .plan-field {
+      margin-bottom: 1rem;
+    }
+
+    .plan-field label {
+      color: var(--navy);
+      font-weight: 800;
+      margin-bottom: 0.45rem;
+    }
+
+    .plan-field textarea {
+      min-height: 85px;
+      background: #f9fafb;
+    }
+
+    .plan-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn-ai {
+      background: linear-gradient(135deg, var(--navy), #3657ff);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-save-plan {
+      background: var(--copper);
+      color: white;
+      width: 100%;
+    }
+
+
+    .guided-card {
+      background: linear-gradient(135deg, #101b3f, #3657ff);
+      color: white;
+      border-radius: 22px;
+      padding: 1.35rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 18px 40px rgba(54,87,255,0.22);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .guided-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .guided-card p {
+      color: rgba(255,255,255,0.82);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    .guided-btn {
+      background: white;
+      color: var(--navy);
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: #333;
+      font-size: 0.95rem;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.85rem;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      margin-bottom: 1rem;
+      background: white;
+    }
+
+    textarea {
+      min-height: 95px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 0.9rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--copper);
+      color: white;
+      width: 100%;
+    }
+
+    .meeting-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: #fff;
+    }
+
+    .meeting-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .meeting-title {
+      font-weight: 800;
+      color: var(--navy);
+      font-size: 1.05rem;
+    }
+
+    .meeting-date {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .note-section {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 0.85rem;
+      margin-top: 0.7rem;
+      border: 1px solid #eef0f3;
+    }
+
+    .note-section strong {
+      color: var(--navy);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    .note-section p {
+      color: #374151;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem 1rem;
+      border: 1px dashed #cbd5e1;
+      border-radius: 18px;
+      background: #f9fafb;
+    }
+
+    .message {
+      padding: 1rem;
+      border-radius: 14px;
+      margin-bottom: 1rem;
+      font-weight: 700;
+      display: none;
+    }
+
+    .message.success {
+      display: block;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .message.error {
+      display: block;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .small-help {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: -0.7rem;
+      margin-bottom: 1rem;
+    }
+
+    #developmentGoalsInput {
+      min-height: 160px;
+    }
+
+    #developmentAreasInput {
+      min-height: 120px;
+    }
+
+    #successCriteriaInput {
+      min-height: 140px;
+    }
+
+
+    .language-switcher {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 0.5rem 0.75rem;
+      border-radius: 14px;
+    }
+
+    .language-switcher label {
+      color: white;
+      margin: 0;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .language-switcher select {
+      margin: 0;
+      width: auto;
+      padding: 0.45rem 0.7rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid, .people, .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 { font-size: 1.6rem; }
+      body { padding: 1rem; }
+    }
+
+    body {
+      padding-top: 0 !important;
+    }
+
+    /* ---------- Rehber paneli ---------- */
+
+    .guide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .guide-toggle {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a2b5e;
+      line-height: 1;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: #eef1f8;
+      flex-shrink: 0;
+    }
+
+    .guide-intro {
+      color: #6b7280;
+      font-size: 13px;
+      line-height: 1.55;
+      margin: 6px 0 0;
+    }
+
+    .guide-tabs {
+      display: flex;
+      gap: 6px;
+      background: #eef1f8;
+      border-radius: 10px;
+      padding: 4px;
+      margin: 16px 0 4px;
+    }
+
+    .guide-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #48506b;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .guide-tab.active {
+      background: #ffffff;
+      color: #1a2b5e;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .guide-section {
+      border-bottom: 1px solid #e6e8ef;
+    }
+
+    .guide-section > summary {
+      cursor: pointer;
+      padding: 13px 2px;
+      font-weight: 600;
+      font-size: 14.5px;
+      color: #1a2b5e;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .guide-section > summary::-webkit-details-marker { display: none; }
+
+    .guide-section > summary::before {
+      content: "\203A";
+      display: inline-block;
+      transition: transform 0.15s;
+      font-size: 17px;
+      color: #b5651d;
+    }
+
+    .guide-section[open] > summary::before { transform: rotate(90deg); }
+
+    .guide-body {
+      padding: 2px 2px 18px 20px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: #3a3f51;
+    }
+
+    .guide-body p { margin: 0 0 11px; }
+    .guide-body b { color: #1a2b5e; }
+
+    .guide-body .guide-sub {
+      font-weight: 600;
+      color: #1a2b5e;
+      margin: 15px 0 7px;
+    }
+
+    .guide-list, .guide-steps { margin: 0 0 11px; padding-left: 20px; }
+    .guide-list li, .guide-steps li { margin-bottom: 8px; }
+
+    .guide-check { margin: 0 0 11px; padding-left: 4px; list-style: none; }
+    .guide-check li {
+      margin-bottom: 7px;
+      padding-left: 25px;
+      position: relative;
+    }
+    .guide-check li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid #b7bdd0;
+      border-radius: 3px;
+    }
+
+    .guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 13px;
+      font-size: 13.5px;
+    }
+    .guide-table th, .guide-table td {
+      border: 1px solid #e2e5ee;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .guide-table th {
+      background: #f4f6fb;
+      color: #1a2b5e;
+      font-weight: 600;
+    }
+
+    .guide-callout {
+      background: #fffbf5;
+      border: 1px solid #f3e0c8;
+      border-radius: 8px;
+      padding: 11px 14px;
+      margin: 13px 0 4px;
+      color: #7a5122;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    .guide-callout b { color: #7a5122; }
+
+    .guide-box {
+      background: #f8fafc;
+      border: 1px solid #dbe2f3;
+      border-radius: 8px;
+      padding: 13px 15px;
+      margin: 0 0 13px;
+      font-size: 13.5px;
+    }
+    .guide-box p:last-child { margin-bottom: 0; }
+
+    @media (max-width: 640px) {
+      .guide-table, .guide-table tr, .guide-table td, .guide-table th { display: block; width: 100%; }
+      .guide-table th { border-bottom: none; }
+    }
+
+  </style>
+</head>
+
+<body>
+
+    <div class="app-header">
+    <div class="app-header-inner">
+      
+      <div class="app-brand">
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+        ">
+          <div style="
+            width:40px;
+            height:40px;
+            border-radius:12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:linear-gradient(135deg,#101b3f,#3657ff);
+            color:white;
+            font-weight:900;
+            font-size:20px;
+            flex-shrink:0;
+          ">
+            M
+          </div>
+
+          <div style="
+            font-size:22px;
+            font-weight:800;
+            color:#101b3f;
+            line-height:1;
+          ">
+            MentorOS
+          </div>
+        </div>  
+        
+      </div>
+
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div id="loading" class="loading" data-i18n="loadingWorkspace">Loading mentorship workspace...</div>
+
+    <div id="app" style="display:none;">
+
+      <header class="header">
+        <div class="header-top">
+          <div>
+            <h1 data-i18n="pageTitle">Mentorship Workspace</h1>
+            <p data-i18n="pageSubtitle">Shared space for mentor, mentee, meeting notes, actions and follow-up.</p>
+          </div>
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <div class="language-switcher">
+              <label for="languageSelect" data-i18n="languageLabel">Language</label>
+              <select id="languageSelect" onchange="changeLanguage(this.value)">
+                <option value="en">English</option>
+                <option value="tr">Türkçe</option>
+              </select>
+            </div>
+            <div id="statusBadge" class="badge">Active</div>
+            <div id="closingBadge" class="badge" style="display:none; background:#8a5a1c; color:#fff;"></div>
+          </div>
+        </div>
+
+        <div class="workspace-actions">
+          <div class="workspace-id" id="workspaceIdLabel">Workspace ID: -</div>
+          <button class="copy-link-btn" onclick="copyWorkspaceLink()" data-i18n="copyWorkspaceLink">Copy Workspace Link</button>
+        </div>
+      </header>
+
+      <div id="message" class="message"></div>
+
+      <div class="grid">
+
+        <div>
+          <section class="card">
+            <h2 data-i18n="mentorMentee">Mentor & Mentee</h2>
+
+            <div class="people">
+              <div class="person-box">
+                <small data-i18n="mentor">Mentor</small>
+                <strong id="mentorName">-</strong>
+                <span id="mentorEmail">-</span>
+              </div>
+
+              <div class="person-box">
+                <small data-i18n="mentee">Mentee</small>
+                <strong id="menteeName">-</strong>
+                <span id="menteeEmail">-</span>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <strong data-i18n="nextMeeting">Next Meeting</strong>
+              <span id="nextMeetingDate">Not scheduled yet</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="guide-header" onclick="toggleGuide()">
+              <h2 data-i18n="guideTitle" style="margin:0">Mentoring Guide</h2>
+              <span class="guide-toggle" id="guideToggle">+</span>
+            </div>
+            <p class="guide-intro" data-i18n="guideIntro">
+              How the process works, what is expected of you, and what to do at each stage.
+              Reading it takes about 15 minutes.
+            </p>
+
+            <div id="guideBody" hidden>
+              <div class="guide-tabs">
+                <button type="button" class="guide-tab active" data-role="mentee"
+                        onclick="setGuideRole('mentee')" data-i18n="guideForMentee">
+                  For Mentees
+                </button>
+                <button type="button" class="guide-tab" data-role="mentor"
+                        onclick="setGuideRole('mentor')" data-i18n="guideForMentor">
+                  For Mentors
+                </button>
+              </div>
+              <div id="guideContent"></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 data-i18n="developmentPlan">Development Plan</h2>
+
+            <p class="small-help" style="margin-top:0;">
+              <span data-i18n="developmentPlanHelp">AI can draft this plan based on the mentee’s development need. The mentor can review and edit before saving.</span>
+            </p>
+
+            <div class="plan-field">
+              <label for="developmentGoalsInput" data-i18n="developmentGoals">Development Goals</label>
+              <textarea id="developmentGoalsInput" data-i18n-placeholder="developmentGoalsPlaceholder" placeholder="AI will suggest 1–3 development goals. Mentor can edit here."></textarea>
+            </div>
+
+            <div class="plan-field">
+              <label for="developmentAreasInput" data-i18n="developmentAreas">Development Areas</label>
+              <textarea id="developmentAreasInput" data-i18n-placeholder="developmentAreasPlaceholder" placeholder="Example: Leadership, Communication, Stakeholder Management"></textarea>
+            </div>
+
+            <div class="plan-field">
+              <label for="successCriteriaInput" data-i18n="successCriteria">Success Criteria</label>
+              <textarea id="successCriteriaInput" data-i18n-placeholder="successCriteriaPlaceholder" placeholder="Example: Lead 2 meetings independently, receive mentor feedback, complete agreed actions."></textarea>
+            </div>
+
+            <div class="plan-actions">
+              <button class="btn-ai" onclick="generateDevelopmentPlan()">
+                <span data-i18n="generateWithAI">✨ Generate with AI</span>
+              </button>
+
+              <button class="btn-save-plan" onclick="saveDevelopmentPlan()">
+                <span data-i18n="savePlan">Save Plan</span>
+              </button>
+            </div>
+          </section>
+
+        </div>
+        <div>
+
+          <section class="card">
+            <h2 data-i18n="addMeetingNote">Add Meeting Note</h2>
+
+            <form id="meetingForm">
+              <div class="form-row">
+                <div>
+                  <label for="meetingDate" data-i18n="meetingDateRequired">Meeting Date *</label>
+                  <input type="date" id="meetingDate" required />
+                </div>
+
+                <div>
+                  <label for="createdBy" data-i18n="createdBy">Created By</label>
+                  <select id="createdBy">
+                    <option value="mentor" data-i18n="mentor">Mentor</option>
+                    <option value="mentee" data-i18n="mentee">Mentee</option>
+                    <option value="hr" data-i18n="hr">HR</option>
+                  </select>
+                </div>
+              </div>
+
+              <label for="title" data-i18n="meetingTitleRequired">Meeting Title *</label>
+              <input type="text" id="title" data-i18n-placeholder="meetingTitlePlaceholder" placeholder="e.g. First mentoring session" required />
+
+              <label for="agenda" data-i18n="agenda">Agenda</label>
+              <textarea id="agenda" data-i18n-placeholder="agendaPlaceholder" placeholder="What is the purpose of this meeting?"></textarea>
+
+              <label for="progressSinceLastMeeting" data-i18n="progressSinceLastMeeting">Progress Since Last Meeting</label>
+              <textarea id="progressSinceLastMeeting" data-i18n-placeholder="progressPlaceholder" placeholder="What happened since the previous meeting?"></textarea>
+
+              <label for="discussed" data-i18n="whatWasDiscussed">What Was Discussed?</label>
+              <textarea id="discussed" data-i18n-placeholder="discussedPlaceholder" placeholder="Main topics, decisions, reflections..."></textarea>
+
+              <label for="actionItemsText" data-i18n="actionItems">Action Items</label>
+              <textarea id="actionItemsText" data-i18n-placeholder="actionItemsPlaceholder" placeholder="Write one action per line. Example:&#10;Mentee: Prepare development plan by Friday&#10;Mentor: Share leadership article"></textarea>
+              <div class="small-help" data-i18n="actionItemsHelp">Each line will be saved as a separate action item.</div>
+
+              <label for="nextMeetingFocus" data-i18n="focusNextMeeting">Focus for Next Meeting</label>
+              <textarea id="nextMeetingFocus" data-i18n-placeholder="nextFocusPlaceholder" placeholder="What should be discussed next time?"></textarea>
+
+              <label for="nextMeetingDateInput" data-i18n="nextMeetingDate">Next Meeting Date</label>
+              <input type="date" id="nextMeetingDateInput" />
+
+              <label for="nextMeetingTimeInput" data-i18n="nextMeetingTime">Next Meeting Time</label>
+              <input type="time" id="nextMeetingTimeInput" value="10:00" />
+
+              <label for="nextMeetingGuestsInput" data-i18n="nextMeetingGuests">Additional Guests (optional)</label>
+              <textarea id="nextMeetingGuestsInput" rows="2"
+                        data-i18n-placeholder="guestsPlaceholder"
+                        placeholder="ayse.yilmaz@firma.com, mehmet.demir@firma.com"></textarea>
+              <div class="small-help" data-i18n="guestsHelp">
+                Separate addresses with a comma or a new line. Guests receive the same
+                calendar invite as optional participants. Leave empty if not needed.
+              </div>
+
+              <small id="inviteHint" data-i18n="inviteHint" style="display:block;color:#6b7280;font-size:12px;margin-top:6px;">Setting a date sends a calendar invite to the mentor and mentee.</small>
+
+              <button type="submit" class="btn-primary" id="saveBtn" data-i18n="saveMeetingNote">Save Meeting Note</button>
+            </form>
+          </section>
+
+          <section class="card">
+            <h2 data-i18n="meetingHistory">Meeting History</h2>
+            <div id="meetingsList"></div>
+          </section>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/guides.js"></script>
+
+  <script>
+
+    const params = new URLSearchParams(window.location.search);
+    const mentorshipId = params.get("id") || params.get("mentorshipId");
+    const API_BASE_URL = window.location.origin;
+
+    /**
+     * Bu sayfa paylasimli API anahtari TASIMAZ ve GIRIS GEREKTIRMEZ.
+     * Kimlik dogrulamasi, SADECE bu iliskiye erisim veren token ile yapilir.
+     *
+     * ESKI HATA: sayfa "company" parametresi yoksa login'e yonlendiriyordu.
+     * Ama token'li linkte company parametresi yok - bu yuzden mentor ve
+     * mentee calisma alanina hic giremiyordu.
+     */
+    const ACCESS_TOKEN = params.get("token") || "";
+
+    // Firma kodu artik URL'den degil, sunucudan gelen iliski verisinden
+    // okunur (asagida doldurulur). Linkte tasinmasina gerek yok.
+    let COMPANY_ID = params.get("company") || "";
+
+    if (!mentorshipId || !ACCESS_TOKEN) {
+      document.addEventListener("DOMContentLoaded", () => {
+        document.body.innerHTML = `
+          <div style="max-width:460px;margin:16vh auto;text-align:center;
+                      font:15px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;
+                      color:#374151;padding:24px">
+            <div style="font-size:42px;margin-bottom:12px">🔒</div>
+            <h2 style="color:#1a2b5e;margin:0 0 10px">Geçersiz bağlantı</h2>
+            <p style="color:#6b7280">
+              Bu çalışma alanı bağlantısı geçersiz veya eksik.
+              Lütfen İnsan Kaynakları ekibinden güncel bağlantıyı isteyin.
+            </p>
+          </div>`;
+      });
+    }
+
+    const translations = {
+      en: {
+        languageLabel: "Language",
+        loadingWorkspace: "Loading mentorship workspace...",
+        pageTitle: "Mentorship Workspace",
+        pageSubtitle: "Shared space for mentor, mentee, meeting notes, actions and follow-up.",
+        active: "Active",
+        mentorMentee: "Mentor & Mentee",
+        mentor: "Mentor",
+        mentee: "Mentee",
+        hr: "HR",
+        nextMeeting: "Next Meeting",
+        notScheduledYet: "Not scheduled yet",
+        closingLabel: "Closing",
+        closed: "closed",
+        developmentPlan: "Development Plan",
+        developmentPlanHelp: "AI can draft this plan based on the mentee’s development need. The mentor can review and edit before saving.",
+        developmentGoals: "Development Goals",
+        developmentAreas: "Development Areas",
+        successCriteria: "Success Criteria",
+        generateWithAI: "✨ Generate with AI",
+        savePlan: "Save Plan",
+        addMeetingNote: "Add Meeting Note",
+        meetingDateRequired: "Meeting Date *",
+        createdBy: "Created By",
+        meetingTitleRequired: "Meeting Title *",
+        agenda: "Agenda",
+        progressSinceLastMeeting: "Progress Since Last Meeting",
+        whatWasDiscussed: "What Was Discussed?",
+        actionItems: "Action Items",
+        actionItemsHelp: "Each line will be saved as a separate action item.",
+        focusNextMeeting: "Focus for Next Meeting",
+        nextMeetingDate: "Next Meeting Date",
+        nextMeetingTime: "Next Meeting Time",
+        inviteHint: "Setting a date sends a calendar invite to the mentor and mentee.",
+        guideTitle: "Mentoring Guide",
+        guideIntro: "How the process works, what is expected of you, and what to do at each stage. Reading it takes about 15 minutes.",
+        guideForMentee: "For Mentees",
+        guideForMentor: "For Mentors",
+        guideUnavailable: "The guide content could not be loaded.",
+        nextMeetingGuests: "Additional Guests (optional)",
+        guestsPlaceholder: "jane.smith@company.com, john.doe@company.com",
+        guestsHelp: "Separate addresses with a comma or a new line. Guests receive the same calendar invite as optional participants. Leave empty if not needed.",
+        guestsInvited: "Invite also sent to:",
+        guestsSkipped: "These addresses could not be invited:",
+        inviteFailed: "The meeting note was saved, but the calendar invite could not be sent.",
+        saveMeetingNote: "Save Meeting Note",
+        saving: "Saving...",
+        meetingHistory: "Meeting History",
+        copyWorkspaceLink: "Copy Workspace Link",
+        workspaceId: "Workspace ID",
+        workspaceLinkCopied: "Workspace link copied.",
+        dataNotLoaded: "Workspace data is not loaded yet.",
+        enterDevelopmentNeed: "Enter the mentee development need:",
+        generatingPlan: "AI is generating the development plan...",
+        planGenerateFailed: "AI development plan could not be generated.",
+        planGenerated: "AI development plan generated. You can edit it before saving.",
+        planSaveFailed: "Development plan could not be saved.",
+        planSaved: "Development plan saved successfully.",
+        mentorshipIdNotFound: "Mentorship ID not found.",
+        noMentorshipId: "No mentorship ID found in URL.",
+        workspaceLoadFailed: "Workspace could not be loaded.",
+        workspaceLoadCheck: "Workspace could not be loaded. Please check the mentorship link.",
+        noMeetings: "No meeting notes yet. Add the first mentoring meeting above.",
+        meeting: "Meeting",
+        createdByText: "Created by",
+        unknown: "unknown",
+        meetingSaveFailed: "Meeting note could not be saved.",
+        meetingSaved: "Meeting note saved successfully.",
+        meetingSaveTryAgain: "Meeting note could not be saved. Please try again.",
+        taskUpdateFailed: "Failed to update task",
+        agendaTitle: "Agenda",
+        progressTitle: "Progress Since Last Meeting",
+        discussedTitle: "What Was Discussed",
+        nextFocusTitle: "Focus for Next Meeting",
+        nextMeetingDateTitle: "Next Meeting Date",
+        nextMeetingTimeTitle: "Next Meeting Time",
+        developmentGoalsPlaceholder: "AI will suggest 1–3 development goals. Mentor can edit here.",
+        developmentAreasPlaceholder: "Example: Leadership, Communication, Stakeholder Management",
+        successCriteriaPlaceholder: "Example: Lead 2 meetings independently, receive mentor feedback, complete agreed actions.",
+        meetingTitlePlaceholder: "e.g. First mentoring session",
+        agendaPlaceholder: "What is the purpose of this meeting?",
+        progressPlaceholder: "What happened since the previous meeting?",
+        discussedPlaceholder: "Main topics, decisions, reflections...",
+        actionItemsPlaceholder: "Write one action per line. Example:\nMentee: Prepare development plan by Friday\nMentor: Share leadership article",
+        nextFocusPlaceholder: "What should be discussed next time?"
+      },
+      tr: {
+        languageLabel: "Dil",
+        loadingWorkspace: "Mentorluk çalışma alanı yükleniyor...",
+        pageTitle: "Mentorluk Çalışma Alanı",
+        pageSubtitle: "Mentor, mentee, toplantı notları, aksiyonlar ve takip süreci için ortak alan.",
+        active: "Aktif",
+        mentorMentee: "Mentor & Mentee",
+        mentor: "Mentor",
+        mentee: "Mentee",
+        hr: "İK",
+        nextMeeting: "Sonraki Toplantı",
+        notScheduledYet: "Henüz planlanmadı",
+        closingLabel: "Kapanış",
+        closed: "kapandı",
+        developmentPlan: "Gelişim Planı",
+        developmentPlanHelp: "AI, mentee’nin gelişim ihtiyacına göre bu planı taslak olarak oluşturabilir. Mentor kaydetmeden önce gözden geçirip düzenleyebilir.",
+        developmentGoals: "Gelişim Hedefleri",
+        developmentAreas: "Gelişim Alanları",
+        successCriteria: "Başarı Kriterleri",
+        generateWithAI: "✨ AI ile Oluştur",
+        savePlan: "Planı Kaydet",
+        addMeetingNote: "Toplantı Notu Ekle",
+        meetingDateRequired: "Toplantı Tarihi *",
+        createdBy: "Oluşturan",
+        meetingTitleRequired: "Toplantı Başlığı *",
+        agenda: "Gündem",
+        progressSinceLastMeeting: "Son Toplantıdan Bu Yana İlerleme",
+        whatWasDiscussed: "Neler Konuşuldu?",
+        actionItems: "Aksiyon Maddeleri",
+        actionItemsHelp: "Her satır ayrı bir aksiyon maddesi olarak kaydedilir.",
+        focusNextMeeting: "Sonraki Toplantı Odağı",
+        nextMeetingDate: "Sonraki Toplantı Tarihi",
+        nextMeetingTime: "Sonraki Toplantı Saati",
+        inviteHint: "Bir tarih seçtiğinizde mentor ve mentee'ye takvim daveti gönderilir.",
+        guideTitle: "Mentorluk Rehberi",
+        guideIntro: "Sürecin nasıl işlediği, sizden ne beklendiği ve her aşamada ne yapmanız gerektiği. Okuması yaklaşık 15 dakika sürer.",
+        guideForMentee: "Mentee İçin",
+        guideForMentor: "Mentor İçin",
+        guideUnavailable: "Rehber içeriği yüklenemedi.",
+        nextMeetingGuests: "Ek Katılımcılar (isteğe bağlı)",
+        guestsPlaceholder: "ayse.yilmaz@firma.com, mehmet.demir@firma.com",
+        guestsHelp: "Adresleri virgülle veya alt alta yazın. Ek katılımcılar aynı takvim davetini opsiyonel katılımcı olarak alır. Gerekmiyorsa boş bırakın.",
+        guestsInvited: "Davet ayrıca şu kişilere gönderildi:",
+        guestsSkipped: "Şu adreslere davet gönderilemedi:",
+        inviteFailed: "Toplantı notu kaydedildi, ancak takvim daveti gönderilemedi.",
+        saveMeetingNote: "Toplantı Notunu Kaydet",
+        saving: "Kaydediliyor...",
+        meetingHistory: "Toplantı Geçmişi",
+        copyWorkspaceLink: "Çalışma Alanı Linkini Kopyala",
+        workspaceId: "Çalışma Alanı ID",
+        workspaceLinkCopied: "Çalışma alanı linki kopyalandı.",
+        dataNotLoaded: "Çalışma alanı verisi henüz yüklenmedi.",
+        enterDevelopmentNeed: "Mentee gelişim ihtiyacını girin:",
+        generatingPlan: "AI gelişim planını oluşturuyor...",
+        planGenerateFailed: "AI gelişim planı oluşturulamadı.",
+        planGenerated: "AI gelişim planı oluşturuldu. Kaydetmeden önce düzenleyebilirsiniz.",
+        planSaveFailed: "Gelişim planı kaydedilemedi.",
+        planSaved: "Gelişim planı başarıyla kaydedildi.",
+        mentorshipIdNotFound: "Mentorluk ID bulunamadı.",
+        noMentorshipId: "URL içinde mentorluk ID bulunamadı.",
+        workspaceLoadFailed: "Çalışma alanı yüklenemedi.",
+        workspaceLoadCheck: "Çalışma alanı yüklenemedi. Lütfen mentorluk linkini kontrol edin.",
+        noMeetings: "Henüz toplantı notu yok. İlk mentorluk toplantısını yukarıdan ekleyin.",
+        meeting: "Toplantı",
+        createdByText: "Oluşturan",
+        unknown: "bilinmiyor",
+        meetingSaveFailed: "Toplantı notu kaydedilemedi.",
+        meetingSaved: "Toplantı notu başarıyla kaydedildi.",
+        meetingSaveTryAgain: "Toplantı notu kaydedilemedi. Lütfen tekrar deneyin.",
+        taskUpdateFailed: "Görev güncellenemedi",
+        agendaTitle: "Gündem",
+        progressTitle: "Son Toplantıdan Bu Yana İlerleme",
+        discussedTitle: "Neler Konuşuldu",
+        nextFocusTitle: "Sonraki Toplantı Odağı",
+        nextMeetingDateTitle: "Sonraki Toplantı Tarihi",
+        nextMeetingTimeTitle: "Sonraki Toplantı Saati",
+        developmentGoalsPlaceholder: "AI 1–3 gelişim hedefi önerecek. Mentor buradan düzenleyebilir.",
+        developmentAreasPlaceholder: "Örnek: Liderlik, İletişim, Paydaş Yönetimi",
+        successCriteriaPlaceholder: "Örnek: 2 toplantıyı bağımsız yönetmek, mentor geri bildirimi almak, üzerinde anlaşılan aksiyonları tamamlamak.",
+        meetingTitlePlaceholder: "Örn. İlk mentorluk görüşmesi",
+        agendaPlaceholder: "Bu toplantının amacı nedir?",
+        progressPlaceholder: "Önceki toplantıdan bu yana ne oldu?",
+        discussedPlaceholder: "Ana konular, kararlar, değerlendirmeler...",
+        actionItemsPlaceholder: "Her satıra bir aksiyon yazın. Örnek:\nMentee: Gelişim planını Cuma gününe kadar hazırlayacak\nMentor: Liderlik makalesi paylaşacak",
+        nextFocusPlaceholder: "Bir sonraki toplantıda ne konuşulmalı?"
+      }
+    };
+
+    let currentLanguage = localStorage.getItem("mentorAppLang") || "en";
+
+    function t(key) {
+      return (translations[currentLanguage] && translations[currentLanguage][key]) ||
+             (translations.en && translations.en[key]) ||
+             key;
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLanguage;
+      const selector = document.getElementById("languageSelect");
+      if (selector) selector.value = currentLanguage;
+
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        el.textContent = t(key);
+      });
+
+      document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+        const key = el.getAttribute("data-i18n-placeholder");
+        el.setAttribute("placeholder", t(key));
+      });
+
+      document.title = t("pageTitle");
+
+      // Rehber içeriği seçili dilde yeniden çizilir. applyLanguage yalnızca
+      // [data-i18n] taşıyan elemanları çevirir; rehber metinleri guides.js'ten
+      // geldiği için burada ayrıca yenilenmesi gerekir.
+      renderGuide();
+
+      if (mentorshipData) {
+        renderWorkspace(mentorshipData);
+      }
+    }
+
+    function changeLanguage(lang) {
+      currentLanguage = lang;
+      localStorage.setItem("mentorAppLang", lang);
+      applyLanguage();
+    }
+
+    /* ==================================================================
+       REHBER PANELI
+
+       Calisma alanini mentor ve mentee AYNI sayfadan kullaniyor; ayri bir
+       rol bilgisi yok. Bu yuzden iki rehber de sunulur ve kisi kendi
+       sekmesini secer.
+       ================================================================== */
+
+    let guideRole = "mentee";
+
+    function toggleGuide() {
+      const body = document.getElementById("guideBody");
+      const icon = document.getElementById("guideToggle");
+      if (!body) return;
+
+      body.hidden = !body.hidden;
+      icon.textContent = body.hidden ? "+" : "\u2212";
+
+      if (!body.hidden) renderGuide();
+    }
+
+    function setGuideRole(role) {
+      guideRole = role;
+      document.querySelectorAll(".guide-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.role === role);
+      });
+      renderGuide();
+    }
+
+    function renderGuide() {
+      const box = document.getElementById("guideContent");
+      if (!box) return;
+
+      // guides.js yuklenmediyse sessizce gecme - kullanici bos bir panel
+      // gorup "bozuk mu?" diye dusunmesin.
+      if (typeof GUIDES === "undefined") {
+        box.innerHTML = `<p class="guide-intro">${escapeHtml(t("guideUnavailable"))}</p>`;
+        return;
+      }
+
+      const pack = (GUIDES[currentLanguage] || GUIDES.en || {})[guideRole] || [];
+
+      if (!pack.length) {
+        box.innerHTML = `<p class="guide-intro">${escapeHtml(t("guideUnavailable"))}</p>`;
+        return;
+      }
+
+      // Ilk bolum acik gelir; geri kalani katli. Boylece panel acildiginda
+      // hem ne oldugu gorunur hem de ekran bir metin duvarina donmez.
+      box.innerHTML = pack.map((section, index) => `
+        <details class="guide-section"${index === 0 ? " open" : ""}>
+          <summary>${escapeHtml(section.t)}</summary>
+          <div class="guide-body">${section.h}</div>
+        </details>
+      `).join("");
+    }
+
+
+
+    
+
+    const loadingEl = document.getElementById("loading");
+    const appEl = document.getElementById("app");
+    const messageEl = document.getElementById("message");
+
+    let mentorshipData = null;
+
+    function showMessage(text, type) {
+      messageEl.textContent = text;
+      messageEl.className = "message " + type;
+
+      setTimeout(() => {
+        messageEl.className = "message";
+        messageEl.textContent = "";
+      }, 4000);
+    }
+
+    function copyWorkspaceLink() {
+      navigator.clipboard.writeText(window.location.href);
+      showMessage(t("workspaceLinkCopied"), "success");
+    }
+
+    async function generateDevelopmentPlan() {
+      if (!mentorshipData) {
+        showMessage(t("dataNotLoaded"), "error");
+        return;
+      }
+
+      const developmentNeed = prompt(
+        t("enterDevelopmentNeed"),
+        mentorshipData.developmentNeed || mentorshipData.goals?.join(", ") || ""
+      );
+
+      if (!developmentNeed || !developmentNeed.trim()) return;
+
+      try {
+        showMessage(t("generatingPlan"), "success");
+
+        const response = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/development-plan?token=${ACCESS_TOKEN}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+                      },
+          body: JSON.stringify({
+            companyId: COMPANY_ID,
+            menteeName: mentorshipData.menteeName || "",
+            menteeRole: mentorshipData.menteeRole || "",
+            menteeDepartment: mentorshipData.menteeDepartment || "",
+            mentorName: mentorshipData.mentorName || "",
+            developmentNeed,
+            language: currentLanguage
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || t("planGenerateFailed"));
+        }
+
+        document.getElementById("developmentGoalsInput").value =
+          (data.developmentGoals || []).join("\n");
+
+        document.getElementById("developmentAreasInput").value =
+          (data.developmentAreas || []).join("\n");
+
+        document.getElementById("successCriteriaInput").value =
+          (data.successCriteria || []).join("\n");
+
+        showMessage(t("planGenerated"), "success");
+
+      } catch (error) {
+        console.error(error);
+        showMessage(error.message, "error");
+      }
+    }
+
+    async function saveDevelopmentPlan() {
+      const goals = document.getElementById("developmentGoalsInput").value
+        .split("\n")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      const developmentAreas = document.getElementById("developmentAreasInput").value
+        .split("\n")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      const successCriteria = document.getElementById("successCriteriaInput").value
+        .split("\n")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/development-plan?token=${ACCESS_TOKEN}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+                      },
+          body: JSON.stringify({
+            goals,
+            developmentAreas,
+            successCriteria
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || t("planSaveFailed"));
+        }
+
+        showMessage(t("planSaved"), "success");
+        await loadWorkspace();
+
+      } catch (error) {
+        console.error(error);
+        showMessage(error.message, "error");
+      }
+    }
+
+    function openGuidedSession() {
+      if (!mentorshipId) {
+        alert(t("mentorshipIdNotFound"));
+        return;
+      }
+
+      const mentorName = mentorshipData?.mentorName || "";
+      const menteeName = mentorshipData?.menteeName || "";
+
+      const params = new URLSearchParams({
+        mentorshipId,
+        mentor: mentorName,
+        mentee: menteeName,
+        company: COMPANY_ID
+      });
+
+      window.open(`guided_session.html?${params.toString()}`, "_blank");
+    }
+
+
+    function formatStatus(status) {
+      const value = String(status || "").toLowerCase();
+      if (currentLanguage === "tr") {
+        const map = {
+          active: "Aktif",
+          pending: "Beklemede",
+          approved: "Onaylandı",
+          rejected: "Reddedildi",
+          completed: "Tamamlandı",
+          paused: "Duraklatıldı",
+          cancelled: "İptal edildi"
+        };
+        return map[value] || status;
+      }
+      return status || "active";
+    }
+
+    function formatCreatedBy(value) {
+      const key = String(value || "").toLowerCase();
+      if (key === "mentor") return t("mentor");
+      if (key === "mentee") return t("mentee");
+      if (key === "hr") return t("hr");
+      if (key === "unknown") return t("unknown");
+      return value;
+    }
+
+    function formatDate(dateValue) {
+      if (!dateValue) return t("notScheduledYet");
+
+      const date = new Date(dateValue);
+
+      if (isNaN(date.getTime())) return dateValue;
+
+      return date.toLocaleDateString(currentLanguage === "tr" ? "tr-TR" : "en-GB", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    // Tarih + (varsa) saati birlikte gosterir. Saat "HH:MM" bekleniyor.
+    function formatDateTime(dateValue, timeValue) {
+      if (!dateValue) return t("notScheduledYet");
+      const datePart = formatDate(dateValue);
+      return timeValue ? `${datePart} · ${timeValue}` : datePart;
+    }
+
+    function renderTags(containerId, items, emptyText) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      if (!items || items.length === 0 || items.every(item => !item)) {
+        container.innerHTML = `<span class="tag">${emptyText}</span>`;
+        return;
+      }
+
+      items.filter(item => item && String(item).trim()).forEach(item => {
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = item;
+        container.appendChild(tag);
+      });
+    }
+
+    async function loadWorkspace() {
+      if (!mentorshipId) {
+        loadingEl.innerHTML = t("noMentorshipId");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}?token=${ACCESS_TOKEN}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+                      }
+        });
+
+        if (!response.ok) {
+          throw new Error(t("workspaceLoadFailed"));
+        }
+
+        mentorshipData = await response.json();
+
+        // Firma kodu artik linkte tasinmiyor; iliski verisinden okunur.
+        COMPANY_ID = mentorshipData.companyId || COMPANY_ID;
+
+        renderWorkspace(mentorshipData);
+        if (
+          mentorshipData.developmentNeed &&
+          (!mentorshipData.goals || mentorshipData.goals.length === 0)
+        ) {
+          await autoGeneratePlan(mentorshipData.developmentNeed);
+        }
+
+        loadingEl.style.display = "none";
+        appEl.style.display = "block";
+
+      } catch (error) {
+        console.error(error);
+        loadingEl.innerHTML = t("workspaceLoadCheck");
+      }
+    }
+
+      async function autoGeneratePlan(developmentNeed) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/development-plan?token=${ACCESS_TOKEN}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+                      },
+          body: JSON.stringify({
+            companyId: COMPANY_ID,
+            menteeName: mentorshipData.menteeName || "",
+            menteeRole: mentorshipData.menteeRole || "",
+            menteeDepartment: mentorshipData.menteeDepartment || "",
+            mentorName: mentorshipData.mentorName || "",
+            developmentNeed,
+            language: currentLanguage
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) return;
+
+        document.getElementById("developmentGoalsInput").value =
+          (data.developmentGoals || []).join("\n");
+
+        document.getElementById("developmentAreasInput").value =
+          (data.developmentAreas || []).join("\n");
+
+        document.getElementById("successCriteriaInput").value =
+          (data.successCriteria || []).join("\n");
+
+      } catch (e) {
+        console.error("Auto AI failed:", e);
+      }
+    }
+
+    function renderWorkspace(data) {
+      document.getElementById("mentorName").textContent = data.mentorName || t("mentor");
+      document.getElementById("mentorEmail").textContent = data.mentorEmail || "-";
+
+      document.getElementById("menteeName").textContent = data.menteeName || t("mentee");
+      document.getElementById("menteeEmail").textContent = data.menteeEmail || "-";
+
+      document.getElementById("statusBadge").textContent = formatStatus(data.status || "active");
+
+      // Kapanis tarihi (varsa) baslikta gorunur. Tarih gecse bile sayfa
+      // erisilebilir kalir; rozet sadece bilgilendirir.
+      const closingBadge = document.getElementById("closingBadge");
+      if (data.closingDate) {
+        const isPast = new Date(data.closingDate) < new Date(new Date().toDateString());
+        closingBadge.textContent =
+          t("closingLabel") + ": " + formatDate(data.closingDate) + (isPast ? " · " + t("closed") : "");
+        closingBadge.style.background = isPast ? "#9b2c2c" : "#8a5a1c";
+        closingBadge.style.display = "";
+      } else {
+        closingBadge.style.display = "none";
+      }
+
+      document.getElementById("nextMeetingDate").textContent = formatDateTime(data.nextMeetingDate, data.nextMeetingTime);
+
+      document.getElementById("workspaceIdLabel").textContent =
+        t("workspaceId") + ": " + mentorshipId.slice(0, 8) + "...";
+
+      document.getElementById("developmentGoalsInput").value =
+        Array.isArray(data.goals) ? data.goals.join("\n") : (data.goals || "");
+
+      document.getElementById("developmentAreasInput").value =
+        Array.isArray(data.developmentAreas) ? data.developmentAreas.join("\n") : (data.developmentAreas || "");
+
+      document.getElementById("successCriteriaInput").value =
+        Array.isArray(data.successCriteria) ? data.successCriteria.join("\n") : (data.successCriteria || "");
+
+      renderMeetings(data.meetings || []);
+    }
+
+    function renderMeetings(meetings) {
+      const container = document.getElementById("meetingsList");
+      container.innerHTML = "";
+
+      if (!meetings || meetings.length === 0) {
+        container.innerHTML = `
+          <div class="empty">
+            ${t("noMeetings")}
+          </div>
+        `;
+        return;
+      }
+
+      const sortedMeetings = [...meetings].sort((a, b) => {
+        return new Date(b.meetingDate) - new Date(a.meetingDate);
+      });
+
+      sortedMeetings.forEach((meeting, index) => {
+        const card = document.createElement("div");
+        card.className = "meeting-card";
+
+        const actionItems = Array.isArray(meeting.actionItems)
+          ? meeting.actionItems
+          : [];
+
+        card.innerHTML = `
+          <div class="meeting-head">
+            <div>
+              <div class="meeting-title">${index + 1}. ${escapeHtml(meeting.title || t("meeting"))}</div>
+              <div class="meeting-date">${formatDate(meeting.meetingDate)} · ${t("createdByText")} ${escapeHtml(formatCreatedBy(meeting.createdBy || "unknown"))}</div>
+            </div>
+          </div>
+
+          ${renderNoteSection(t("agendaTitle"), meeting.agenda)}
+          ${renderNoteSection(t("progressTitle"), meeting.progressSinceLastMeeting)}
+          ${renderNoteSection(t("discussedTitle"), meeting.discussed)}
+          ${renderActionItems(actionItems, meeting.id)}
+          ${renderNoteSection(t("nextFocusTitle"), meeting.nextMeetingFocus)}
+          ${renderNoteSection(t("nextMeetingDateTitle"), formatDateTime(meeting.nextMeetingDate, meeting.nextMeetingTime))}
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function renderNoteSection(title, content) {
+      if (!content || String(content).trim() === "" || content === t("notScheduledYet")) return "";
+
+      return `
+        <div class="note-section">
+          <strong>${escapeHtml(title)}</strong>
+          <p>${escapeHtml(content)}</p>
+        </div>
+      `;
+    }
+
+    function renderActionItems(items, meetingId) {
+      if (!items || items.length === 0) return "";
+
+      const list = items.map((item, i) => `
+        <div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:6px;">
+          <input type="checkbox"
+            ${item.status === "done" ? "checked" : ""}
+            onchange="toggleAction('${meetingId}', ${i}, this.checked)"
+            style="width:auto; margin-top:3px;"
+          />
+          <span style="${item.status === "done" ? "text-decoration: line-through; color:#888;" : ""}">
+            ${escapeHtml(item.task || item)}
+          </span>
+        </div>
+      `).join("");
+
+      return `
+        <div class="note-section">
+          <strong>${t("actionItems")}</strong>
+          ${list}
+        </div>
+      `;
+    }
+
+    function parseActionItems(text) {
+      if (!text || !text.trim()) return [];
+
+      return text
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => ({
+          task: line,
+          status: "open",
+          createdAt: new Date().toISOString()
+        }));
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    document.getElementById("meetingForm").addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const saveBtn = document.getElementById("saveBtn");
+      saveBtn.disabled = true;
+      saveBtn.textContent = t("saving");
+
+      const payload = {
+        meetingDate: document.getElementById("meetingDate").value,
+        title: document.getElementById("title").value,
+        agenda: document.getElementById("agenda").value,
+        progressSinceLastMeeting: document.getElementById("progressSinceLastMeeting").value,
+        discussed: document.getElementById("discussed").value,
+        actionItems: parseActionItems(document.getElementById("actionItemsText").value),
+        nextMeetingFocus: document.getElementById("nextMeetingFocus").value,
+        nextMeetingDate: document.getElementById("nextMeetingDateInput").value,
+        nextMeetingTime: document.getElementById("nextMeetingTimeInput").value,
+        nextMeetingGuests: document.getElementById("nextMeetingGuestsInput").value,
+        createdBy: document.getElementById("createdBy").value,
+        language: currentLanguage
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/meetings?token=${ACCESS_TOKEN}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+                      },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(t("meetingSaveFailed"));
+        }
+
+        const result = await response.json().catch(() => ({}));
+
+        // Not her halukarda kaydedildi. Ama davet tarafinda bir aksaklik
+        // varsa BUNU SOYLE - "kaydedildi" deyip gecmek, birinin davet
+        // aldigini sanmasina yol acar.
+        let message = t("meetingSaved");
+        let tone = "success";
+
+        const invite = result.invite;
+        if (invite) {
+          const g = invite.guests || {};
+          const problems = [...(g.invalid || []), ...(g.skipped || [])];
+
+          if (!invite.sent) {
+            message = t("inviteFailed");
+            tone = "error";
+          } else if (problems.length) {
+            message = t("meetingSaved") + " " +
+                      t("guestsSkipped") + " " + problems.join(", ");
+            tone = "error";
+          } else if ((g.invited || []).length) {
+            message = t("meetingSaved") + " " +
+                      t("guestsInvited") + " " + g.invited.join(", ");
+          }
+        }
+
+        showMessage(message, tone);
+
+        document.getElementById("meetingForm").reset();
+
+        await loadWorkspace();
+
+      } catch (error) {
+        console.error(error);
+        showMessage(t("meetingSaveTryAgain"), "error");
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = t("saveMeetingNote");
+      }
+    });
+
+    async function toggleAction(meetingId, index, isChecked) {
+      try {
+        await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/meetings/${meetingId}/action?token=${ACCESS_TOKEN}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+                      },
+          body: JSON.stringify({
+            index,
+            status: isChecked ? "done" : "open"
+          })
+        });
+
+        await loadWorkspace();
+
+      } catch (error) {
+        alert(t("taskUpdateFailed"));
+      }
+    }
+
+    applyLanguage();
+    loadWorkspace();
+  </script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MentorOS Cloud — Yönetim</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --copper: #b5651d;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #23262d;
+    --muted: #6b7280;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --warn: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff);
+    color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text { font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1; }
+  .brand-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  input, select {
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 14px; background: #fff; color: var(--text);
+    width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--navy); }
+
+  button {
+    padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  button.danger { background: #fff; border-color: var(--err); color: var(--err); }
+  button.danger:hover:not(:disabled) { background: #fef2f2; }
+  button.sm { padding: 6px 11px; font-size: 13px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  h2 { font-size: 15px; color: var(--navy); margin-bottom: 5px; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px;
+  }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--muted); padding: 9px 10px;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  td { padding: 12px 10px; border-bottom: 1px solid #f0f0f2; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+
+  .name { font-weight: 700; color: var(--navy); }
+  .uname { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 13px; color: var(--muted); }
+
+  .pill {
+    display: inline-block; padding: 3px 9px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+  }
+  .pill.ok   { background: #dcfce7; color: #15803d; }
+  .pill.warn { background: #fef3c7; color: #92400e; }
+  .pill.err  { background: #fee2e2; color: #991b1b; }
+  .pill.off  { background: #e5e7eb; color: #4b5563; }
+
+  .counts { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+
+  .msg { padding: 11px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; display: none; }
+  .msg.show { display: block; }
+  .msg.ok  { background: #dcfce7; color: #15803d; }
+  .msg.err { background: #fee2e2; color: #991b1b; }
+
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,.55);
+    align-items: center; justify-content: center; padding: 20px; z-index: 50;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 12px; padding: 24px; width: 100%;
+    max-width: 460px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { font-size: 18px; color: var(--navy); margin-bottom: 4px; }
+  .modal .card-sub { margin-bottom: 18px; }
+  .modal .field { margin-bottom: 14px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  .cred-box {
+    background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; margin-top: 6px;
+  }
+  .cred-line { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 14px; }
+  .cred-line span:first-child { color: var(--muted); }
+  .cred-line span:last-child {
+    font-family: ui-monospace, "SF Mono", Consolas, monospace; font-weight: 700; word-break: break-all;
+  }
+  .warn-note {
+    background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+    border-radius: 8px; padding: 11px 14px; font-size: 13px; line-height: 1.5; margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS Cloud</div>
+        <div class="brand-sub">Yönetim paneli / Administration</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="sm" onclick="location.href='/admin.html'">Teknik ayarlar</button>
+      <button class="sm" onclick="logout()">Çıkış</button>
+    </div>
+  </div>
+
+  <div class="msg" id="msg"></div>
+
+  <!-- Yeni firma -->
+  <div class="card">
+    <h2>Yeni hesap oluştur</h2>
+    <p class="card-sub">
+      Her hesap kendi verisini görür; hesaplar birbirinin verisine erişemez.
+      Kullanıcı adı sonradan değiştirilemez — verinin anahtarıdır.
+    </p>
+
+    <div class="grid">
+      <div class="field">
+        <label>Kuruluş adı</label>
+        <input id="newName" placeholder="Örn. Eğitim Derneği"/>
+      </div>
+      <div class="field">
+        <label>Kullanıcı adı</label>
+        <input id="newId" placeholder="ornek-dernek" autocapitalize="off" spellcheck="false"/>
+        <div class="hint">Sadece harf, rakam ve tire.</div>
+      </div>
+      <div class="field">
+        <label>Şifre</label>
+        <input id="newPass" placeholder="En az 8 karakter"/>
+        <div class="hint"><a href="#" onclick="genPass();return false;">Rastgele üret</a></div>
+      </div>
+      <div class="field">
+        <label>Geçerlilik bitişi</label>
+        <input id="newExp" type="date"/>
+        <div class="hint">Varsayılan: bugünden bir yıl sonra.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button class="primary" onclick="createCompany()">Hesabı oluştur</button>
+    </div>
+  </div>
+
+  <!-- Liste -->
+  <div class="card">
+    <h2>Hesaplar</h2>
+    <p class="card-sub">Süresi dolan hesap giriş yapamaz; verisi silinmez, tarih uzatılınca erişim geri açılır.</p>
+    <div id="list"><div class="empty">Yükleniyor…</div></div>
+  </div>
+
+</div>
+
+<!-- Düzenleme -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3 id="editTitle">Hesabı düzenle</h3>
+    <p class="card-sub" id="editSub"></p>
+
+    <div class="field">
+      <label>Kuruluş adı</label>
+      <input id="editName"/>
+    </div>
+    <div class="field">
+      <label>Geçerlilik bitişi</label>
+      <input id="editExp" type="date"/>
+      <div class="hint">Boş bırakılırsa süresiz olur.</div>
+    </div>
+    <div class="field">
+      <label>Durum</label>
+      <select id="editStatus">
+        <option value="active">Aktif</option>
+        <option value="inactive">Pasif</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Yeni şifre</label>
+      <input id="editPass" placeholder="Değiştirmek istemiyorsanız boş bırakın"/>
+      <div class="hint"><a href="#" onclick="genPass('editPass');return false;">Rastgele üret</a></div>
+    </div>
+
+    <div class="warn-note">
+      Şifreyi değiştirmek, süreyi güncellemek veya hesabı pasife almak
+      <strong>o hesabın açık oturumlarını anında kapatır.</strong>
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="closeModal('editModal')">Vazgeç</button>
+      <button class="primary" onclick="saveEdit()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Yeni kimlik bilgileri -->
+<div class="modal-bg" id="credModal">
+  <div class="modal">
+    <h3>Hesap hazır</h3>
+    <p class="card-sub">
+      Bu bilgileri şimdi kaydedin. Şifre bir daha gösterilemez —
+      sunucuda yalnızca şifrelenmiş hâli saklanır.
+    </p>
+
+    <div class="cred-box" id="credBox"></div>
+
+    <div class="modal-actions">
+      <button onclick="copyCreds()">Kopyala</button>
+      <button class="primary" onclick="closeModal('credModal')">Tamam</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let companies = [];
+let editingId = null;
+
+function show(text, kind) {
+  const el = document.getElementById("msg");
+  el.textContent = text;
+  el.className = "msg show " + (kind || "ok");
+  if (kind !== "err") setTimeout(() => el.className = "msg", 4000);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[<>&"]/g, c =>
+    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+}
+
+function oneYearFromNow() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function genPass(target) {
+  // Karistirilmasi kolay karakterler (O/0, l/1) bilerek disarida birakildi -
+  // sifre telefonda okunup elle yazilacak.
+  const chars = "abcdefghijkmnpqrstuvwxyzACDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  const bytes = new Uint32Array(14);
+  crypto.getRandomValues(bytes);
+  for (const b of bytes) out += chars[b % chars.length];
+  document.getElementById(target || "newPass").value = out;
+}
+
+async function api(path, options) {
+  const res = await fetch(API + path, {
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    ...options
+  });
+
+  if (res.status === 403 || res.status === 401) {
+    location.href = "/login.html?next=%2Fsuper_admin.html";
+    throw new Error("session");
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const err = new Error(data.error || "İşlem başarısız");
+    err.payload = data;          // uyari metni, sayimlar, kod
+    throw err;
+  }
+
+  return data;
+}
+
+async function load() {
+  try {
+    companies = await api("/companies");
+    render();
+  } catch (e) {
+    if (e.message !== "session") show(e.message, "err");
+  }
+}
+
+function statusPill(c) {
+  if (c.status !== "active") return '<span class="pill off">Pasif</span>';
+  if (c.expired) return '<span class="pill err">Süresi doldu</span>';
+  if (c.daysLeft !== null && c.daysLeft <= 30)
+    return `<span class="pill warn">${c.daysLeft} gün kaldı</span>`;
+  return '<span class="pill ok">Aktif</span>';
+}
+
+function render() {
+  const el = document.getElementById("list");
+
+  if (!companies.length) {
+    el.innerHTML = '<div class="empty">Henüz hesap yok. Yukarıdan ilk hesabı oluşturun.</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Kuruluş</th><th>Kullanıcı adı</th><th>Durum</th>
+        <th>Bitiş</th><th>Veri</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${companies.map(c => `
+          <tr>
+            <td class="name">${esc(c.name)}</td>
+            <td class="uname">${esc(c.companyId)}</td>
+            <td>${statusPill(c)}</td>
+            <td>${c.expiresAt ? esc(c.expiresAt) : '<span class="counts">süresiz</span>'}</td>
+            <td class="counts">
+              ${c.counts.mentors} mentor · ${c.counts.mentees} mentee · ${c.counts.mentorships} eşleşme
+            </td>
+            <td>
+              <div class="row-actions">
+                <button class="sm" onclick="openEdit('${esc(c.companyId)}')">Düzenle</button>
+                <button class="sm danger" onclick="removeCompany('${esc(c.companyId)}')">Sil</button>
+              </div>
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function createCompany() {
+  const name = document.getElementById("newName").value.trim();
+  const companyId = document.getElementById("newId").value.trim();
+  const password = document.getElementById("newPass").value.trim();
+  const expiresAt = document.getElementById("newExp").value;
+
+  if (!name || !companyId || !password) {
+    return show("Kuruluş adı, kullanıcı adı ve şifre gerekli.", "err");
+  }
+  if (password.length < 8) {
+    return show("Şifre en az 8 karakter olmalı.", "err");
+  }
+
+  try {
+    const data = await api("/companies", {
+      method: "POST",
+      body: JSON.stringify({ companyId, name, password, expiresAt })
+    });
+
+    showCreds(data.company, password);
+
+    document.getElementById("newName").value = "";
+    document.getElementById("newId").value = "";
+    document.getElementById("newPass").value = "";
+    document.getElementById("newExp").value = oneYearFromNow();
+
+    load();
+  } catch (e) {
+    if (e.message !== "session") show(e.message, "err");
+  }
+}
+
+let lastCreds = "";
+
+function showCreds(company, password) {
+  const url = window.location.origin + "/login.html";
+
+  lastCreds =
+    `${company.name}\n` +
+    `Adres      : ${url}\n` +
+    `Kullanıcı  : ${company.companyId}\n` +
+    `Şifre      : ${password}\n` +
+    `Geçerlilik : ${company.expiresAt || "süresiz"}`;
+
+  document.getElementById("credBox").innerHTML = `
+    <div class="cred-line"><span>Adres</span><span>${esc(url)}</span></div>
+    <div class="cred-line"><span>Kullanıcı adı</span><span>${esc(company.companyId)}</span></div>
+    <div class="cred-line"><span>Şifre</span><span>${esc(password)}</span></div>
+    <div class="cred-line"><span>Geçerlilik</span><span>${esc(company.expiresAt || "süresiz")}</span></div>`;
+
+  document.getElementById("credModal").classList.add("show");
+}
+
+function copyCreds() {
+  navigator.clipboard.writeText(lastCreds)
+    .then(() => show("Kopyalandı."))
+    .catch(() => show("Kopyalanamadı, elle seçin.", "err"));
+}
+
+function openEdit(id) {
+  const c = companies.find(x => x.companyId === id);
+  if (!c) return;
+
+  editingId = id;
+  document.getElementById("editTitle").textContent = c.name;
+  document.getElementById("editSub").textContent = "Kullanıcı adı: " + c.companyId;
+  document.getElementById("editName").value = c.name;
+  document.getElementById("editExp").value = c.expiresAt || "";
+  document.getElementById("editStatus").value = c.status;
+  document.getElementById("editPass").value = "";
+  document.getElementById("editModal").classList.add("show");
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("show");
+}
+
+async function saveEdit() {
+  const body = {
+    name: document.getElementById("editName").value.trim(),
+    expiresAt: document.getElementById("editExp").value,
+    status: document.getElementById("editStatus").value
+  };
+
+  const pass = document.getElementById("editPass").value.trim();
+  if (pass) {
+    if (pass.length < 8) return show("Şifre en az 8 karakter olmalı.", "err");
+    body.password = pass;
+  }
+
+  try {
+    await api("/companies/" + encodeURIComponent(editingId), {
+      method: "PATCH",
+      body: JSON.stringify(body)
+    });
+
+    closeModal("editModal");
+    show(pass ? "Kaydedildi. Yeni şifreyi kuruluşa iletin." : "Kaydedildi.");
+    load();
+  } catch (e) {
+    if (e.message !== "session") show(e.message, "err");
+  }
+}
+
+async function removeCompany(id) {
+  const c = companies.find(x => x.companyId === id);
+  if (!c) return;
+
+  if (!confirm(`"${c.name}" hesabını silmek üzeresiniz.\n\nBu işlem geri alınamaz.`)) return;
+
+  try {
+    await api("/companies/" + encodeURIComponent(id), { method: "DELETE" });
+    show("Hesap silindi.");
+    load();
+  } catch (e) {
+    if (e.message === "session") return;
+
+    // Veri varsa sunucu 409 + "has_data" doner; kullaniciya TAM OLARAK
+    // neyi kaybedecegini goster, sonra tekrar sor.
+    if (e.payload?.code === "has_data") {
+      if (confirm((e.payload.warning || e.message) + "\n\nYine de silinsin mi?")) {
+        try {
+          await api("/companies/" + encodeURIComponent(id) + "?force=true", { method: "DELETE" });
+          show("Hesap ve verisi silindi.");
+          load();
+        } catch (e2) { show(e2.message, "err"); }
+      }
+      return;
+    }
+    show(e.message, "err");
+  }
+}
+
+async function logout() {
+  await fetch(API + "/company-logout", { method: "POST", credentials: "same-origin" });
+  location.href = "/login.html";
+}
+
+document.getElementById("newExp").value = oneYearFromNow();
+load();
+</script>
+</body>
+</html>

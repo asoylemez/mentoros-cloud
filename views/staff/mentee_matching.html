@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mentee Mentor Matching</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a2b5e;
+      --copper: #b5651d;
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --border: #e0e0e0;
+      --muted: #6b7280;
+      --soft: #eef1f8;
+      --green: #0f9f6e;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: #1a1a1a;
+      padding: 0 1rem 2rem;
+    }
+
+    .app-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e6e8ef;
+      padding: 10px 0;
+    }
+
+    .app-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      color: #1a2b5e;
+      font-size: 16px;
+    }
+
+    .page-wrap {
+      max-width: 980px;
+      margin: 24px auto 0;
+    }
+
+    .language-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .language-bar select {
+      width: auto;
+      min-width: 130px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: 13px;
+      background: white;
+      color: #1a1a1a;
+      cursor: pointer;
+    }
+
+    .header {
+      background: var(--navy);
+      color: white;
+      padding: 1.5rem 1.75rem;
+      border-radius: 14px;
+      margin-bottom: 1.25rem;
+    }
+
+    .header h1 { font-size: 22px; margin-bottom: 6px; }
+    .header p { color: rgba(255,255,255,0.7); font-size: 14px; }
+
+    .input-card, .mentor-card, .approval-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    .input-card {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--muted);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 190px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(26,43,94,0.08);
+    }
+
+    .score-note {
+      margin-top: 12px;
+      background: #eef1f8;
+      color: #1a2b5e;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    button {
+      background: var(--copper);
+      color: white;
+      border: none;
+      border-radius: 9px;
+      padding: 11px 22px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-row, .copy-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1rem;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .results-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--navy);
+    }
+
+    .mentor-card {
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.04);
+    }
+
+    .mentor-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .mentor-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .mentor-role {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .score-badge {
+      background: var(--soft);
+      color: var(--navy);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .section { margin-top: 0.9rem; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--copper);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 5px;
+    }
+
+    .text {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.55;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .tag {
+      background: #f3f4f6;
+      color: #374151;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .reason-list {
+      padding-left: 18px;
+      color: #333;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .empty-state {
+      background: white;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .copy-btn {
+      background: #eef1f8;
+      color: #1a2b5e;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13px;
+    }
+
+    .start-btn {
+      background: var(--green);
+      color: white;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .approval-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border-color: #dbe2f3;
+    }
+
+    .approval-box h3 {
+      color: var(--navy);
+      font-size: 16px;
+      margin-bottom: 0.7rem;
+    }
+
+    .approval-link-row {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem;
+      margin-top: 0.75rem;
+    }
+
+    .approval-link-row strong {
+      display: block;
+      color: var(--navy);
+      margin-bottom: 0.4rem;
+      font-size: 13px;
+    }
+
+    .approval-url {
+      font-size: 13px;
+      color: #374151;
+      word-break: break-all;
+      line-height: 1.4;
+      margin-bottom: 0.7rem;
+    }
+
+    .link-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .link-actions button {
+      font-size: 12px;
+      padding: 8px 10px;
+      background: var(--navy);
+    }
+
+    .link-actions .mail-btn {
+        background: #0f766e;
+        border: 1px solid #0f766e;
+        color: #fff;
+      }
+      .mail-btn:hover:not(:disabled) { filter: brightness(1.15); }
+      .mail-btn:disabled { opacity: .6; cursor: default; }
+
+      .open-btn {
+      background: var(--green);
+    }
+
+    /* ---------- Adim basliklari ve sekmeler ---------- */
+
+    .step-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--copper);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 10px;
+    }
+
+    .step-label + .tabs { margin-top: 0; }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0 1.25rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background: #eef1f8;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      flex: 1;
+      background: transparent;
+      color: #48506b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .tab.active {
+      background: #ffffff;
+      color: var(--navy);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    select {
+      width: 100%;
+      padding: 13px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      background: white;
+      color: #1a1a1a;
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(26,43,94,0.08);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    /* ---------- Secilen mentee ozeti ---------- */
+
+
+
+    .engaged-warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 13px 15px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #92400e;
+    }
+
+    /* ---------- Manuel mentor secimi ---------- */
+
+
+
+    .manual-note {
+      background: #eef1f8;
+      color: #1a2b5e;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 720px) {
+      .language-bar {
+        justify-content: flex-start;
+      }
+
+      .grid-2 { grid-template-columns: 1fr; }
+
+      .form-grid, .mentor-top {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+      }
+    }
+
+    body {
+      padding-top: 0 !important;
+    }
+
+  </style>
+</head>
+
+<body>
+
+    <div class="app-header">
+    <div class="app-header-inner">
+      
+      <div class="app-brand" onclick="window.location.href='/index.html?company=' + encodeURIComponent(COMPANY_ID)" style="cursor:pointer;">
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+        ">
+          <div style="
+            width:40px;
+            height:40px;
+            border-radius:12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:linear-gradient(135deg,#101b3f,#3657ff);
+            color:white;
+            font-weight:900;
+            font-size:20px;
+            flex-shrink:0;
+          ">
+            M
+          </div>
+
+          <div style="
+            font-size:22px;
+            font-weight:800;
+            color:#101b3f;
+            line-height:1;
+          ">
+            MentorOS
+          </div>
+        </div>  
+        
+      </div>
+
+    </div>
+  </div>
+
+  <div class="page-wrap">
+
+    <div class="language-bar">
+      <span data-i18n="languageLabel">Language</span>
+      <select id="languageSelect" onchange="setLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="tr">Türkçe</option>
+      </select>
+    </div>
+
+    <div class="header">
+      <h1 data-i18n="pageTitle">Mentee Mentor Matching</h1>
+      <p data-i18n="pageSubtitle">Enter the mentee’s development need and find the most suitable mentors from the registered mentor pool.</p>
+    </div>
+
+    <div class="input-card">
+
+      <!-- ================= ADIM 1: MENTEE ================= -->
+      <div class="step-label" data-i18n="step1Title">1 · Mentee</div>
+
+      <div class="tabs" id="sourceTabs">
+        <button type="button" class="tab active" data-source="registered"
+                onclick="setSource('registered')" data-i18n="sourceRegistered">
+          Registered mentee
+        </button>
+        <button type="button" class="tab" data-source="manual"
+                onclick="setSource('manual')" data-i18n="sourceManual">
+          Enter manually
+        </button>
+      </div>
+
+      <!-- ---- Kayitli mentee secimi ---- -->
+      <div id="registeredPane">
+        <label for="menteeSelect" data-i18n="selectMenteeLabel">Select mentee</label>
+        <select id="menteeSelect" onchange="onMenteeSelected()">
+          <option value="" data-i18n="menteeLoading">Loading...</option>
+        </select>
+        <div class="hint" data-i18n="selectMenteeHint">
+          Mentees already working with a mentor cannot be selected. A mentee can only
+          have one mentor at a time.
+        </div>
+        <div id="menteeSummary"></div>
+      </div>
+
+      <!-- ---- Kayitsiz mentee (elle giris) ---- -->
+      <div id="manualMenteePane" hidden>
+      <div class="form-grid">
+        <div>
+          <label for="menteeName" data-i18n="menteeNameLabel">Mentee Name</label>
+          <input id="menteeName" type="text" placeholder="e.g. Jane Smith" data-i18n-placeholder="menteeNamePlaceholder" />
+        </div>
+
+        <div>
+          <label for="menteeEmail" data-i18n="menteeEmailLabel">Mentee Email</label>
+          <input id="menteeEmail" type="email" placeholder="e.g. jane.smith@example.com" data-i18n-placeholder="menteeEmailPlaceholder" />
+        </div>
+
+        <div>
+          <label for="menteeRole" data-i18n="roleLabel">Role</label>
+          <input id="menteeRole" type="text" placeholder="e.g. Sales Executive" data-i18n-placeholder="rolePlaceholder" />
+        </div>
+
+        <div>
+          <label for="menteeDepartment" data-i18n="departmentLabel">Department</label>
+          <input id="menteeDepartment" type="text" placeholder="e.g. Commercial" data-i18n-placeholder="departmentPlaceholder" />
+        </div>
+      </div>
+
+      <!-- ============ YONETICI ============
+           Onay surecinin ILK kapisi. Yonetici onaylamadan mentor ve
+           mentee'ye baglanti gonderilmez. -->
+      <div style="background:#f6f7fc;border:1px solid #e3e6f2;border-radius:8px;
+                  padding:14px 16px;margin:4px 0 16px">
+        <div style="font-size:13px;font-weight:600;color:#1a2b5e;margin-bottom:3px"
+             data-i18n="managerSectionTitle">Mentee's Manager</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5"
+             data-i18n="managerSectionHint">
+          Approval is requested from the manager first. The mentor and the mentee are
+          only contacted after the manager approves.
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label for="managerName" data-i18n="managerNameLabel">Manager name</label>
+            <input id="managerName" type="text" placeholder="e.g. Michael Brown"
+                   data-i18n-placeholder="managerNamePlaceholder" />
+          </div>
+          <div>
+            <label for="managerEmail" data-i18n="managerEmailLabel">Manager email</label>
+            <input id="managerEmail" type="email" placeholder="e.g. michael.brown@example.com"
+                   data-i18n-placeholder="managerEmailPlaceholder" />
+          </div>
+        </div>
+      </div>
+
+      <label for="menteeNeed" data-i18n="developmentNeedLabel">Mentee development need</label>
+      <textarea id="menteeNeed" placeholder="Example: I would like to improve my leadership skills, gain confidence in presenting to senior stakeholders, and learn how to manage my career growth in a commercial role." data-i18n-placeholder="developmentNeedPlaceholder"></textarea>
+      </div>
+      <!-- ---- /kayitsiz mentee ---- -->
+
+      <div class="divider"></div>
+
+      <!-- ================= ADIM 2: YONTEM ================= -->
+      <div class="step-label" data-i18n="step2Title">2 · Matching method</div>
+
+      <div class="tabs" id="methodTabs">
+        <button type="button" class="tab active" data-method="ai"
+                onclick="setMethod('ai')" data-i18n="methodAi">
+          Match with AI
+        </button>
+        <button type="button" class="tab" data-method="manual"
+                onclick="setMethod('manual')" data-i18n="methodManual">
+          Match manually
+        </button>
+      </div>
+
+      <!-- ---- AI ile eslestirme ---- -->
+      <div id="aiMethodPane">
+        <div class="score-note">
+          <strong data-i18n="matchingNoteTitle">Matching note:</strong>
+          <span data-i18n="matchingNoteText">Mentor isimleri ve e-postaları yapay zekaya hiçbir zaman gönderilmez. Anonimleştirilmiş profiller gelişim ihtiyacıyla karşılaştırılır; her mentora 0-100 arası bir puan ve yazılı gerekçe verilir. Tüm adaylar sıralı olarak gösterilir.</span>
+        </div>
+
+        <div class="btn-row">
+          <button id="matchBtn" onclick="findMentors()" data-i18n="findBestMentors">Find Best Mentors</button>
+        </div>
+      </div>
+
+      <!-- ---- Manuel eslestirme ---- -->
+      <div id="manualMethodPane" hidden>
+        <label for="mentorSelect" data-i18n="selectMentorLabel">Select mentor</label>
+        <select id="mentorSelect" onchange="onMentorSelected()">
+          <option value="" data-i18n="mentorLoading">Loading...</option>
+        </select>
+
+        <div id="mentorPreview"></div>
+
+        <div style="margin-top:1rem">
+          <label for="manualReason" data-i18n="manualReasonLabel">
+            Reason for this match (optional)
+          </label>
+          <textarea id="manualReason" style="min-height:90px"
+                    placeholder="e.g. Both work in commercial roles; the mentor has led a similar transition."
+                    data-i18n-placeholder="manualReasonPlaceholder"></textarea>
+          <div class="hint" data-i18n="manualReasonHint">
+            This note is shown to the manager in the approval email, so they can see
+            why this mentor was chosen.
+          </div>
+        </div>
+
+        <div class="manual-note" data-i18n="manualNoteText">
+          Manual matching does not use AI. No data is sent to the AI service and no
+          match score is calculated — the pairing is your decision.
+        </div>
+
+        <div class="btn-row">
+          <button id="manualBtn" onclick="manualMatch()" data-i18n="manualMatchButton">
+            Match and Request Approval
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="manualResult"></div>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+
+    
+    const translations = {
+      en: {
+        languageLabel: "Language",
+        pageTitle: "Mentee Mentor Matching",
+        pageSubtitle: "Choose a mentee, then let the AI suggest mentors or pick one yourself.",
+
+        step1Title: "1 · Mentee",
+        step2Title: "2 · Matching method",
+        sourceRegistered: "Registered mentee",
+        sourceManual: "Enter manually",
+        selectMenteeLabel: "Select mentee",
+        selectMenteePlaceholder: "— Select a mentee —",
+        menteeLoading: "Loading...",
+        selectMenteeHint: "Mentees already working with a mentor cannot be selected. A mentee can only have one mentor at a time.",
+        noMentees: "No mentee records yet. Add mentees from the Mentee Registry page.",
+        candidatesFailed: "Could not load mentees and mentors.",
+        menteeEngagedMatched: "Already matched with",
+        menteeEngagedPending: "Approval pending with",
+        menteeEngagedNote: "A mentee can only work with one mentor at a time. Complete or cancel the existing mentorship first.",
+        menteeEngagedNotePending: "A mentee can only have one open request at a time. Resolve or delete the pending request first from the HR Dashboard.",
+        developmentNeedSummary: "Development need",
+        noNeedRecorded: "No development information recorded yet. Open the Mentee Registry and complete this mentee's profile.",
+        selectMenteeFirst: "Please select a mentee first.",
+
+        currentChallenge: "Current challenge",
+        developmentAreas: "Development areas",
+        competenciesToDevelop: "Competencies to develop",
+        careerGoal: "Career goal",
+        menteeExpectations: "Expectations from mentoring",
+        preferredMentorProfileLabel: "Preferred mentor profile",
+        monthlyHours: "Available hours (monthly)",
+        menteeNote: "Additional note",
+        menteeBadge: "Mentee",
+        experienceAreasLabel: "Experience areas",
+        methodAi: "Match with AI",
+        methodManual: "Match manually",
+        selectMentorLabel: "Select mentor",
+        selectMentorPlaceholder: "— Select a mentor —",
+        mentorLoading: "Loading...",
+        noMentors: "No active mentors available.",
+        selectMentorFirst: "Please select a mentor.",
+        manualReasonLabel: "Reason for this match (optional)",
+        manualReasonPlaceholder: "e.g. Both work in commercial roles; the mentor has led a similar transition.",
+        manualReasonHint: "This note is shown to the manager in the approval email, so they can see why this mentor was chosen.",
+        manualNoteText: "Manual matching does not use AI. No data is sent to the AI service and no match score is calculated — the pairing is your decision.",
+        manualMatchButton: "Match and Request Approval",
+        manualDefaultReason: "Matched manually by HR.",
+        capacityFull: "at capacity",
+        capacityFree: "free",
+        manualMatchTitle: "Manual match",
+
+        menteeNameLabel: "Mentee Name",
+        menteeNamePlaceholder: "e.g. Jane Smith",
+        menteeEmailLabel: "Mentee Email",
+        menteeEmailPlaceholder: "e.g. jane.smith@example.com",
+        roleLabel: "Role",
+        rolePlaceholder: "e.g. Sales Executive",
+        departmentLabel: "Department",
+        departmentPlaceholder: "e.g. Commercial",
+        developmentNeedLabel: "Mentee development need",
+        developmentNeedPlaceholder: "Example: I would like to improve my leadership skills, gain confidence in presenting to senior stakeholders, and learn how to manage my career growth in a commercial role.",
+        matchingNoteTitle: "Matching note:",
+        matchingNoteText: "Mentor names and emails are never sent to the AI. Anonymised profiles are compared against the development need, and every mentor is scored 0-100 with a written rationale. All candidates are shown, ranked.",
+        findBestMentors: "Find Best Mentors",
+        matching: "Matching...",
+        analysingProfiles: "Analysing mentor profiles...",
+        enterDevelopmentNeed: "Please enter the mentee development need.",
+        matchingFailed: "Matching failed",
+        errorPrefix: "Error:",
+        noSuitableMentor: "No results returned.",
+        empty_no_mentors: "No mentors are registered for this company.",
+        empty_no_mentors_fix: "Share the invitation link from the Mentor Registry page so mentors can sign up.",
+        empty_all_inactive: "All mentors are currently inactive.",
+        empty_all_inactive_fix: "Open the Mentor Registry and set at least one mentor to Active.",
+        empty_all_full: "Every mentor is at full capacity.",
+        empty_all_full_fix: "Increase a mentor's capacity in the Mentor Registry, or complete an existing mentorship to free one up.",
+        bandVeryStrong: "Very strong",
+        bandStrong: "Strong",
+        bandModerate: "Moderate",
+        bandWeak: "Weak",
+        bandPoor: "Poor fit",
+        bandNotAssessed: "Not assessed",
+        weakPoolTitle: "No strong match in the current mentor pool.",
+        weakPoolText: "The closest candidates are listed below, but none is a strong fit for this development need. Consider recruiting mentors with the relevant expertise, or reviewing the need with the mentee.",
+        recommendedMentors: "Recommended Mentors",
+        unnamedMentor: "Unnamed Mentor",
+        score: "Score",
+        aiRecommendationSummary: "AI Recommendation Summary",
+        defaultAiSummary: "This mentor is recommended based on profile fit, relevant competencies and available mentoring capacity.",
+        suggestedMentoringFocus: "Suggested mentoring focus",
+        firstSessionQuestions: "AI Suggested First Session Questions",
+        defaultQuestion1: "What would you like to achieve through this mentorship in the next 3 months?",
+        defaultQuestion2Prefix: "Which specific challenge related to",
+        defaultQuestion2Suffix: "would you like to work on first?",
+        defaultDevelopmentGoal: "your development goal",
+        defaultQuestion3: "What would a successful mentoring relationship look like for you?",
+        mentorProfile: "Mentor profile",
+        noMentorProfile: "No mentor profile provided.",
+        competencies: "Competencies",
+        functionalAreas: "Functional areas",
+        languagesFormatAvailability: "Languages / Format / Availability",
+        languages: "Languages",
+        formats: "Formats",
+        availability: "Availability",
+        capacity: "Capacity",
+        menteesUnit: "mentee(s)",
+        messageToMentee: "Message to mentee",
+        copy: "Copy",
+        requestApproval: "Request Approval",
+        mentorDataNotFound: "Mentor data not found.",
+        creatingRequest: "Creating Request...",
+        approvalRequestFailed: "Approval request could not be created.",
+        approvalRequested: "Approval Requested",
+        approvalCreated: "Approval request created ✅",
+        mentorApprovalLink: "Mentor approval link",
+        menteeApprovalLink: "Mentee approval link",
+        copyMentorLink: "Copy Mentor Link",
+        emailBoth: "Email Approval Links to Both",
+        managerSectionTitle: "Mentee's Manager",
+        managerSectionHint: "Approval is requested from the manager first. The mentor and the mentee are only contacted after the manager approves.",
+        managerNameLabel: "Manager name",
+        managerNamePlaceholder: "e.g. Michael Brown",
+        managerEmailLabel: "Manager email",
+        managerEmailPlaceholder: "e.g. michael.brown@example.com",
+        managerApprovalLink: "Manager approval link",
+        managerFirstHint: "Send this first. The mentor and mentee are contacted only after the manager approves.",
+        copyManagerLink: "Copy Manager Link",
+        openManagerLink: "Open Manager Approval",
+        emailManager: "Email Manager",
+        lockedUntilManager: "The links below stay locked until the manager approves. Do not send them yet.",
+        emailBothHint: "Sends the approval link to the mentor and the mentee. No copy-pasting needed.",
+        emailMentor: "Email Mentor",
+        emailMentee: "Email Mentee",
+        emailSending: "Sending…",
+        emailSent: "Sent ✓",
+        emailFailed: "Could not send email",
+        emailNotSent: "Not sent:",
+        whatToDo: "What to do:",
+        smtpNotSet: "To send these links by email, configure the email server in the admin panel (/admin.html).",
+        copyMenteeLink: "Copy Mentee Link",
+        openMentorLink: "Open Mentor Link",
+        openMenteeLink: "Open Mentee Link",
+        copied: "Copied!",
+        recommendationCopied: "Mentor recommendation copied!",
+        copyTextMentorTitle: "Recommended Mentor",
+        country: "Country"
+      },
+      tr: {
+        languageLabel: "Dil",
+        pageTitle: "Mentee Mentor Eşleştirme",
+        pageSubtitle: "Bir mentee seçin; ardından yapay zeka mentor önersin ya da mentoru kendiniz seçin.",
+
+        step1Title: "1 · Mentee",
+        step2Title: "2 · Eşleştirme yöntemi",
+        sourceRegistered: "Kayıtlı Mentee",
+        sourceManual: "Manuel Kayıt",
+        selectMenteeLabel: "Mentee seçin",
+        selectMenteePlaceholder: "— Mentee seçin —",
+        menteeLoading: "Yükleniyor...",
+        selectMenteeHint: "Halihazırda bir mentorle çalışan mentee'ler seçilemez. Bir mentee aynı anda yalnızca bir mentorle çalışabilir.",
+        noMentees: "Henüz mentee kaydı yok. Mentee Kayıtları sayfasından mentee ekleyin.",
+        candidatesFailed: "Mentee ve mentor listesi yüklenemedi.",
+        menteeEngagedMatched: "Zaten eşleşti:",
+        menteeEngagedPending: "Onay bekliyor:",
+        menteeEngagedNote: "Bir mentee aynı anda yalnızca bir mentorle çalışabilir. Önce mevcut mentorluğu tamamlayın veya iptal edin.",
+        menteeEngagedNotePending: "Bir mentee'nin aynı anda yalnızca bir açık talebi olabilir. Önce İK Panosundan bekleyen talebi sonuçlandırın veya silin.",
+        developmentNeedSummary: "Gelişim ihtiyacı",
+        noNeedRecorded: "Henüz gelişim bilgisi girilmemiş. Mentee Kayıtları sayfasından bu mentee'nin profilini tamamlayın.",
+        selectMenteeFirst: "Lütfen önce bir mentee seçin.",
+
+        currentChallenge: "Şu anki zorluk",
+        developmentAreas: "Gelişim alanları",
+        competenciesToDevelop: "Geliştirmek istediği yetkinlikler",
+        careerGoal: "Kariyer hedefi",
+        menteeExpectations: "Mentorluktan beklentisi",
+        preferredMentorProfileLabel: "Tercih ettiği mentor profili",
+        monthlyHours: "Ayırabileceği süre (aylık)",
+        menteeNote: "Ek not",
+        menteeBadge: "Mentee",
+        experienceAreasLabel: "Deneyim alanları",
+        methodAi: "AI İle Eşleştir",
+        methodManual: "Manuel Eşleştir (Mentor Seçin)",
+        selectMentorLabel: "Mentor seçin",
+        selectMentorPlaceholder: "— Mentor seçin —",
+        mentorLoading: "Yükleniyor...",
+        noMentors: "Uygun aktif mentor yok.",
+        selectMentorFirst: "Lütfen bir mentor seçin.",
+        manualReasonLabel: "Bu eşleştirmenin gerekçesi (isteğe bağlı)",
+        manualReasonPlaceholder: "örn. İkisi de ticari rolde; mentor benzer bir geçişi yönetmiş.",
+        manualReasonHint: "Bu not, yöneticiye giden onay e-postasında görünür; böylece bu mentorun neden seçildiğini görebilir.",
+        manualNoteText: "Manuel eşleştirmede yapay zeka kullanılmaz. Yapay zeka servisine hiçbir veri gönderilmez ve uyum puanı hesaplanmaz — eşleştirme sizin kararınızdır.",
+        manualMatchButton: "Eşleştir ve Onay Talebi Gönder",
+        manualDefaultReason: "İK tarafından manuel eşleştirildi.",
+        capacityFull: "kapasite dolu",
+        capacityFree: "boş",
+        manualMatchTitle: "Manuel eşleştirme",
+
+        menteeNameLabel: "Mentee Adı",
+        menteeNamePlaceholder: "örn. Jane Smith",
+        menteeEmailLabel: "Mentee E-posta",
+        menteeEmailPlaceholder: "örn. jane.smith@example.com",
+        roleLabel: "Rol",
+        rolePlaceholder: "örn. Satış Yöneticisi",
+        departmentLabel: "Departman",
+        departmentPlaceholder: "örn. Ticari",
+        developmentNeedLabel: "Mentee gelişim ihtiyacı",
+        developmentNeedPlaceholder: "Örnek: Liderlik becerilerimi geliştirmek, üst düzey paydaşlara sunum yaparken daha özgüvenli olmak ve ticari rolde kariyer gelişimimi nasıl yöneteceğimi öğrenmek istiyorum.",
+        matchingNoteTitle: "Eşleştirme notu:",
+        matchingNoteText: "Mentor isimleri ve e-postaları yapay zekaya hiçbir zaman gönderilmez. Anonimleştirilmiş profiller gelişim ihtiyacıyla karşılaştırılır; her mentora 0-100 arası bir puan ve yazılı gerekçe verilir. Tüm adaylar sıralı olarak gösterilir.",
+        findBestMentors: "En Uygun Mentorları Bul",
+        matching: "Eşleştiriliyor...",
+        analysingProfiles: "Mentor profilleri analiz ediliyor...",
+        enterDevelopmentNeed: "Lütfen mentee gelişim ihtiyacını girin.",
+        matchingFailed: "Eşleştirme başarısız oldu",
+        errorPrefix: "Hata:",
+        noSuitableMentor: "Sonuç dönmedi.",
+        empty_no_mentors: "Bu firmada hiç mentor kaydı yok.",
+        empty_no_mentors_fix: "Mentor Kayıtları sayfasındaki davet bağlantısını paylaşarak mentor kaydı alın.",
+        empty_all_inactive: "Tüm mentorlar şu anda pasif durumda.",
+        empty_all_inactive_fix: "Mentor Kayıtları sayfasından en az bir mentoru Aktif yapın.",
+        empty_all_full: "Tüm mentorların kapasitesi dolu.",
+        empty_all_full_fix: "Mentor Kayıtları'ndan bir mentorun kapasitesini artırın veya mevcut bir mentorluğu tamamlayın.",
+        recommendedMentors: "Önerilen Mentorlar",
+        unnamedMentor: "İsimsiz Mentor",
+        score: "Skor",
+        bandVeryStrong: "Çok güçlü",
+        bandStrong: "Güçlü",
+        bandModerate: "Makul",
+        bandWeak: "Zayıf",
+        bandPoor: "Uygun değil",
+        bandNotAssessed: "Değerlendirilmedi",
+        weakPoolTitle: "Mevcut mentor havuzunda güçlü bir eşleşme yok.",
+        weakPoolText: "En yakın adaylar aşağıda listelendi, ancak hiçbiri bu gelişim ihtiyacı için güçlü bir eşleşme değil. Bu alanda deneyimli mentor kazanmayı ya da ihtiyacı mentee ile yeniden gözden geçirmeyi düşünebilirsiniz.",
+        aiRecommendationSummary: "AI Öneri Özeti",
+        defaultAiSummary: "Bu mentor; profil uyumu, ilgili yetkinlikler ve uygun mentorluk kapasitesi nedeniyle önerilmektedir.",
+        suggestedMentoringFocus: "Önerilen mentorluk odağı",
+        firstSessionQuestions: "AI Tarafından Önerilen İlk Görüşme Soruları",
+        defaultQuestion1: "Bu mentorluk sürecinde önümüzdeki 3 ayda neyi başarmak istersiniz?",
+        defaultQuestion2Prefix: "İlk olarak şu alanla ilgili hangi somut zorluk üzerinde çalışmak istersiniz:",
+        defaultQuestion2Suffix: "",
+        defaultDevelopmentGoal: "gelişim hedefiniz",
+        defaultQuestion3: "Sizin için başarılı bir mentorluk ilişkisi nasıl görünür?",
+        mentorProfile: "Mentor profili",
+        noMentorProfile: "Mentor profili girilmemiş.",
+        competencies: "Yetkinlikler",
+        functionalAreas: "Fonksiyonel alanlar",
+        languagesFormatAvailability: "Diller / Format / Uygunluk",
+        languages: "Diller",
+        formats: "Formatlar",
+        availability: "Uygunluk",
+        capacity: "Kapasite",
+        menteesUnit: "mentee",
+        messageToMentee: "Mentee’ye mesaj",
+        copy: "Kopyala",
+        requestApproval: "Onay Talebi Gönder",
+        mentorDataNotFound: "Mentor verisi bulunamadı.",
+        creatingRequest: "Talep Oluşturuluyor...",
+        approvalRequestFailed: "Onay talebi oluşturulamadı.",
+        approvalRequested: "Onay Talebi Gönderildi",
+        approvalCreated: "Onay talebi oluşturuldu ✅",
+        mentorApprovalLink: "Mentor onay linki",
+        menteeApprovalLink: "Mentee onay linki",
+        copyMentorLink: "Mentor Linkini Kopyala",
+        emailBoth: "İkisine de Onay E-postası Gönder",
+        managerSectionTitle: "Mentee'nin Yöneticisi",
+        managerSectionHint: "Onay önce yöneticiden istenir. Mentor ve mentee, ancak yönetici onayladıktan sonra bilgilendirilir.",
+        managerNameLabel: "Yönetici adı",
+        managerNamePlaceholder: "Örn. Mehmet Yılmaz",
+        managerEmailLabel: "Yönetici e-postası",
+        managerEmailPlaceholder: "Örn. mehmet.yilmaz@firma.com",
+        managerApprovalLink: "Yönetici onay bağlantısı",
+        managerFirstHint: "Önce bunu gönderin. Mentor ve mentee, ancak yönetici onayladıktan sonra bilgilendirilir.",
+        copyManagerLink: "Yönetici Linkini Kopyala",
+        openManagerLink: "Yönetici Onayını Aç",
+        emailManager: "Yöneticiye E-posta",
+        lockedUntilManager: "Aşağıdaki bağlantılar yönetici onaylayana kadar kilitlidir. Henüz göndermeyin.",
+        emailBothHint: "Onay bağlantısını mentora ve mentee'ye gönderir. Kopyala-yapıştır gerekmez.",
+        emailMentor: "Mentora E-posta",
+        emailMentee: "Mentee'ye E-posta",
+        emailSending: "Gönderiliyor…",
+        emailSent: "Gönderildi ✓",
+        emailFailed: "E-posta gönderilemedi",
+        emailNotSent: "Gönderilemeyenler:",
+        whatToDo: "Ne yapmalı:",
+        smtpNotSet: "Bu bağlantıları e-posta ile göndermek için yönetici panelinden e-posta sunucusunu yapılandırın (/admin.html).",
+        copyMenteeLink: "Mentee Linkini Kopyala",
+        openMentorLink: "Mentor Linkini Aç",
+        openMenteeLink: "Mentee Linkini Aç",
+        copied: "Kopyalandı!",
+        recommendationCopied: "Mentor önerisi kopyalandı!",
+        copyTextMentorTitle: "Önerilen Mentor",
+        country: "Ülke"
+      }
+    };
+
+    let currentLanguage = localStorage.getItem("mentorAppLang") || "en";
+
+    function t(key) {
+      return (translations[currentLanguage] && translations[currentLanguage][key]) || translations.en[key] || key;
+    }
+
+    function setLanguage(language) {
+      currentLanguage = translations[language] ? language : "en";
+      localStorage.setItem("mentorAppLang", currentLanguage);
+      applyTranslations();
+
+      // Ihtiyac metni sunucuda ve secilen dilde derleniyor; dil degisince
+      // listeleri yeniden al ki ozet de o dilde gorunsun.
+      if (typeof loadCandidates === "function") loadCandidates();
+
+      if (lastRecommendations.length) {
+        renderResults(lastRecommendations);
+      }
+    }
+
+    function applyTranslations() {
+      document.documentElement.lang = currentLanguage;
+      document.title = t("pageTitle");
+
+      const languageSelect = document.getElementById("languageSelect");
+      if (languageSelect) languageSelect.value = currentLanguage;
+
+      document.querySelectorAll("[data-i18n]").forEach((element) => {
+        const key = element.getAttribute("data-i18n");
+        element.textContent = t(key);
+      });
+
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+        const key = element.getAttribute("data-i18n-placeholder");
+        element.setAttribute("placeholder", t(key));
+      });
+
+      const matchBtn = document.getElementById("matchBtn");
+      if (matchBtn && !matchBtn.disabled) {
+        matchBtn.textContent = t("findBestMentors");
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const COMPANY_ID = "default";   // tek kurulum - firma secimi yok
+
+    const API_BASE_URL = window.location.origin;
+    const API_KEY = "mentor-demo-key-2026";
+
+    let lastRecommendations = [];
+    let lastMenteeId = "";
+
+    /* ==================================================================
+       DURUM
+
+       source : "registered" -> kayitli mentee secilir
+                "manual"     -> mentee elle yazilir (kayitsiz)
+       method : "ai"         -> yapay zeka mentor onerir
+                "manual"     -> mentoru IK kendi secer
+       ================================================================== */
+
+    let SOURCE = "registered";
+    let METHOD = "ai";
+
+    let MENTEES = [];
+    let MENTORS = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      applyTranslations();
+      checkSmtp();          // e-posta butonlarinin gorunup gorunmeyecegini belirler
+      loadCandidates();     // kayitli mentee + aktif mentor listeleri
+    });
+
+    /* ------------------------------------------------------------------
+       ADAY LISTELERI
+
+       Mentee'lerin "mesgul mu" bilgisi SUNUCUDA hesaplanir; burada
+       yalnizca gosterilir. Tek-mentor kuralinin asil bekcisi sunucudur.
+       ------------------------------------------------------------------ */
+
+    async function loadCandidates() {
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/matching-candidates?language=${encodeURIComponent(currentLanguage)}`,
+          { headers: { "x-api-key": API_KEY } }
+        );
+
+        if (!res.ok) throw new Error(t("candidatesFailed"));
+
+        const data = await res.json();
+        MENTEES = data.mentees || [];
+        MENTORS = data.mentors || [];
+
+        renderMenteeSelect();
+        renderMentorSelect();
+
+      } catch (e) {
+        MENTEES = [];
+        MENTORS = [];
+        renderMenteeSelect();
+        renderMentorSelect();
+        console.error("[eslestirme] adaylar yuklenemedi:", e);
+      }
+    }
+
+    function renderMenteeSelect() {
+      const select = document.getElementById("menteeSelect");
+      const previous = select.value;
+
+      if (!MENTEES.length) {
+        select.innerHTML = `<option value="">${escapeHtml(t("noMentees"))}</option>`;
+        return;
+      }
+
+      let html = `<option value="">${escapeHtml(t("selectMenteePlaceholder"))}</option>`;
+
+      MENTEES.forEach(m => {
+        const engagement = m.engagement || {};
+        const busy = !!engagement.engaged;
+
+        // Mesgul mentee GIZLENMEZ - gorunur ama secilemez. Kaybolmasi
+        // IK'ya "kayit nerede?" diye arattirirdi.
+        const suffix = !busy ? "" :
+          engagement.state === "matched"
+            ? ` — ${t("menteeEngagedMatched")} ${engagement.mentorName || "-"}`
+            : ` — ${t("menteeEngagedPending")} ${engagement.mentorName || "-"}`;
+
+        const label = [
+          m.fullName || "-",
+          m.role ? ` (${m.role})` : ""
+        ].join("") + suffix;
+
+        html += `<option value="${escapeHtml(m.id)}" ${busy ? "disabled" : ""}>` +
+                `${escapeHtml(label)}</option>`;
+      });
+
+      select.innerHTML = html;
+
+      if (previous && MENTEES.some(m => m.id === previous && !(m.engagement || {}).engaged)) {
+        select.value = previous;
+      }
+
+      onMenteeSelected();
+    }
+
+    function renderMentorSelect() {
+      const select = document.getElementById("mentorSelect");
+      const previous = select.value;
+
+      if (!MENTORS.length) {
+        select.innerHTML = `<option value="">${escapeHtml(t("noMentors"))}</option>`;
+        return;
+      }
+
+      let html = `<option value="">${escapeHtml(t("selectMentorPlaceholder"))}</option>`;
+
+      MENTORS.forEach(m => {
+        // Kapasitesi dolu mentor listede kalir ama ISARETLENIR.
+        // Karari IK verir; yazilim mentoru sessizce gizlemez.
+        const remaining = Number(m.remainingCapacity || 0);
+        const capacityText = remaining > 0
+          ? `${remaining} ${t("capacityFree")}`
+          : t("capacityFull");
+
+        const label = [
+          m.fullName || "-",
+          m.role ? ` (${m.role})` : "",
+          ` — ${capacityText}`
+        ].join("");
+
+        html += `<option value="${escapeHtml(m.id)}">${escapeHtml(label)}</option>`;
+      });
+
+      select.innerHTML = html;
+
+      if (previous && MENTORS.some(m => m.id === previous)) {
+        select.value = previous;
+      }
+
+      onMentorSelected();
+    }
+
+    /* ------------------------------------------------------------------
+       SECIMLER
+       ------------------------------------------------------------------ */
+
+    function selectedMentee() {
+      const id = document.getElementById("menteeSelect").value;
+      return MENTEES.find(m => m.id === id) || null;
+    }
+
+    function selectedMentor() {
+      const id = document.getElementById("mentorSelect").value;
+      return MENTORS.find(m => m.id === id) || null;
+    }
+
+    /**
+     * Bolumlu kart parcasi uretir. Bos bolum HIC basilmaz - "-" dolu
+     * bir kart, okuyani bilgi var saniyip yaniltir.
+     */
+    function cardSection(title, bodyHtml) {
+      if (!bodyHtml) return "";
+      return `
+        <div class="section">
+          <div class="section-title">${escapeHtml(title)}</div>
+          ${bodyHtml}
+        </div>`;
+    }
+
+    function textSection(title, value) {
+      const text = String(value == null ? "" : value).trim();
+      if (!text || text === "-") return "";
+      return cardSection(title, `<div class="text">${escapeHtml(text)}</div>`);
+    }
+
+    function tagSection(title, list, extra) {
+      const items = (Array.isArray(list) ? list : []).filter(Boolean).slice();
+      const more = String(extra || "").trim();
+      if (more) items.push(more);
+      if (!items.length) return "";
+      return cardSection(
+        title,
+        `<div class="tags">${items.map(s => `<span class="tag">${escapeHtml(s)}</span>`).join("")}</div>`
+      );
+    }
+
+    function onMenteeSelected() {
+      const box = document.getElementById("menteeSummary");
+      const mentee = selectedMentee();
+
+      if (!mentee) {
+        box.innerHTML = "";
+        return;
+      }
+
+      // Yonetici alanlarini kayittan doldur - ama DUZENLENEBILIR birak.
+      // IK, mentee kaydindaki yonetici degismisse burada duzeltebilmeli.
+      const managerName = document.getElementById("managerName");
+      const managerEmail = document.getElementById("managerEmail");
+      if (managerName && !managerName.value.trim()) managerName.value = mentee.managerName || "";
+      if (managerEmail && !managerEmail.value.trim()) managerEmail.value = mentee.managerEmail || "";
+
+      const meta = [
+        mentee.role,
+        mentee.department,
+        mentee.band,
+        mentee.tenure
+      ].filter(Boolean).join(" • ");
+
+      // Gelisim bilgisi hic girilmemisse kartla oyalanma, dogrudan soyle.
+      const body = mentee.hasNeed
+        ? [
+            textSection(t("developmentNeedSummary"), mentee.developmentNeeds),
+            textSection(t("currentChallenge"), mentee.challenge),
+            tagSection(t("developmentAreas"), mentee.devFunctionalAreas, mentee.devAreasExtra),
+            tagSection(t("competenciesToDevelop"), mentee.competenciesToDevelop, mentee.compExtra),
+            textSection(t("careerGoal"), mentee.goals),
+            textSection(t("menteeExpectations"), mentee.expectations),
+            tagSection(t("preferredMentorProfileLabel"), mentee.preferredMentorProfile),
+            cardSection(t("languagesFormatAvailability"), `
+              <div class="text">
+                ${escapeHtml(t("languages"))}: ${escapeHtml((mentee.languages || []).join(", ") || "-")}<br>
+                ${escapeHtml(t("formats"))}: ${escapeHtml((mentee.formats || []).join(", ") || "-")}<br>
+                ${escapeHtml(t("monthlyHours"))}: ${escapeHtml(mentee.hoursPerMonth || "-")}
+              </div>`),
+            textSection(t("menteeNote"), mentee.message)
+          ].join("")
+        : `<div class="section"><div class="text" style="color:#92400e">
+             ${escapeHtml(t("noNeedRecorded"))}
+           </div></div>`;
+
+      box.innerHTML = `
+        <div class="mentor-card" style="margin-top:14px">
+          <div class="mentor-top">
+            <div>
+              <div class="mentor-name">${escapeHtml(mentee.fullName || "-")}</div>
+              <div class="mentor-role">${escapeHtml(meta)}</div>
+            </div>
+            <div class="score-badge" style="background:#1a2b5e">
+              ${escapeHtml(t("menteeBadge"))}
+            </div>
+          </div>
+          ${body}
+        </div>
+      `;
+    }
+
+    function onMentorSelected() {
+      const box = document.getElementById("mentorPreview");
+      const mentor = selectedMentor();
+
+      if (!mentor) {
+        box.innerHTML = "";
+        return;
+      }
+
+      const remaining = Number(mentor.remainingCapacity || 0);
+
+      // Kapasite dolu ise bunu kartin UZERINDE goster - IK secmeden once
+      // gormeli, onay talebi gonderdikten sonra degil.
+      const badgeColor = remaining > 0 ? "#1a2b5e" : "#b45309";
+      const badgeText = remaining > 0
+        ? `${remaining} ${t("capacityFree")}`
+        : t("capacityFull");
+
+      const meta = [mentor.role, mentor.band]
+        .filter(Boolean).join(" • ");
+
+      box.innerHTML = `
+        <div class="mentor-card" style="margin-top:14px">
+          <div class="mentor-top">
+            <div>
+              <div class="mentor-name">${escapeHtml(mentor.fullName || t("unnamedMentor"))}</div>
+              <div class="mentor-role">${escapeHtml(meta)}</div>
+            </div>
+            <div class="score-badge" style="background:${badgeColor}">
+              ${escapeHtml(badgeText)}
+            </div>
+          </div>
+
+          ${textSection(t("mentorProfile"), mentor.mentorProfile)}
+          ${cardSection(t("firstSessionQuestions"), `
+            <ul class="reason-list">
+              ${buildDefaultQuestions(mentor).map(q => `<li>${escapeHtml(q)}</li>`).join("")}
+            </ul>`)}
+          ${tagSection(t("competencies"), mentor.skills)}
+          ${tagSection(t("functionalAreas"), mentor.functionalAreas)}
+          ${tagSection(t("experienceAreasLabel"), mentor.experienceAreas)}
+          ${cardSection(t("languagesFormatAvailability"), `
+            <div class="text">
+              ${escapeHtml(t("languages"))}: ${escapeHtml((mentor.languages || []).join(", ") || "-")}<br>
+              ${escapeHtml(t("formats"))}: ${escapeHtml((mentor.formats || []).join(", ") || "-")}<br>
+              ${escapeHtml(t("availability"))}: ${escapeHtml(mentor.availability || "-")}<br>
+              ${escapeHtml(t("capacity"))}: ${escapeHtml(String(mentor.capacity || "-"))} ${escapeHtml(t("menteesUnit"))}
+            </div>`)}
+          ${textSection(t("messageToMentee"), mentor.messageToMentee)}
+        </div>
+      `;
+    }
+
+    /* ------------------------------------------------------------------
+       MOD ANAHTARLARI
+       ------------------------------------------------------------------ */
+
+    function setSource(source) {
+      SOURCE = source;
+
+      document.querySelectorAll("#sourceTabs .tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.source === source);
+      });
+
+      document.getElementById("registeredPane").hidden = source !== "registered";
+      document.getElementById("manualMenteePane").hidden = source !== "manual";
+    }
+
+    function setMethod(method) {
+      METHOD = method;
+
+      document.querySelectorAll("#methodTabs .tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.method === method);
+      });
+
+      document.getElementById("aiMethodPane").hidden = method !== "ai";
+      document.getElementById("manualMethodPane").hidden = method !== "manual";
+    }
+
+    /* ------------------------------------------------------------------
+       MENTEE BILGISI  (iki kaynagi tek bicime cevirir)
+
+       Kayitli mentee secildiyse SADECE menteeId gonderilir; kimlik ve
+       ihtiyac bilgisini sunucu kendi kaydindan doldurur. Boylece
+       ekrandaki bilgi ile kayit asla ayrismaz.
+       ------------------------------------------------------------------ */
+
+    function menteePayload() {
+      if (SOURCE === "registered") {
+        const mentee = selectedMentee();
+        if (!mentee) {
+          alert(t("selectMenteeFirst"));
+          return null;
+        }
+        return { menteeId: mentee.id, mentee };
+      }
+
+      const description = document.getElementById("menteeNeed").value.trim();
+      if (!description) {
+        alert(t("enterDevelopmentNeed"));
+        return null;
+      }
+
+      return {
+        menteeId: "",
+        fullName: document.getElementById("menteeName").value.trim() || "Mentee",
+        email: document.getElementById("menteeEmail").value.trim(),
+        role: document.getElementById("menteeRole").value.trim(),
+        department: document.getElementById("menteeDepartment").value.trim(),
+        developmentNeeds: description,
+        goals: description
+      };
+    }
+
+    async function findMentors() {
+      const resultsDiv = document.getElementById("results");
+      const btn = document.getElementById("matchBtn");
+
+      const payload = menteePayload();
+      if (!payload) return;
+
+      document.getElementById("manualResult").innerHTML = "";
+
+      try {
+        btn.disabled = true;
+        btn.textContent = t("matching");
+
+        resultsDiv.innerHTML = `
+          <div class="empty-state">
+            ${escapeHtml(t("analysingProfiles"))}
+          </div>
+        `;
+
+        console.log("MATCH LANGUAGE:", currentLanguage);
+        
+        const response = await fetch(`${API_BASE_URL}/match`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          },
+          // Kayitli mentee secildiyse SADECE menteeId gider; ihtiyac
+          // metnini sunucu kendi kaydindan derler.
+          body: JSON.stringify({
+            companyId: COMPANY_ID,
+            ...payload,
+            mentee: undefined,          // arayuze ait, sunucuya gerekmez
+            language: currentLanguage
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || t("matchingFailed"));
+        }
+
+        // ESKI HATA: skoru 40'in altindaki herkes GIZLENIYORDU.
+        // Sonuc: IK bos ekran goruyor ve NEDENINI bilmiyordu.
+        //
+        // Artik tum adaylar siralanmis halde gosterilir. Zayif eslesmeler
+        // de gorunur - ama zayif olduklari acikca yazar. Karari IK verir,
+        // yazilim onun yerine karar vermez.
+        const all = (data.recommendations || [])
+          .sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
+
+        // Sunucu bos dondurduyse NEDENINI soyle.
+        // "Mentor yok", "hepsi pasif" ve "hepsi dolu" farkli sorunlardir
+        // ve farkli cozumleri vardir.
+        if (!all.length && data.emptyReason) {
+          lastRecommendations = [];
+          document.getElementById("results").innerHTML = `
+            <div class="empty-state" style="line-height:1.6">
+              <strong>${escapeHtml(t("empty_" + data.emptyReason))}</strong><br>
+              <span style="font-size:13px;color:#6b7280">
+                ${escapeHtml(t("empty_" + data.emptyReason + "_fix"))}
+              </span>
+            </div>`;
+          return;
+        }
+
+        renderResults(all);
+
+      } catch (error) {
+        resultsDiv.innerHTML = `
+          <div class="empty-state">
+            ${escapeHtml(t("errorPrefix"))} ${escapeHtml(error.message)}
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = t("findBestMentors");
+      }
+    }
+
+    function buildDefaultQuestions(mentor) {
+      const focusArea = (mentor.suggestedFocusAreas || [])[0] || t("defaultDevelopmentGoal");
+      const secondQuestion = currentLanguage === "tr"
+        ? `${t("defaultQuestion2Prefix")} ${focusArea}?`
+        : `${t("defaultQuestion2Prefix")} ${focusArea} ${t("defaultQuestion2Suffix")}`;
+
+      return [
+        t("defaultQuestion1"),
+        secondQuestion,
+        t("defaultQuestion3")
+      ];
+    }
+
+    /**
+ * Eslesme gucu bantlari.
+ * Skor artik Claude'un dogrudan verdigi 0-100 arasi bir deger.
+ */
+function bandLabel(score, notAssessed) {
+  if (notAssessed) return t("bandNotAssessed");
+  const n = Number(score || 0);
+  if (n >= 85) return t("bandVeryStrong");
+  if (n >= 70) return t("bandStrong");
+  if (n >= 55) return t("bandModerate");
+  if (n >= 40) return t("bandWeak");
+  return t("bandPoor");
+}
+
+function bandColor(score, notAssessed) {
+  if (notAssessed) return "#6b7280";
+  const n = Number(score || 0);
+  if (n >= 85) return "#15803d";
+  if (n >= 70) return "#16a34a";
+  if (n >= 55) return "#ca8a04";
+  if (n >= 40) return "#ea580c";
+  return "#9ca3af";
+}
+
+function renderResults(mentors) {
+      lastRecommendations = mentors;
+      const resultsDiv = document.getElementById("results");
+
+      if (!mentors.length) {
+        resultsDiv.innerHTML = `
+          <div class="empty-state">
+            ${escapeHtml(t("noSuitableMentor"))}
+          </div>
+        `;
+        return;
+      }
+
+      // Havuzda gercekten guclu bir aday yoksa bunu ACIKCA soyle.
+      // Sessizce bos ekran gostermek IK'yi yanlis yonlendirir.
+      const best = Number(mentors[0]?.score || 0);
+
+      let html = "";
+
+      if (best < 55) {
+        html += `
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;
+                      padding:14px 16px;margin-bottom:16px;font-size:13px;color:#92400e;
+                      line-height:1.55">
+            <strong>${escapeHtml(t("weakPoolTitle"))}</strong><br>
+            ${escapeHtml(t("weakPoolText"))}
+          </div>`;
+      }
+
+      html += `<div class="results-title">${escapeHtml(t("recommendedMentors"))}</div>`;
+
+      mentors.forEach((mentor, index) => {
+        const firstSessionQuestions = mentor.suggestedFirstSessionQuestions && mentor.suggestedFirstSessionQuestions.length
+          ? mentor.suggestedFirstSessionQuestions
+          : buildDefaultQuestions(mentor);
+
+        html += `
+          <div class="mentor-card" id="mentorCard_${index}">
+            <div class="mentor-top">
+              <div>
+                <div class="mentor-name">#${index + 1} — ${escapeHtml(mentor.fullName || t("unnamedMentor"))}</div>
+                <div class="mentor-role">${escapeHtml(mentor.role || "")}</div>
+              </div>
+              <div class="score-badge" style="background:${bandColor(mentor.score, mentor.notAssessed)}">
+                ${mentor.notAssessed
+                    ? escapeHtml(t("bandNotAssessed"))
+                    : escapeHtml(t("score")) + ": " + Math.round(mentor.score || 0) +
+                      " · " + escapeHtml(bandLabel(mentor.score))}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("aiRecommendationSummary"))}</div>
+              <div class="text">
+                ${escapeHtml(mentor.aiSummary || t("defaultAiSummary"))}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("suggestedMentoringFocus"))}</div>
+              <div class="tags">
+                ${(mentor.suggestedFocusAreas || []).map(s => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("firstSessionQuestions"))}</div>
+              <ul class="reason-list">
+                ${firstSessionQuestions.map(q => `<li>${escapeHtml(q)}</li>`).join("")}
+              </ul>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("mentorProfile"))}</div>
+              <div class="text">${escapeHtml(mentor.mentorProfile || t("noMentorProfile"))}</div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("competencies"))}</div>
+              <div class="tags">
+                ${(mentor.skills || []).map(s => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("functionalAreas"))}</div>
+              <div class="tags">
+                ${(mentor.functionalAreas || []).map(s => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("languagesFormatAvailability"))}</div>
+              <div class="text">
+                ${escapeHtml(t("languages"))}: ${escapeHtml((mentor.languages || []).join(", ") || "-")}<br>
+                ${escapeHtml(t("formats"))}: ${escapeHtml((mentor.formats || []).join(", ") || "-")}<br>
+                ${escapeHtml(t("availability"))}: ${escapeHtml(mentor.availability || "-")}<br>
+                ${escapeHtml(t("capacity"))}: ${escapeHtml(mentor.capacity || "-")} ${escapeHtml(t("menteesUnit"))}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">${escapeHtml(t("messageToMentee"))}</div>
+              <div class="text">${escapeHtml(mentor.messageToMentee || "-")}</div>
+            </div>
+
+            <div class="copy-row">
+              <button class="copy-btn" onclick="copyMentorCard(${index})">${escapeHtml(t("copy"))}</button>
+              <button class="start-btn" id="approvalBtn_${index}" onclick="requestApproval(${index})">
+                ${escapeHtml(t("requestApproval"))}
+              </button>
+            </div>
+
+            <div id="approvalLinks_${index}"></div>
+          </div>
+        `;
+      });
+
+      resultsDiv.innerHTML = html;
+    }
+
+    /* ==================================================================
+       ONAY TALEBI  (AI ve manuel yollarin ORTAK cikisi)
+
+       Eslestirmenin nasil yapildigi degisse de onay sureci ayni:
+       yonetici kapisi -> mentor + mentee onayi -> calisma alani.
+       Bu yuzden iki yol da ayni uca (/match-request) baglanir; tek
+       fark, puanin ve gerekcenin nereden geldigidir.
+       ================================================================== */
+
+    /**
+     * Talep olusturur ve onay kutusunu cizer.
+     *
+     * @param mentor    {id|mentorId, fullName, email}
+     * @param score     AI puani (manuel yolda 0)
+     * @param reason    gerekce metni
+     * @param linksBox  onay kutusunun cizilecegi element
+     * @param btn       tiklanan buton (durum yazisi icin)
+     */
+    async function createMatchRequest(mentor, score, reason, linksBox, btn) {
+      const payload = menteePayload();
+      if (!payload) return false;
+
+      const original = btn.textContent;
+
+      try {
+        btn.disabled = true;
+        btn.textContent = t("creatingRequest");
+
+        // Kayitli mentee'de kimlik ve ihtiyac bilgisini SUNUCU doldurur;
+        // burada sadece menteeId gonderilir.
+        const body = {
+          companyId: COMPANY_ID,
+          mentorId: mentor.mentorId || mentor.id || "",
+          mentorName: mentor.fullName || "",
+          mentorEmail: mentor.email || "",
+          managerName: document.getElementById("managerName").value.trim(),
+          managerEmail: document.getElementById("managerEmail").value.trim(),
+          matchScore: Math.round(Number(score) || 0),
+          matchReason: reason || "",
+          language: currentLanguage
+        };
+
+        if (payload.menteeId) {
+          body.menteeId = payload.menteeId;
+        } else {
+          // Kayitsiz mentee: kalici kimligi yok, bu yuzden gecici bir id
+          // uretilir. Tek-mentor kurali bu mentee icin DOGRULANAMAZ.
+          const menteeId = lastMenteeId || `mentee_${Date.now()}`;
+          lastMenteeId = menteeId;
+
+          body.menteeId = menteeId;
+          body.menteeName = payload.fullName || "Mentee";
+          body.menteeEmail = payload.email || "";
+          body.menteeRole = payload.role || "";
+          body.menteeDepartment = payload.department || "";
+          body.developmentNeed = payload.developmentNeeds || "";
+        }
+
+        const response = await fetch(`${API_BASE_URL}/match-request`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          },
+          body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Tek-mentor kurali cignendiginde sunucu 409 doner. IK'ya NE
+          // oldugunu ve NE YAPMASI gerektigini acikca soyle.
+          if (data.code === "mentee_already_engaged") {
+            const lines = [data.error];
+            if (data.mentorName) lines.push(`Mentor: ${data.mentorName}`);
+            if (data.action) lines.push("\n" + t("whatToDo") + " " + data.action);
+            throw new Error(lines.join("\n"));
+          }
+          throw new Error(data.error || t("approvalRequestFailed"));
+        }
+
+        btn.textContent = t("approvalRequested");
+        renderApprovalBox(data, linksBox);
+
+        // Mentee artik mesgul: listeyi tazele ki tekrar secilemesin.
+        loadCandidates();
+
+        return true;
+
+      } catch (error) {
+        alert(error.message);
+        btn.disabled = false;
+        btn.textContent = original;
+        return false;
+      }
+    }
+
+    /** AI sonuc kartindaki "Onay Talebi Gonder" butonu. */
+    async function requestApproval(index) {
+      const mentor = lastRecommendations[index];
+
+      if (!mentor) {
+        alert(t("mentorDataNotFound"));
+        return;
+      }
+
+      await createMatchRequest(
+        mentor,
+        mentor.score || 0,
+        mentor.aiReason || mentor.aiSummary || "",
+        document.getElementById(`approvalLinks_${index}`),
+        document.getElementById(`approvalBtn_${index}`)
+      );
+    }
+
+    /** Manuel eslestirme: AI cagrisi YOK, puan YOK. */
+    async function manualMatch() {
+      const mentor = selectedMentor();
+
+      if (!mentor) {
+        alert(t("selectMentorFirst"));
+        return;
+      }
+
+      const box = document.getElementById("manualResult");
+      const btn = document.getElementById("manualBtn");
+
+      // Gerekce bos birakilabilir; o zaman kaydin manuel oldugu yazilir.
+      const reason =
+        document.getElementById("manualReason").value.trim() ||
+        t("manualDefaultReason");
+
+      box.innerHTML = `
+        <div class="mentor-card">
+          <div class="mentor-top">
+            <div>
+              <div class="mentor-name">${escapeHtml(mentor.fullName || t("unnamedMentor"))}</div>
+              <div class="mentor-role">
+                ${escapeHtml(mentor.role || "")}
+              </div>
+            </div>
+            <div class="score-badge" style="background:#1a2b5e">
+              ${escapeHtml(t("manualMatchTitle"))}
+            </div>
+          </div>
+          <div id="manualLinks"></div>
+        </div>
+      `;
+
+      const ok = await createMatchRequest(
+        mentor,
+        0,                                  // manuel yolda AI puani yok
+        reason,
+        document.getElementById("manualLinks"),
+        btn
+      );
+
+      if (ok) {
+        box.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Butonu tekrar ac: IK sonraki mentee'yi eslestirebilsin.
+        // Ayni mentee'ye ikinci talep denenirse sunucu zaten 409 doner.
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = t("manualMatchButton");
+        }, 2000);
+      } else {
+        box.innerHTML = "";
+      }
+    }
+
+    /** Onay linkleri kutusu (iki yol da ayni kutuyu kullanir). */
+    function renderApprovalBox(data, linksBox) {
+      const rid = data.requestId;
+      const gated = !!data.managerRequired;
+
+      const mailBtn = (target, label) => SMTP_READY
+        ? `<button class="mail-btn" onclick="emailApproval('${escapeJs(rid)}','${target}',this)">${escapeHtml(label)}</button>`
+        : "";
+
+      // ==============================================================
+      // ONAY SIRASI
+      //
+      // Yonetici girilmisse ONCE o onaylamali. Mentor ve mentee
+      // linkleri gorunur ama e-posta butonlari GIZLENIR - IK
+      // yanlislikla once onlara gondermesin.
+      // ==============================================================
+
+      const stepBadge = (n) => gated
+        ? `<span style="background:#1a2b5e;color:#fff;font-size:10px;font-weight:700;
+            padding:2px 7px;border-radius:9px;margin-right:6px">${n}</span>`
+        : "";
+
+      linksBox.innerHTML = `
+        <div class="approval-box">
+          <h3>${escapeHtml(t("approvalCreated"))}</h3>
+
+          ${gated ? `
+            <div class="approval-link-row" style="border-left:3px solid #b5651d;
+                 background:#fffbf5;padding-left:13px">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+                <span style="background:#b5651d;color:#fff;font-size:10px;font-weight:700;
+                      padding:2px 7px;border-radius:9px">1</span>
+                <strong>${escapeHtml(t("managerApprovalLink"))}</strong>
+              </div>
+              <div style="font-size:12px;color:#8a5a2b;margin-bottom:8px">
+                ${escapeHtml(t("managerFirstHint"))}
+              </div>
+              <div class="approval-url">${escapeHtml(data.managerLink)}</div>
+              <div class="link-actions">
+                <button onclick="copyText('${escapeJs(data.managerLink)}')">${escapeHtml(t("copyManagerLink"))}</button>
+                <button class="open-btn" onclick="openLink('${escapeJs(data.managerLink)}')">${escapeHtml(t("openManagerLink"))}</button>
+                ${mailBtn("manager", t("emailManager"))}
+              </div>
+            </div>
+
+            <div style="font-size:12px;color:#8a5a2b;background:#fffbf5;
+                 border:1px solid #f3e0c8;border-radius:6px;padding:9px 12px;margin:0 0 12px">
+              ${escapeHtml(t("lockedUntilManager"))}
+            </div>
+          ` : ""}
+
+          ${!gated && SMTP_READY ? `
+            <div style="margin:0 0 18px">
+              <button class="mail-btn" style="padding:11px 22px;font-size:15px"
+                      onclick="emailApproval('${escapeJs(rid)}','both',this)">
+                ${escapeHtml(t("emailBoth"))}
+              </button>
+              <div style="font-size:12px;color:#6b7280;margin-top:7px">
+                ${escapeHtml(t("emailBothHint"))}
+              </div>
+            </div>
+          ` : ""}
+
+          ${!gated && !SMTP_READY ? `
+            <div style="font-size:12px;color:#6b7280;margin:0 0 16px">
+              ${escapeHtml(t("smtpNotSet"))}
+            </div>
+          ` : ""}
+
+          <div class="approval-link-row">
+            <strong>${stepBadge(2)}${escapeHtml(t("mentorApprovalLink"))}</strong>
+            <div class="approval-url">${escapeHtml(data.mentorLink)}</div>
+            <div class="link-actions">
+              <button onclick="copyText('${escapeJs(data.mentorLink)}')">${escapeHtml(t("copyMentorLink"))}</button>
+              <button class="open-btn" onclick="openLink('${escapeJs(data.mentorLink)}')">${escapeHtml(t("openMentorLink"))}</button>
+              ${gated ? "" : mailBtn("mentor", t("emailMentor"))}
+            </div>
+          </div>
+
+          <div class="approval-link-row">
+            <strong>${stepBadge(2)}${escapeHtml(t("menteeApprovalLink"))}</strong>
+            <div class="approval-url">${escapeHtml(data.menteeLink)}</div>
+            <div class="link-actions">
+              <button onclick="copyText('${escapeJs(data.menteeLink)}')">${escapeHtml(t("copyMenteeLink"))}</button>
+              <button class="open-btn" onclick="openLink('${escapeJs(data.menteeLink)}')">${escapeHtml(t("openMenteeLink"))}</button>
+              ${gated ? "" : mailBtn("mentee", t("emailMentee"))}
+            </div>
+          </div>
+        </div>
+      `;
+
+      linksBox.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    /* ==============================================================
+       E-POSTA GONDERIMI
+
+       Butonlar sadece SMTP yapilandirilmissa gorunur.
+       ============================================================== */
+
+    let SMTP_READY = false;
+
+    async function checkSmtp() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/email/status`, {
+          headers: { "x-api-key": API_KEY }
+        });
+        SMTP_READY = res.ok && (await res.json()).configured;
+      } catch {
+        SMTP_READY = false;
+      }
+    }
+
+    async function emailApproval(requestId, target, btn) {
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = t("emailSending");
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/email/approval/${requestId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          },
+          body: JSON.stringify({ target, lang: currentLanguage || "en" })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const parts = [data.error || t("emailFailed")];
+          if (data.detail) parts.push(data.detail);
+          if (data.action) parts.push("\n" + t("whatToDo") + " " + data.action);
+          throw new Error(parts.join("\n"));
+        }
+
+        // Kismi basarisizlik: bazilari gitti, bazilari gitmedi.
+        // IK'ya NE gitmedigini ve NEDEN gitmedigini soyle.
+        if (data.failed && data.failed.length) {
+          const reasons = data.failed
+            .map(f => `${f.type || f.email}: ${f.reason}`)
+            .join("\n");
+
+          alert(`${data.message}\n\n${t("emailNotSent")}\n${reasons}`);
+          btn.textContent = original;
+          btn.disabled = false;
+          return;
+        }
+
+        btn.textContent = t("emailSent");
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.disabled = false;
+        }, 2500);
+
+      } catch (e) {
+        alert(e.message);
+        btn.textContent = original;
+        btn.disabled = false;
+      }
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text);
+      alert(t("copied"));
+    }
+
+    function openLink(url) {
+      window.open(url, "_blank");
+    }
+
+    function copyMentorCard(index) {
+      const mentor = lastRecommendations[index];
+
+      const text = `
+${t("copyTextMentorTitle")}: ${mentor.fullName || "-"}
+${t("roleLabel")}: ${mentor.role || "-"}
+${t("score")}: ${Math.round(mentor.score || 0)}
+
+${t("aiRecommendationSummary")}:
+${mentor.aiSummary || "-"}
+
+${t("suggestedMentoringFocus")}:
+${(mentor.suggestedFocusAreas || []).join(", ") || "-"}
+
+${t("firstSessionQuestions")}:
+${(mentor.suggestedFirstSessionQuestions || buildDefaultQuestions(mentor)).join("\n") || "-"}
+
+${t("mentorProfile")}:
+${mentor.mentorProfile || "-"}
+
+${t("competencies")}:
+${(mentor.skills || []).join(", ") || "-"}
+
+${t("functionalAreas")}:
+${(mentor.functionalAreas || []).join(", ") || "-"}
+
+${t("languages")}:
+${(mentor.languages || []).join(", ") || "-"}
+
+${t("formats")}:
+${(mentor.formats || []).join(", ") || "-"}
+
+${t("availability")}:
+${mentor.availability || "-"}
+
+${t("capacity")}:
+${mentor.capacity || "-"} ${t("menteesUnit")}
+
+${t("messageToMentee")}:
+${mentor.messageToMentee || "-"}
+`;
+
+      navigator.clipboard.writeText(text.trim());
+      alert(t("recommendationCopied"));
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeJs(value) {
+      return String(value || "")
+        .replaceAll("\\", "\\\\")
+        .replaceAll("'", "\\'")
+        .replaceAll('"', "&quot;");
+    }
+  </script>
+
+<script>
+/* ==================================================================
+   LISANS UYARI BANDI
+
+   Deneme suresi bitmeden IK'nin haberi olmali. Surenin dolmasini
+   surpriz olarak yasamak, calisma gununu bolen bir kesinti demektir.
+   ================================================================== */
+(async function licenseBanner() {
+  try {
+    const res = await fetch("/license-status");
+    if (!res.ok) return;
+    const s = await res.json();
+
+    if (s.state === "trial" || s.state === "licensed") return;
+
+    const isTr = (localStorage.getItem("mentorAppLang") || "en") === "tr";
+
+    const M = {
+      trial_expiring: {
+        tr: [`Deneme süreniz ${s.trialDaysLeft} gün içinde doluyor.`,
+             "Kesintisiz devam etmek için yönetici panelinden lisans anahtarınızı girin."],
+        en: [`Your trial ends in ${s.trialDaysLeft} day${s.trialDaysLeft === 1 ? "" : "s"}.`,
+             "Enter your license key in the admin panel to continue without interruption."]
+      },
+      trial_expired: {
+        tr: ["20 günlük deneme süresi doldu — yeni eşleştirme duraklatıldı.",
+             "Mevcut çalışma alanlarınız ve toplantı notlarınız erişilebilir durumda."],
+        en: ["The 20-day trial has ended — new matching is paused.",
+             "Your existing workspaces and meeting notes remain accessible."]
+      },
+      license_expired: {
+        tr: ["Lisans süresi doldu — yeni eşleştirme duraklatıldı.",
+             "Verileriniz erişilebilir durumda. Tedarikçinizle iletişime geçin."],
+        en: ["The license has expired — new matching is paused.",
+             "Your data remains accessible. Please contact your supplier."]
+      },
+      invalid_license: {
+        tr: ["Lisans anahtarı doğrulanamıyor.",
+             "Yönetici panelinden anahtarı yeniden girin."],
+        en: ["The license key cannot be verified.",
+             "Re-enter the key in the admin panel."]
+      }
+    };
+
+    const m = (M[s.state] || M.trial_expired)[isTr ? "tr" : "en"];
+    const urgent = s.state !== "trial_expiring";
+
+    const bar = document.createElement("div");
+    bar.style.cssText = `
+      background:${urgent ? "#fef2f2" : "#fffbeb"};
+      border-bottom:1px solid ${urgent ? "#fecaca" : "#fde68a"};
+      color:${urgent ? "#991b1b" : "#92400e"};
+      padding:11px 20px;font-size:13.5px;line-height:1.5;
+      font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+      display:flex;align-items:center;gap:12px;flex-wrap:wrap;`;
+
+    bar.innerHTML =
+      `<span><strong>${m[0]}</strong> ${m[1]}</span>` +
+      `<a href="/admin.html" style="margin-left:auto;color:inherit;font-weight:600;
+         white-space:nowrap">${isTr ? "Yönetici paneli →" : "Admin panel →"}</a>`;
+
+    document.body.insertBefore(bar, document.body.firstChild);
+  } catch { /* banda ulasilamadi - sessiz gec */ }
+})();
+</script>
+
+</body>
+</html>

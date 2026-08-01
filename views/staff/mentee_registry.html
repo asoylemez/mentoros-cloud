@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MentorOS Cloud — Mentee Kayıtları</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --copper: #b5651d;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #23262d;
+    --muted: #6b7280;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --warn: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff);
+    color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text {
+    font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  select, input, textarea {
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 14px; background: #fff; color: var(--text);
+    width: 100%;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--navy);
+  }
+  select.compact { width: auto; padding: 7px 10px; font-size: 13px; }
+
+  button {
+    padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  button.danger { background: #fff; border-color: var(--err); color: var(--err); }
+  button.danger:hover:not(:disabled) { background: #fef2f2; }
+  button.sm { padding: 6px 11px; font-size: 13px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  h2 { font-size: 15px; color: var(--navy); margin-bottom: 5px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+  /* Davet */
+  .invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .invite-row input { flex: 1; min-width: 250px; background: #f9fafb; font-size: 13px; }
+
+  /* İstatistik */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 15px 17px; }
+  .stat-value { font-size: 23px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Tablo */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; padding: 11px 12px; background: #fafbfc;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .3px; white-space: nowrap;
+  }
+  td { padding: 12px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  tr:hover td { background: #fafbfc; }
+
+  .name { font-weight: 600; color: var(--navy); }
+  .email { color: var(--muted); font-size: 12px; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; background: #eef1f6; color: var(--navy); margin: 1px 2px 1px 0;
+  }
+  .badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.active   { background: #dcfce7; color: #15803d; }
+  .badge.inactive { background: #f3f4f6; color: #6b7280; }
+  .badge.full     { background: #fef3c7; color: #92400e; }
+
+  .cap-bar { width: 62px; height: 5px; background: #eceef1; border-radius: 3px; margin-top: 4px; }
+  .cap-fill { height: 100%; border-radius: 3px; background: var(--copper); }
+
+  .actions { display: flex; gap: 6px; white-space: nowrap; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+  /* Modal */
+  .modal {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(15,20,35,.55); padding: 24px;
+    overflow-y: auto;
+  }
+  .modal.open { display: block; }
+  .modal-box {
+    background: #fff; border-radius: 12px; max-width: 760px;
+    margin: 20px auto; padding: 26px 28px;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; gap: 12px;
+  }
+  .modal-close {
+    border: none; background: none; font-size: 22px; color: var(--muted);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 500;
+  }
+  textarea { min-height: 78px; resize: vertical; line-height: 1.5; }
+
+  .section-head {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--muted); font-weight: 600;
+    margin: 22px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .modal-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 13px 15px; font-size: 13px; color: #92400e;
+    line-height: 1.5; margin-bottom: 16px; display: none;
+  }
+  .warn-box.show { display: block; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff; padding: 12px 22px;
+    border-radius: 8px; font-size: 14px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div class="brand-text">MentorOS Cloud</div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact">
+        <option value="tr">Türkçe</option>
+        <option value="en">English</option>
+      </select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <div style="margin-bottom:20px">
+    <h1 data-i18n="pageTitle">Mentee Kayıtları</h1>
+    <div class="sub" data-i18n="pageSub">Kayıtlı mentee'ler, gelişim ihtiyaçları ve hedefleri</div>
+  </div>
+
+  <!-- Davet linki -->
+  <div class="card">
+    <h2 data-i18n="inviteTitle">Mentee Davet Bağlantısı</h2>
+    <div class="card-sub" data-i18n="inviteSub">
+      Bu bağlantıyı mentee adaylarına gönderin. Giriş yapmadan yalnızca kayıt
+      formunu doldurabilirler; başka hiçbir sayfayı göremezler.
+    </div>
+    <div class="invite-row">
+      <input id="inviteUrl" readonly>
+      <button class="primary" id="copyInvite" data-i18n="copy">Kopyala</button>
+      <button id="rotateInvite" data-i18n="rotate">Yenile</button>
+    </div>
+    <div class="hint" data-i18n="rotateHint">
+      "Yenile" eski bağlantıyı anında geçersiz kılar. Bağlantı yanlış kişilere ulaştıysa kullanın.
+    </div>
+
+    <div id="inviteMailBox" style="display:none;margin-top:18px;padding-top:18px;
+         border-top:1px solid var(--border)">
+      <label data-i18n="inviteMailLabel">E-posta ile gönder</label>
+      <div class="invite-row">
+        <input id="inviteEmails" data-i18n-ph="inviteMailPh"
+               placeholder="ali@firma.com, ayse@firma.com">
+        <button class="primary" id="sendInvite" data-i18n="sendInvite">Gönder</button>
+      </div>
+      <div class="hint" data-i18n="inviteMailHint">
+        Birden fazla adresi virgülle ayırın. Her birine davet bağlantısını içeren
+        bir e-posta gider.
+      </div>
+    </div>
+
+    <div id="inviteMailOff" style="display:none;margin-top:14px;font-size:12px;
+         color:var(--muted)" data-i18n="smtpNotSet">
+      E-posta ile göndermek için yönetici panelinden e-posta sunucusunu
+      yapılandırın (/admin.html).
+    </div>
+  </div>
+
+  <!-- İstatistik -->
+  <div class="stats">
+    <div class="stat"><div class="stat-value" id="sTotal">–</div>
+      <div class="stat-label" data-i18n="statTotal">toplam mentee</div></div>
+    <div class="stat"><div class="stat-value" id="sActive">–</div>
+      <div class="stat-label" data-i18n="statActive">aktif</div></div>
+    <div class="stat"><div class="stat-value" id="sInactive">–</div>
+      <div class="stat-label" data-i18n="statInactive">pasif</div></div>
+    <div class="stat"><div class="stat-value" id="sMonth">–</div>
+      <div class="stat-label" data-i18n="statMonth">bu ay eklenen</div></div>
+  </div>
+
+  <!-- Liste -->
+  <div class="card">
+    <div class="toolbar">
+      <input id="search" data-i18n-ph="searchPh" placeholder="Ada, role, gelişim alanına göre ara…">
+      <select id="statusFilter" class="compact">
+        <option value="all" data-i18n="filterAll">Tümü</option>
+        <option value="active" data-i18n="filterActive">Aktif</option>
+        <option value="inactive" data-i18n="filterInactive">Pasif</option>
+      </select>
+      <button id="refreshBtn" data-i18n="refresh">Yenile</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="thMentee">Mentee</th>
+            <th data-i18n="thRole">Rol / Departman</th>
+            <th data-i18n="thDevAreas">Gelişim Alanları</th>
+            <th data-i18n="thStatus">Durum</th>
+            <th data-i18n="thRegistered">Kayıt</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="empty" id="emptyBox" style="display:none" data-i18n="empty">
+      Henüz mentee kaydı yok. Yukarıdaki davet bağlantısını paylaşın.
+    </div>
+  </div>
+</div>
+
+<!-- ============ DÜZENLEME PENCERESİ ============ -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><h2 id="mTitle">—</h2><div class="sub" id="mMeta"></div></div>
+      <button class="modal-close" id="mClose">&times;</button>
+    </div>
+
+    <div class="section-head" data-i18n="secBasic">Temel Bilgiler</div>
+    <div class="grid2">
+      <div class="field"><label data-i18n="fFullName">Ad Soyad</label><input id="f_fullName"></div>
+      <div class="field"><label data-i18n="fEmail">E-posta</label><input id="f_email" type="email"></div>
+      <div class="field"><label data-i18n="fRole">Rol / Unvan</label><input id="f_role"></div>
+      <div class="field"><label data-i18n="fDepartment">Departman</label><input id="f_department"></div>
+      <div class="field"><label data-i18n="fBand">Kademe</label><input id="f_band"></div>
+      <div class="field"><label data-i18n="fTenure">Kıdem</label><input id="f_tenure"></div>
+    </div>
+
+    <div class="section-head" data-i18n="secDevelopment">Gelişim İhtiyacı</div>
+    <div class="field"><label data-i18n="fDevAreas">Gelişmek istediği alanlar <span data-i18n="commaSep">(virgülle ayırın)</span></label><input id="f_devFunctionalAreas"></div>
+    <div class="field"><label data-i18n="fDevExtra">Ek gelişim alanı (serbest)</label><input id="f_devAreasExtra"></div>
+    <div class="field"><label data-i18n="fDevNeeds">Gelişim ihtiyacı açıklaması</label><textarea id="f_developmentNeeds"></textarea></div>
+    <div class="field"><label data-i18n="fChallenge">Şu anki en büyük zorluğu</label><textarea id="f_challenge"></textarea></div>
+
+    <div class="section-head" data-i18n="secGoals">Hedefler</div>
+    <div class="field"><label data-i18n="fCompetencies">Geliştirmek istediği yetkinlikler <span data-i18n="commaSep">(virgülle ayırın)</span></label><input id="f_competenciesToDevelop"></div>
+    <div class="field"><label data-i18n="fCompExtra">Ek yetkinlik (serbest)</label><input id="f_compExtra"></div>
+    <div class="field"><label data-i18n="fGoals">Kariyer hedefi</label><textarea id="f_goals"></textarea></div>
+    <div class="field"><label data-i18n="fExpectations">Başarı / beklenti</label><textarea id="f_expectations"></textarea></div>
+
+    <div class="section-head" data-i18n="secPreferences">Tercihler</div>
+    <div class="grid2">
+      <div class="field"><label data-i18n="fFormats">Formatlar <span data-i18n="commaSep">(virgülle ayırın)</span></label><input id="f_formats"></div>
+      <div class="field"><label data-i18n="fHours">Aylık ayırabileceği zaman</label><input id="f_hoursPerMonth"></div>
+      <div class="field"><label data-i18n="fLanguages">Diller <span data-i18n="commaSep">(virgülle ayırın)</span></label><input id="f_languages"></div>
+      <div class="field"><label data-i18n="fMentorPref">Tercih ettiği mentor profili <span data-i18n="commaSep">(virgülle ayırın)</span></label><input id="f_preferredMentorProfile"></div>
+    </div>
+
+    <div class="section-head" data-i18n="secManager">Yönetici &amp; Durum</div>
+    <div class="grid2">
+      <div class="field"><label data-i18n="fManagerName">Yönetici adı</label><input id="f_managerName"></div>
+      <div class="field"><label data-i18n="fManagerEmail">Yönetici e-postası</label><input id="f_managerEmail" type="email"></div>
+      <div class="field"><label data-i18n="fStatus">Durum (eşleştirme)</label>
+        <select id="f_status">
+          <option value="active" data-i18n="optActive">Aktif — eşleştirmeye dahil</option>
+          <option value="inactive" data-i18n="optInactive">Pasif — eşleştirmeye dahil değil</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label data-i18n="fMessage">Mentoruna mesajı</label><textarea id="f_message"></textarea></div>
+
+    <div class="modal-foot">
+      <button class="danger" id="mDelete" data-i18n="delete">Mentee'yi Sil</button>
+      <div style="display:flex;gap:8px">
+        <button id="mCancel" data-i18n="cancel">Vazgeç</button>
+        <button class="primary" id="mSave" data-i18n="save">Kaydet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_KEY = "mentor-demo-key-2026";
+const COMPANY_ID = "default";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+const T = {
+  tr: {
+    pageTitle: "Mentee Kayıtları", pageSub: "Kayıtlı mentee'ler, gelişim ihtiyaçları ve hedefleri",
+    logout: "Çıkış",
+    inviteTitle: "Mentee Davet Bağlantısı",
+    inviteSub: "Bu bağlantıyı mentee adaylarına gönderin. Giriş yapmadan yalnızca kayıt formunu doldurabilirler; başka hiçbir sayfayı göremezler.",
+    copy: "Kopyala", rotate: "Yenile",
+    rotateHint: "\"Yenile\" eski bağlantıyı anında geçersiz kılar. Bağlantı yanlış kişilere ulaştıysa kullanın.",
+    rotateConfirm: "Eski davet bağlantısı geçersiz olacak. Devam edilsin mi?",
+    inviteMailLabel: "E-posta ile gönder", inviteMailPh: "ali@firma.com, ayse@firma.com",
+    inviteMailHint: "Birden fazla adresi virgülle ayırın. Her birine davet bağlantısını içeren bir e-posta gider.",
+    smtpNotSet: "E-posta ile göndermek için yönetici panelinden e-posta sunucusunu yapılandırın (/admin.html).",
+    sendInvite: "Gönder", sending: "Gönderiliyor…", noEmails: "Lütfen en az bir e-posta girin.",
+    notSent: "Gönderilemeyenler:", whatToDo: "Ne yapmalı:",
+    statTotal: "toplam mentee", statActive: "aktif", statInactive: "pasif", statMonth: "bu ay eklenen",
+    searchPh: "Ada, role, gelişim alanına göre ara…",
+    filterAll: "Tümü", filterActive: "Aktif", filterInactive: "Pasif", refresh: "Yenile",
+    thMentee: "Mentee", thRole: "Rol / Departman", thDevAreas: "Gelişim Alanları", thStatus: "Durum", thRegistered: "Kayıt",
+    empty: "Henüz mentee kaydı yok. Yukarıdaki davet bağlantısını paylaşın.",
+    noResult: "Aramanızla eşleşen mentee yok.",
+    badgeActive: "Aktif", badgeInactive: "Pasif",
+    view: "Aç", registered: "Kayıt",
+    secBasic: "Temel Bilgiler", secDevelopment: "Gelişim İhtiyacı", secGoals: "Hedefler",
+    secPreferences: "Tercihler", secManager: "Yönetici & Durum", commaSep: "(virgülle ayırın)",
+    fFullName: "Ad Soyad", fEmail: "E-posta", fRole: "Rol / Unvan", fDepartment: "Departman",
+    fBand: "Kademe", fTenure: "Kıdem", fCountry: "Ülke", fRegion: "Bölge / segment",
+    fDevAreas: "Gelişmek istediği alanlar", fDevExtra: "Ek gelişim alanı (serbest)",
+    fDevNeeds: "Gelişim ihtiyacı açıklaması", fChallenge: "Şu anki en büyük zorluğu",
+    fCompetencies: "Geliştirmek istediği yetkinlikler", fCompExtra: "Ek yetkinlik (serbest)",
+    fGoals: "Kariyer hedefi", fExpectations: "Başarı / beklenti",
+    fFormats: "Formatlar", fHours: "Aylık ayırabileceği zaman", fLanguages: "Diller",
+    fMentorPref: "Tercih ettiği mentor profili",
+    fManagerName: "Yönetici adı", fManagerEmail: "Yönetici e-postası", fMessage: "Mentoruna mesajı",
+    fStatus: "Durum (eşleştirme)", optActive: "Aktif — eşleştirmeye dahil", optInactive: "Pasif — eşleştirmeye dahil değil",
+    delete: "Mentee'yi Sil", cancel: "Vazgeç", save: "Kaydet", saving: "Kaydediliyor…",
+    saved: "Kaydedildi ✓", deleted: "Silindi ✓", copied: "Kopyalandı ✓",
+    deleteConfirm: "Bu mentee kaydını silmek istediğinize emin misiniz?"
+  },
+  en: {
+    pageTitle: "Mentee Registry", pageSub: "Registered mentees, their development needs and goals",
+    logout: "Log out",
+    inviteTitle: "Mentee Invitation Link",
+    inviteSub: "Send this link to prospective mentees. Without signing in they can only fill in the registration form; no other page is visible to them.",
+    copy: "Copy", rotate: "Rotate",
+    rotateHint: "\"Rotate\" invalidates the old link instantly. Use it if the link reached the wrong people.",
+    rotateConfirm: "The old invitation link will stop working. Continue?",
+    inviteMailLabel: "Send by email", inviteMailPh: "alice@company.com, bob@company.com",
+    inviteMailHint: "Separate multiple addresses with commas. Each person receives an email containing the invitation link.",
+    smtpNotSet: "To send by email, configure the email server in the admin panel (/admin.html).",
+    sendInvite: "Send", sending: "Sending…", noEmails: "Please enter at least one email.",
+    notSent: "Not sent:", whatToDo: "What to do:",
+    statTotal: "total mentees", statActive: "active", statInactive: "inactive", statMonth: "added this month",
+    searchPh: "Search by name, role, development area…",
+    filterAll: "All", filterActive: "Active", filterInactive: "Inactive", refresh: "Refresh",
+    thMentee: "Mentee", thRole: "Role / Department", thDevAreas: "Development areas", thStatus: "Status", thRegistered: "Registered",
+    empty: "No mentees yet. Share the invitation link above.",
+    noResult: "No mentee matches your search.",
+    badgeActive: "Active", badgeInactive: "Inactive",
+    view: "Open", registered: "Registered",
+    secBasic: "Basic information", secDevelopment: "Development needs", secGoals: "Goals",
+    secPreferences: "Preferences", secManager: "Manager & status", commaSep: "(comma-separated)",
+    fFullName: "Full name", fEmail: "Email", fRole: "Title / role", fDepartment: "Department",
+    fBand: "Band", fTenure: "Tenure", fCountry: "Country", fRegion: "Region / segment",
+    fDevAreas: "Areas to develop", fDevExtra: "Extra development area (free text)",
+    fDevNeeds: "Development need description", fChallenge: "Biggest current challenge",
+    fCompetencies: "Competencies to develop", fCompExtra: "Extra competency (free text)",
+    fGoals: "Career goal", fExpectations: "Success / expectations",
+    fFormats: "Formats", fHours: "Time per month", fLanguages: "Languages",
+    fMentorPref: "Preferred mentor profile",
+    fManagerName: "Manager's name", fManagerEmail: "Manager's email", fMessage: "Message to mentor",
+    fStatus: "Status (matching)", optActive: "Active — included in matching", optInactive: "Inactive — excluded from matching",
+    delete: "Delete mentee", cancel: "Cancel", save: "Save", saving: "Saving…",
+    saved: "Saved ✓", deleted: "Deleted ✓", copied: "Copied ✓",
+    deleteConfirm: "Are you sure you want to delete this mentee record?"
+  }
+};
+
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+const t = k => (T[LANG] && T[LANG][k]) || T.tr[k] || k;
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  render();
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { location.href = "/index.html?company=" + encodeURIComponent(COMPANY_ID); };
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: { "Content-Type": "application/json", "x-api-key": API_KEY, ...(options.headers || {}) }
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data.error || "Hata"); e.data = data; throw e; }
+  return data;
+}
+function toast(msg, isErr) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => { el.className = "toast"; }, 2600);
+}
+
+/* ---- Davet linki (mentee formuna isaret eder) ---- */
+async function loadInvite(rotate) {
+  const res = await fetch("/invite-link" + (rotate ? "/rotate" : ""), { method: rotate ? "POST" : "GET" });
+  if (!res.ok) return;
+  const mentorUrl = (await res.json()).inviteUrl || "";
+  $("inviteUrl").value = mentorUrl.replace("/register.html", "/mentee_register.html");
+}
+$("copyInvite").onclick = async () => {
+  const input = $("inviteUrl");
+  input.select();
+  try { await navigator.clipboard.writeText(input.value); } catch { document.execCommand("copy"); }
+  toast(t("copied"));
+};
+$("rotateInvite").onclick = async () => {
+  if (!confirm(t("rotateConfirm"))) return;
+  await loadInvite(true);
+  toast("OK");
+};
+
+/* ---- Davet e-postasi ---- */
+let SMTP_READY = false;
+async function checkSmtp() {
+  try { const res = await fetch("/email/status", { headers: { "x-api-key": API_KEY } });
+    SMTP_READY = res.ok && (await res.json()).configured; } catch { SMTP_READY = false; }
+  $("inviteMailBox").style.display = SMTP_READY ? "block" : "none";
+  $("inviteMailOff").style.display = SMTP_READY ? "none" : "block";
+}
+$("sendInvite").onclick = async () => {
+  const raw = $("inviteEmails").value.trim();
+  if (!raw) { toast(t("noEmails"), true); return; }
+  const btn = $("sendInvite"); btn.disabled = true; btn.textContent = t("sending");
+  try {
+    const data = await api(`/email/invite?companyId=${encodeURIComponent(COMPANY_ID)}`, {
+      method: "POST",
+      body: JSON.stringify({ emails: raw, lang: LANG, form: "mentee" })
+    });
+    if (data.failed && data.failed.length) {
+      alert(`${data.message}\n\n${t("notSent")}\n` + data.failed.map(f => `${f.email}: ${f.reason}`).join("\n"));
+    } else { toast(data.message); $("inviteEmails").value = ""; }
+  } catch (e) {
+    const d = e.data || {};
+    alert([d.error || e.message, d.detail, d.action && (t("whatToDo") + " " + d.action)].filter(Boolean).join("\n\n"));
+  } finally { btn.disabled = false; btn.textContent = t("sendInvite"); }
+};
+
+/* ---- Mentee listesi ---- */
+let MENTEES = [];
+async function loadMentees() {
+  MENTEES = await api(`/mentees?companyId=${encodeURIComponent(COMPANY_ID)}`);
+  render();
+}
+function filtered() {
+  const q = $("search").value.trim().toLowerCase();
+  const sf = $("statusFilter").value;
+  return MENTEES.filter(m => {
+    if (sf === "active" && m.status !== "active") return false;
+    if (sf === "inactive" && m.status === "active") return false;
+    if (!q) return true;
+    const hay = [m.fullName, m.email, m.role, m.department,
+      ...(m.devFunctionalAreas || []), ...(m.competenciesToDevelop || [])].join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+}
+function render() {
+  if (!$("rows")) return;
+  $("sTotal").textContent = MENTEES.length;
+  $("sActive").textContent = MENTEES.filter(m => m.status === "active").length;
+  $("sInactive").textContent = MENTEES.filter(m => m.status !== "active").length;
+  const now = new Date();
+  $("sMonth").textContent = MENTEES.filter(m => {
+    if (!m.createdAt) return false;
+    const d = new Date(m.createdAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+
+  const list = filtered();
+  const tbody = $("rows");
+  if (!MENTEES.length) { tbody.innerHTML = ""; $("emptyBox").style.display = "block"; $("emptyBox").textContent = t("empty"); return; }
+  $("emptyBox").style.display = list.length ? "none" : "block";
+  if (!list.length) $("emptyBox").textContent = t("noResult");
+
+  tbody.innerHTML = list.map(m => {
+    const areas = [...(m.devFunctionalAreas || []), ...(m.competenciesToDevelop || [])].slice(0, 3);
+    const badge = m.status === "active" ? "active" : "inactive";
+    const label = m.status === "active" ? t("badgeActive") : t("badgeInactive");
+    const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "–";
+    return `
+      <tr>
+        <td><div class="name">${esc(m.fullName)}</div><div class="email">${esc(m.email)}</div></td>
+        <td>${esc(m.role || "–")}${m.department ? `<div class="email">${esc(m.department)}</div>` : ""}</td>
+        <td>${areas.map(e => `<span class="tag">${esc(e)}</span>`).join("") || "–"}</td>
+        <td><span class="badge ${badge}">${label}</span></td>
+        <td style="color:var(--muted);font-size:13px">${date}</td>
+        <td class="actions"><button class="sm" onclick="openMentee('${m.id}')">${t("view")}</button></td>
+      </tr>`;
+  }).join("");
+}
+$("search").oninput = render;
+$("statusFilter").onchange = render;
+$("refreshBtn").onclick = async () => { await loadMentees(); toast("✓"); };
+
+/* ---- Duzenleme ---- */
+let EDITING = null;
+const TEXT_FIELDS = ["fullName","email","role","department","band","tenure",
+  "devAreasExtra","developmentNeeds","challenge","compExtra","goals","expectations",
+  "hoursPerMonth","managerName","managerEmail","message"];
+const ARRAY_FIELDS = ["devFunctionalAreas","competenciesToDevelop","formats","languages","preferredMentorProfile"];
+
+window.openMentee = function (id) {
+  const m = MENTEES.find(x => x.id === id);
+  if (!m) return;
+  EDITING = m;
+  $("mTitle").textContent = m.fullName || "—";
+  $("mMeta").textContent = `${m.email || ""} · ${t("registered")}: ` +
+    (m.createdAt ? new Date(m.createdAt).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "–");
+  TEXT_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = m[f] || ""; });
+  ARRAY_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = (m[f] || []).join(", "); });
+  $("f_status").value = m.status || "active";
+  $("modal").classList.add("open");
+};
+function closeModal() { $("modal").classList.remove("open"); EDITING = null; }
+$("mClose").onclick = closeModal;
+$("mCancel").onclick = closeModal;
+$("modal").onclick = e => { if (e.target === $("modal")) closeModal(); };
+const splitList = v => v.split(",").map(s => s.trim()).filter(Boolean);
+
+$("mSave").onclick = async () => {
+  if (!EDITING) return;
+  const btn = $("mSave"); btn.disabled = true; btn.textContent = t("saving");
+  try {
+    const body = { status: $("f_status").value };
+    TEXT_FIELDS.forEach(f => { body[f] = $("f_" + f).value; });
+    ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value); });
+    await api(`/mentees/${EDITING.id}`, { method: "PATCH", body: JSON.stringify(body) });
+    closeModal();
+    await loadMentees();
+    toast(t("saved"));
+  } catch (e) { toast(e.message, true); }
+  finally { btn.disabled = false; btn.textContent = t("save"); }
+};
+$("mDelete").onclick = async () => {
+  if (!EDITING) return;
+  if (!confirm(t("deleteConfirm"))) return;
+  try {
+    await api(`/mentees/${EDITING.id}`, { method: "DELETE" });
+    closeModal();
+    await loadMentees();
+    toast(t("deleted"));
+  } catch (e) { toast(e.message, true); }
+};
+
+$("logoutBtn").onclick = async () => {
+  await fetch("/company-logout", { method: "POST" });
+  location.href = "/login.html";
+};
+
+(async function init() {
+  applyLang();
+  await loadInvite(false);
+  await checkSmtp();
+  await loadMentees();
+})();
+</script>
+</body>
+</html>

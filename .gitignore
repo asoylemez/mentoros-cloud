@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Firebase artik kullanilmiyor, ama yanlislikla geri gelirse diye:
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
+.DS_Store
+*.log
+.netlify

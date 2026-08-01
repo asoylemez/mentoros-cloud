@@ -1,0 +1,31 @@
+{
+  "name": "mentoros-cloud",
+  "version": "2.0.0",
+  "description": "MentorOS Cloud - multi-tenant mentor/mentee matching platform (SQLite, Claude)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "set-admin-password": "node scripts/set-admin-password.js",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js",
+    "hash-password": "node scripts/hash-password.js",
+    "seed": "node scripts/seed-demo.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.27.0",
+    "@anthropic-ai/sdk": "^0.111.0",
+    "@anthropic-ai/vertex-sdk": "^0.16.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.4.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "nodemailer": "^9.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0 <23.0.0"
+  }
+}
