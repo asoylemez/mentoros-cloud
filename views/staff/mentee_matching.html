@@ -2027,7 +2027,19 @@ ${mentor.messageToMentee || "-"}
     if (!res.ok) return;
     const s = await res.json();
 
-    if (s.state === "trial" || s.state === "licensed") return;
+    /**
+     * Banti YALNIZCA bilinen bir uyari durumunda goster.
+     *
+     * Onceden mantik tersineydi: "trial"/"licensed" disindaki HER durum
+     * banti aciyor ve tanimadigi durumlar icin yedek metin olarak
+     * "deneme suresi doldu" kullaniliyordu. Bulut surumu "cloud" durumu
+     * donunce - ki orada deneme kavrami hic yok - musteriye yanlisligla
+     * "20 gunluk deneme doldu" uyarisi gosteriliyordu.
+     *
+     * Artik durum listede yoksa bant hic cikmaz.
+     */
+    const SHOWN = ["trial_expiring", "trial_expired", "license_expired", "invalid_license"];
+    if (!SHOWN.includes(s.state)) return;
 
     const isTr = (localStorage.getItem("mentorAppLang") || "en") === "tr";
 
@@ -2058,7 +2070,7 @@ ${mentor.messageToMentee || "-"}
       }
     };
 
-    const m = (M[s.state] || M.trial_expired)[isTr ? "tr" : "en"];
+    const m = M[s.state][isTr ? "tr" : "en"];
     const urgent = s.state !== "trial_expiring";
 
     const bar = document.createElement("div");
