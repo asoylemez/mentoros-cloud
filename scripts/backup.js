@@ -78,12 +78,46 @@ function backup() {
   const dir = path.join(BACKUP_DIR, stamp());
   fs.mkdirSync(dir, { recursive: true });
 
-  fs.copyFileSync(DB_FILE, path.join(dir, "mentoros.db"));
+  /**
+   * TUTARLI YEDEK ALMA
+   *
+   * Onceden burada duz dosya kopyalamasi (fs.copyFileSync) vardi.
+   * Bunun iki sorunu var ve ikisi de yalnizca SUNUCU CALISIRKEN
+   * ortaya cikiyor - yani tam da yedege ihtiyac duyulan durumda:
+   *
+   *   1. SQLite "WAL" kipinde calisiyor. Son yazilan kayitlar ana
+   *      dosyaya degil, yanindaki -wal dosyasina gider. Sadece ana
+   *      dosyayi kopyalamak, en yeni kayitlari DISARIDA BIRAKIR.
+   *
+   *   2. Kopyalama sirasinda bir yazma islemi surerse, yarim yazilmis
+   *      bir dosya elde edilir. Acilir gibi gorunur, ama bozuktur.
+   *
+   * "VACUUM INTO" bu iki sorunu da cozer: SQLite kendi ic kilitlerini
+   * kullanarak, o ANIN tutarli bir goruntusunu tek dosya olarak yazar.
+   * Uygulama bu sirada calismaya devam edebilir. Ayrica ciktiyi
+   * sikistirir, yani yedek dosyasi daha kucuk olur.
+   *
+   * Ayni gerekce Render'in disk anlik goruntuleri icin de gecerlidir:
+   * onlar diski oldugu gibi dondurur ve yazma ortasina denk gelebilir.
+   * Bu yuzden kurtarma icin oncelikle BU yedekleri kullanin.
+   */
+  const target = path.join(dir, "mentoros.db");
+
+  {
+    const Database = require("better-sqlite3");
+    const src = new Database(DB_FILE, { readonly: true });
+    try {
+      src.prepare("VACUUM INTO ?").run(target);
+    } finally {
+      src.close();
+    }
+  }
 
   if (fs.existsSync(ENV_FILE)) {
     fs.copyFileSync(ENV_FILE, path.join(dir, ".env"));
   } else {
-    console.warn("  UYARI: .env bulunamadi, yedeklenemedi.");
+    // Bulutta .env yoktur; degerler ortam degiskeni olarak tutulur.
+    console.log("  Not: .env bulunamadi (bulut kurulumunda normaldir).");
   }
 
   // Ozet
