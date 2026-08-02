@@ -23,8 +23,24 @@
 const fs = require("fs");
 const path = require("path");
 
-const BACKUP_DIR = path.resolve("..", "mentoros-yedekler");
 const DB_FILE = path.resolve(process.env.DB_PATH || "./data/mentoros.db");
+
+/**
+ * YEDEKLER VERITABANININ YANINA YAZILIR.
+ *
+ * Onceden calisma klasorunun bir ustune yaziliyordu. Yerel kurulumda
+ * bu dogruydu, ama BULUTTA orasi GECICI alandir: yedek alinir, "Yedek
+ * alindi" yazar, sonra ilk yeniden baslatmada SILINIR. Yani yedek tam
+ * ihtiyac duyuldugu anda ortada olmaz.
+ *
+ * Veritabaninin yanini secmek her iki kurulumda da doğruyu verir:
+ * kalici disk nereye bagliysa yedek de oraya duser.
+ *
+ * Baska bir yere almak icin:  BACKUP_DIR=/istenen/yol npm run backup
+ */
+const BACKUP_DIR = process.env.BACKUP_DIR
+  ? path.resolve(process.env.BACKUP_DIR)
+  : path.join(path.dirname(DB_FILE), "yedekler");
 const ENV_FILE = path.resolve(".env");
 
 const argv = process.argv.slice(2);
