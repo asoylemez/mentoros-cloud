@@ -10,6 +10,10 @@ const config = {
   apiKey: process.env.API_KEY || "mentor-demo-key-2026",
   siteBaseUrl: process.env.SITE_BASE_URL || "http://localhost:3000",
 
+  // Gunluk otomatik yedek (yalnizca bulut kurulumunda calisir).
+  autoBackup: bool(process.env.AUTO_BACKUP, true),
+  backupKeepDays: Math.max(1, Number(process.env.BACKUP_KEEP_DAYS || 14)),
+
   dbPath: process.env.DB_PATH || "./data/mentoros.db",
 
   /**

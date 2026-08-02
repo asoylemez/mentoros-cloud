@@ -23,24 +23,12 @@
 const fs = require("fs");
 const path = require("path");
 
-const DB_FILE = path.resolve(process.env.DB_PATH || "./data/mentoros.db");
+// Yol hesabi ve yedek alma mantigi ortak modulde; iki dosyada ayri
+// ayri durup zamanla ayrismasin diye.
+const core = require("../lib/backup-core");
 
-/**
- * YEDEKLER VERITABANININ YANINA YAZILIR.
- *
- * Onceden calisma klasorunun bir ustune yaziliyordu. Yerel kurulumda
- * bu dogruydu, ama BULUTTA orasi GECICI alandir: yedek alinir, "Yedek
- * alindi" yazar, sonra ilk yeniden baslatmada SILINIR. Yani yedek tam
- * ihtiyac duyuldugu anda ortada olmaz.
- *
- * Veritabaninin yanini secmek her iki kurulumda da doğruyu verir:
- * kalici disk nereye bagliysa yedek de oraya duser.
- *
- * Baska bir yere almak icin:  BACKUP_DIR=/istenen/yol npm run backup
- */
-const BACKUP_DIR = process.env.BACKUP_DIR
-  ? path.resolve(process.env.BACKUP_DIR)
-  : path.join(path.dirname(DB_FILE), "yedekler");
+const DB_FILE = core.DB_FILE;
+const BACKUP_DIR = core.BACKUP_DIR;
 const ENV_FILE = path.resolve(".env");
 
 const argv = process.argv.slice(2);

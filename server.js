@@ -338,6 +338,27 @@ app.listen(config.port, "0.0.0.0", () => {
     console.log(`\n  ! ${w}\n`);
   }
 
+  /**
+   * GUNLUK OTOMATIK YEDEK
+   *
+   * Yalnizca bulut kurulumunda acilir. Yerel kurulumda makine
+   * sahibinin kendi yedekleme duzeni vardir ve BACKUP.bat ile elle
+   * aliniyor; oraya habersiz bir zamanlayici eklemek dogru olmaz.
+   *
+   * Kapatmak icin:      AUTO_BACKUP=false
+   * Saklama suresi:     BACKUP_KEEP_DAYS (varsayilan 14 gun)
+   */
+  if (config.cloud && config.autoBackup) {
+    const backupCore = require("./lib/backup-core");
+
+    backupCore.startSchedule({ keepDays: config.backupKeepDays });
+
+    console.log(
+      `  Otomatik yedek : acik  (gunluk, ${config.backupKeepDays} gun saklanir)\n` +
+      `                   ${backupCore.BACKUP_DIR}\n`
+    );
+  }
+
   if (!ai.configured) {
     console.log(`
   ! Claude baglantisi kurulmamis.

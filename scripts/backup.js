@@ -23,42 +23,20 @@
 const fs = require("fs");
 const path = require("path");
 
-const DB_FILE = path.resolve(process.env.DB_PATH || "./data/mentoros.db");
+// Yol hesabi ve yedek alma mantigi ortak modulde; iki dosyada ayri
+// ayri durup zamanla ayrismasin diye.
+const core = require("../lib/backup-core");
 
-/**
- * YEDEKLER VERITABANININ YANINA YAZILIR.
- *
- * Onceden calisma klasorunun bir ustune yaziliyordu. Yerel kurulumda
- * bu dogruydu, ama BULUTTA orasi GECICI alandir: yedek alinir, "Yedek
- * alindi" yazar, sonra ilk yeniden baslatmada SILINIR. Yani yedek tam
- * ihtiyac duyuldugu anda ortada olmaz.
- *
- * Veritabaninin yanini secmek her iki kurulumda da doğruyu verir:
- * kalici disk nereye bagliysa yedek de oraya duser.
- *
- * Baska bir yere almak icin:  BACKUP_DIR=/istenen/yol npm run backup
- */
-const BACKUP_DIR = process.env.BACKUP_DIR
-  ? path.resolve(process.env.BACKUP_DIR)
-  : path.join(path.dirname(DB_FILE), "yedekler");
+const DB_FILE = core.DB_FILE;
+const BACKUP_DIR = core.BACKUP_DIR;
 const ENV_FILE = path.resolve(".env");
 
 const argv = process.argv.slice(2);
 const MODE = path.basename(process.argv[1]).includes("restore")
   ? "restore" : "backup";
 
-function stamp() {
-  return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-}
-
-function listBackups() {
-  if (!fs.existsSync(BACKUP_DIR)) return [];
-
-  return fs.readdirSync(BACKUP_DIR)
-    .filter(name => fs.statSync(path.join(BACKUP_DIR, name)).isDirectory())
-    .sort()
-    .reverse();
-}
+const stamp = core.stamp;
+const listBackups = core.listBackups;
 
 // =====================================================================
 // YEDEK AL
@@ -91,48 +69,11 @@ function backup() {
     process.exit(1);
   }
 
-  const dir = path.join(BACKUP_DIR, stamp());
-  fs.mkdirSync(dir, { recursive: true });
+  // Tutarli kopyalama (VACUUM INTO) ortak modulde; ayni mantik
+  // gunluk otomatik yedek tarafindan da kullaniliyor.
+  const { dir } = core.createBackup();
 
-  /**
-   * TUTARLI YEDEK ALMA
-   *
-   * Onceden burada duz dosya kopyalamasi (fs.copyFileSync) vardi.
-   * Bunun iki sorunu var ve ikisi de yalnizca SUNUCU CALISIRKEN
-   * ortaya cikiyor - yani tam da yedege ihtiyac duyulan durumda:
-   *
-   *   1. SQLite "WAL" kipinde calisiyor. Son yazilan kayitlar ana
-   *      dosyaya degil, yanindaki -wal dosyasina gider. Sadece ana
-   *      dosyayi kopyalamak, en yeni kayitlari DISARIDA BIRAKIR.
-   *
-   *   2. Kopyalama sirasinda bir yazma islemi surerse, yarim yazilmis
-   *      bir dosya elde edilir. Acilir gibi gorunur, ama bozuktur.
-   *
-   * "VACUUM INTO" bu iki sorunu da cozer: SQLite kendi ic kilitlerini
-   * kullanarak, o ANIN tutarli bir goruntusunu tek dosya olarak yazar.
-   * Uygulama bu sirada calismaya devam edebilir. Ayrica ciktiyi
-   * sikistirir, yani yedek dosyasi daha kucuk olur.
-   *
-   * Ayni gerekce Render'in disk anlik goruntuleri icin de gecerlidir:
-   * onlar diski oldugu gibi dondurur ve yazma ortasina denk gelebilir.
-   * Bu yuzden kurtarma icin oncelikle BU yedekleri kullanin.
-   */
-  const target = path.join(dir, "mentoros.db");
-
-  {
-    const Database = require("better-sqlite3");
-    const src = new Database(DB_FILE, { readonly: true });
-    try {
-      src.prepare("VACUUM INTO ?").run(target);
-    } finally {
-      src.close();
-    }
-  }
-
-  if (fs.existsSync(ENV_FILE)) {
-    fs.copyFileSync(ENV_FILE, path.join(dir, ".env"));
-  } else {
-    // Bulutta .env yoktur; degerler ortam degiskeni olarak tutulur.
+  if (!fs.existsSync(path.join(dir, ".env"))) {
     console.log("  Not: .env bulunamadi (bulut kurulumunda normaldir).");
   }
 
