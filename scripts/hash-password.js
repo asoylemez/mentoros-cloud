@@ -31,7 +31,7 @@ function ask(question) {
 
 (async () => {
   console.log(`
-  MentorOS Cloud - yonetici sifresi hash'i
+  MentorOS - yonetici sifresi hash'i
   ---------------------------------------------------------
   Uretilen degerleri bulut saglayicinizin "Environment
   Variables" ekranina girin. Bu ekranda gorunen duz sifre

@@ -268,7 +268,7 @@ app.listen(config.port, "0.0.0.0", () => {
   const lan = lanAddress();
 
   console.log(`
-  MentorOS Cloud is running
+  MentorOS is running
   ---------------------------------------------------------
   On this machine : http://localhost:${config.port}
   Mode            : ${config.cloud ? "CLOUD (multi-tenant)" : "LOCAL"}${config.cloud ? "" : `

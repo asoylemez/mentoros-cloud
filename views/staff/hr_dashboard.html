@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR Mentorship Dashboard</title>
+  <title>İK Paneli — MentorOS</title>
 
   <style>
     * { box-sizing: border-box; }
@@ -424,14 +424,10 @@
               M
             </div>
 
-            <div style="
-              font-size:22px;
-              font-weight:800;
-              color:#101b3f;
-              line-height:1;
-            ">
-              MentorOS
-            </div>
+            <div>
+            <div style="font-size:22px;font-weight:800;color:#101b3f;line-height:1;">MentorOS</div>
+            <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:3px;">Mentorluk Programı Yönetim Platformu</div>
+          </div>
           </div>
           
         </div>
@@ -703,7 +699,7 @@ function applyTranslations() {
     const key = el.getAttribute("data-i18n");
     el.textContent = t(key);
   });
-  document.title = t("pageTitle");
+  document.title = t("pageTitle") + " — MentorOS";
 }
 
 async function loadDashboard() {
