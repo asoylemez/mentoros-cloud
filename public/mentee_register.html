@@ -306,7 +306,7 @@
 </div>
 <div>
 <h1 data-i18n="headerTitle">Mentee registration form</h1>
-<p data-i18n="headerSubtitle">Mentoring Program</p>
+<p id="headerSubtitle">Mentoring Program</p>
 </div>
 </div>
 <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
@@ -326,18 +326,6 @@
 <div class="field-row">
 <div class="field"><label data-i18n="role" for="role">Current title / role</label>
 <input data-i18n-placeholder="phRole" id="role" placeholder="e.g. HR Specialist" type="text"/></div>
-<div class="field"><label data-i18n="band" for="band">Level / band</label>
-<select id="band">
-<option data-i18n="select" value="">Select...</option>
-<option data-i18n="item_band_6">Band 6</option>
-<option data-i18n="item_band_7">Band 7</option>
-<option data-i18n="item_band_8">Band 8</option>
-<option data-i18n="item_band_9">Band 9</option>
-<option data-i18n="item_band_10">Band 10</option>
-<option data-i18n="item_band_11">Band 11+</option>
-</select></div>
-</div>
-<div class="field-row">
 <div class="field"><label data-i18n="department" for="department">Department</label>
 <input data-i18n-placeholder="phDepartment" id="department" placeholder="e.g. HR" type="text"/></div>
 </div>
@@ -345,11 +333,11 @@
 <div class="field"><label data-i18n="tenure" for="tenure">Total tenure at the company</label>
 <select id="tenure">
 <option data-i18n="select" value="">Select...</option>
-<option data-i18n="item_less_than_2_years">Less than 2 years</option>
-<option data-i18n="item_2_4_years">2–4 years</option>
-<option data-i18n="item_5_7_years">5–7 years</option>
-<option data-i18n="item_8_10_years">8–10 years</option>
-<option data-i18n="item_10_years">10+ years</option>
+<option data-i18n="item_less_than_2_years" value="Less than 2 years">Less than 2 years</option>
+<option data-i18n="item_2_4_years" value="2–4 years">2–4 years</option>
+<option data-i18n="item_5_7_years" value="5–7 years">5–7 years</option>
+<option data-i18n="item_8_10_years" value="8–10 years">8–10 years</option>
+<option data-i18n="item_10_years" value="10+ years">10+ years</option>
 </select></div>
 </div>
 <div class="btn-row">
@@ -389,7 +377,7 @@
 <div class="char-count" id="devNeedsCount">0 / 400</div>
 </div>
 <div class="field">
-<label data-i18n="challenge" for="challenge">Your biggest current challenge <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
+<label for="challenge"><span data-i18n="challenge">Your biggest current challenge</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
 <textarea data-i18n-placeholder="phChallenge" id="challenge" style="min-height:60px" placeholder="e.g. Leading a team for the first time"></textarea>
 </div>
 <div class="btn-row">
@@ -447,7 +435,7 @@
 <div class="char-count" id="goalsCount">0 / 400</div>
 </div>
 <div class="field">
-<label data-i18n="expectations" for="expectations">What does success from this mentorship look like? <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
+<label for="expectations"><span data-i18n="expectations">What does success from this mentorship look like?</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
 <textarea data-i18n-placeholder="phExpectations" id="expectations" style="min-height:60px" placeholder="e.g. A concrete development plan and more confidence in leadership"></textarea>
 </div>
 <div class="btn-row">
@@ -523,7 +511,7 @@
 </div>
 <div class="divider"></div>
 <div class="field">
-<label data-i18n="preferredMentor">Preferred mentor profile <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
+<label><span data-i18n="preferredMentor">Preferred mentor profile</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
 <div class="tag-group" id="mentorProfileTags">
 <span class="tag" data-i18n="item_pref_same_function" data-value="Same function" onclick="toggleTag(this)">Same function</span>
 <span class="tag" data-i18n="item_pref_diff_function" data-value="Different function" onclick="toggleTag(this)">Different function</span>
@@ -541,15 +529,15 @@
 <div class="step" id="step5">
 <div class="step-label" data-i18n="step5Label">Step 5 / 5 — Manager &amp; consent</div>
 <div class="section-title" data-i18n="step5Title">A few final details</div>
-<div class="section-sub" data-i18n="step5Sub">Your manager approves the match first, so we need their details.</div>
+<div class="section-sub" data-i18n="step5Sub">Manager details are optional. If you add them, your manager approves the match first.</div>
 <div class="field-row">
-<div class="field"><label data-i18n="managerName" for="managerName">Manager's name</label>
+<div class="field"><label for="managerName"><span data-i18n="managerName">Manager's name</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
 <input data-i18n-placeholder="phManagerName" id="managerName" placeholder="e.g. Mehmet Yılmaz" type="text"/></div>
-<div class="field"><label data-i18n="managerEmail" for="managerEmail">Manager's email</label>
+<div class="field"><label for="managerEmail"><span data-i18n="managerEmail">Manager's email</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
 <input data-i18n-placeholder="phManagerEmail" id="managerEmail" placeholder="e.g. m.yilmaz@example.com" type="email"/></div>
 </div>
 <div class="field">
-<label data-i18n="menteeMsg" for="menteeMsg">A message to your future mentor <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
+<label for="menteeMsg"><span data-i18n="menteeMsg">A message to your future mentor</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
 <textarea data-i18n-placeholder="phMenteeMsg" id="menteeMsg" maxlength="400" oninput="updateChar('menteeMsg','menteeMsgCount',400)" placeholder="e.g. I'm eager to learn and open to honest feedback."></textarea>
 <div class="char-count" id="menteeMsgCount">0 / 400</div>
 </div>
@@ -623,170 +611,47 @@
       const data = await res.json();
       COMPANY_ID = data.companyId;
       COMPANY_NAME = data.companyName;
-      document.querySelectorAll("[data-company-name]").forEach(el => { el.textContent = COMPANY_NAME; });
+      renderHeaderSubtitle();
     } catch { fail(); }
   })();
 
-    const translations = {
-    "en": {
-        "headerTitle": "Mentor registration form",
-        "headerSubtitle": "Your Company Mentoring Program — E&A",
-        "step1Label": "Step 1 / 5 — Personal information",
-        "step1Title": "Let's get to know you",
-        "step1Sub": "Enter your basic details. This information will be used during the matching process.",
-        "fullName": "Full name",
-        "email": "Your Company email",
-        "role": "Current title / role",
-        "band": "Level / band",
-        "country": "Country of residence",
-        "region": "Region / segment",
-        "tenure": "Total tenure at Your Company",
-        "step2Label": "Step 2 / 5 — Expertise & career background",
-        "step2Title": "Where does your experience lie?",
-        "step2Sub": "You can select multiple areas. This is the primary basis for mentee matching.",
-        "functionalAreas": "Functional areas of expertise",
-        "industries": "Industries worked in (including pre-Your Company)",
-        "careerBio": "Career summary — briefly describe your professional journey",
-        "step3Label": "Step 3 / 5 — Competencies",
-        "step3Title": "Where do you feel strongest?",
-        "step3Sub": "Select the areas where you feel confident guiding others.",
-        "behavioural": "Behavioural competencies",
-        "technical": "Technical competencies",
-        "extraComp": "Anything not listed above you'd like to add?",
-        "step4Label": "Step 4 / 5 — Mentoring preferences",
-        "step4Title": "How would you like to mentor?",
-        "step4Sub": "These details are critical for accurate matching.",
-        "capacity": "How many mentees can you take on at once?",
-        "hours": "How much time can you commit per month?",
-        "menteeLevels": "Which levels would you prefer to mentor?",
-        "formats": "Preferred mentoring format",
-        "languages": "Languages you can mentor in",
-        "step5Label": "Step 5 / 5 — Motivation & availability",
-        "step5Title": "A few final questions",
-        "step5Sub": "This helps us improve matching quality and understand what drives you.",
-        "availability": "Current availability",
-        "motivation": "Why do you want to be a mentor?",
-        "mentorMsg": "Message to your future mentee",
-        "optional": "(optional)",
-        "visibility": "Visibility preference",
-        "submit": "Complete registration ✓",
-        "continue": "Continue →",
-        "back": "← Back",
-        "saving": "Saving...",
-        "person": "person",
-        "people": "people",
-        "hrsMonth": "hrs / month",
-        "hr": "hr",
-        "successTitle": "Registration complete!",
-        "successText": "Your mentor profile has been created and added to the Your Company Mentoring Program pool. HR or a manager will be able to find you during the matching process.",
-        "available": "Available",
-        "soon": "Soon",
-        "atCapacity": "At capacity",
-        "availableSub": "Ready to take a mentee",
-        "soonSub": "Within 1–2 months",
-        "capacitySub": "Not available now",
-        "pageTitle": "Your Company Mentor Registration",
-        "select": "Select...",
-        "phFullName": "e.g. Jane Smith",
-        "phEmail": "j.smith@example.com",
-        "phRole": "e.g. Commercial Director",
-        "phCareer": "e.g. I have 12 years in FMCG. I spent my first 5 years in sales, then transitioned to marketing. For the past 3 years I've been Commercial Director for Turkey...",
-        "phExtra": "e.g. 'I have hands-on experience advising colleagues through international transfers and relocation.'",
-        "phMsg": "e.g. 'I value open-mindedness and curiosity. I'm especially happy to share experience around career transitions and international moves.'",
-        "validateName": "Please enter the mentor full name.",
-        "validateEmail": "Please enter the your company email address.",
-        "validateRole": "Please enter the current title / role.",
-        "validateArea": "Please select at least one functional area of expertise.",
-        "validateComp": "Please select or add at least one competency.",
-        "validateCapacity": "Please select mentor capacity.",
-        "validateAvailability": "Please select current availability.",
-        "saveFail": "Failed to save mentor profile",
-        "saveError": "Error saving mentor profile: "
+  // Mentee formunun ortak arayuz metinleri. (Eskiden mentor sozlugunun
+  // kopyasiydi; uzerine yazilmayan anahtarlar mentee formunda mentor
+  // metni gosteriyordu. Artik sadece bu formun kullandigi anahtarlar var.)
+  const translations = {
+    en: {
+      fullName: "Full name",
+      email: "Company email",
+      role: "Current title / role",
+      tenure: "Total tenure at the company",
+      select: "Select...",
+      phFullName: "e.g. Jane Smith",
+      phEmail: "j.smith@example.com",
+      phRole: "e.g. HR Specialist",
+      continue: "Continue →",
+      back: "← Back",
+      submit: "Complete registration ✓",
+      saving: "Saving...",
+      saveError: "Error saving your profile: "
     },
-    "tr": {
-        "pageTitle": "Şirketiniz Mentor Kayıt Formu",
-        "headerTitle": "Mentor kayıt formu",
-        "headerSubtitle": "Şirketiniz Mentorluk Programı",
-        "step1Label": "Adım 1 / 5 — Kişisel bilgiler",
-        "step1Title": "Sizi tanıyalım",
-        "step1Sub": "Temel bilgilerinizi girin. Bu bilgiler eşleştirme sürecinde kullanılacaktır.",
-        "fullName": "Ad Soyad",
-        "email": "Şirket e-postası",
-        "role": "Mevcut unvan / rol",
-        "band": "Seviye / band",
-        "country": "Yaşadığınız ülke",
-        "region": "Bölge / segment",
-        "tenure": "Şirkette toplam çalışma süresi",
-        "step2Label": "Adım 2 / 5 — Uzmanlık ve kariyer geçmişi",
-        "step2Title": "Deneyiminiz hangi alanlarda?",
-        "step2Sub": "Birden fazla alan seçebilirsiniz. Bu bilgiler mentee eşleştirmesinin ana temelini oluşturur.",
-        "functionalAreas": "Uzmanlık fonksiyon alanları",
-        "industries": "Uzman olduğunuz sektörler",
-        "careerBio": "Kariyer özeti — profesyonel yolculuğunuzu kısaca anlatın",
-        "step3Label": "Adım 3 / 5 — Yetkinlikler",
-        "step3Title": "Hangi alanlarda daha güçlüsünüz?",
-        "step3Sub": "Başkalarına rehberlik ederken kendinizi güçlü hissettiğiniz alanları seçin.",
-        "behavioural": "Davranışsal yetkinlikler",
-        "technical": "Teknik yetkinlikler",
-        "extraComp": "Yukarıda olmayan eklemek istediğiniz bir yetkinlik var mı?",
-        "step4Label": "Adım 4 / 5 — Mentorluk tercihleri",
-        "step4Title": "Nasıl mentorluk yapmak istersiniz?",
-        "step4Sub": "Bu bilgiler doğru eşleştirme için kritiktir.",
-        "capacity": "Aynı anda kaç mentee ile çalışabilirsiniz?",
-        "hours": "Ayda ne kadar zaman ayırabilirsiniz?",
-        "menteeLevels": "Hangi seviyedeki kişilere mentorluk yapmak istersiniz?",
-        "formats": "Tercih edilen mentorluk formatı",
-        "languages": "Mentorluk yapabileceğiniz diller",
-        "step5Label": "Adım 5 / 5 — Motivasyon ve uygunluk",
-        "step5Title": "Son birkaç soru",
-        "step5Sub": "Bu bilgiler eşleştirme kalitesini artırmamıza ve motivasyonunuzu anlamamıza yardımcı olur.",
-        "availability": "Mevcut uygunluk",
-        "motivation": "Neden mentor olmak istiyorsunuz?",
-        "mentorMsg": "Gelecekteki mentee’nize mesajınız",
-        "optional": "(isteğe bağlı)",
-        "visibility": "Görünürlük tercihi",
-        "submit": "Kaydı tamamla ✓",
-        "continue": "Devam et →",
-        "back": "← Geri",
-        "saving": "Kaydediliyor...",
-        "person": "kişi",
-        "people": "kişi",
-        "hrsMonth": "saat / ay",
-        "hr": "saat",
-        "successTitle": "Kayıt tamamlandı!",
-        "successText": "Mentor profiliniz oluşturuldu ve Şirketiniz Mentorluk Programı havuzuna eklendi. HR veya yöneticiler eşleştirme sürecinde sizi bulabilecek.",
-        "available": "Available",
-        "soon": "Soon",
-        "atCapacity": "At capacity",
-        "availableSub": "Mentee almaya hazırım",
-        "soonSub": "1–2 ay içinde",
-        "capacitySub": "Şu anda uygun değilim",
-        "select": "Seçiniz...",
-        "phFullName": "örn. Jane Smith",
-        "phEmail": "j.smith@example.com",
-        "phRole": "örn. Ticari Direktör",
-        "phCareer": "örn. FMCG alanında 12 yıllık deneyimim var. İlk 5 yılımı satışta geçirdim, sonra pazarlamaya geçtim. Son 3 yıldır Türkiye Ticari Direktörü olarak çalışıyorum...",
-        "phExtra": "örn. 'Uluslararası transfer ve taşınma süreçlerinde çalışma arkadaşlarıma rehberlik etme konusunda deneyimim var.'",
-        "phMsg": "örn. 'Açık fikirliliğe ve meraka değer veririm. Kariyer geçişleri ve uluslararası görevler konusunda deneyimlerimi paylaşmaktan memnun olurum.'",
-        "validateName": "Lütfen mentorun adını ve soyadını girin.",
-        "validateEmail": "Lütfen şirket e-posta adresini girin.",
-        "validateRole": "Lütfen mevcut unvan / rol bilgisini girin.",
-        "validateArea": "Lütfen en az bir uzmanlık alanı seçin.",
-        "validateComp": "Lütfen en az bir yetkinlik seçin veya ekleyin.",
-        "validateCapacity": "Lütfen mentor kapasitesini seçin.",
-        "validateAvailability": "Lütfen mevcut uygunluk durumunu seçin.",
-        "saveFail": "Mentor profili kaydedilemedi",
-        "saveError": "Mentor profili kaydedilirken hata oluştu: "
+    tr: {
+      fullName: "Ad Soyad",
+      email: "Şirket e-postası",
+      role: "Mevcut unvan / rol",
+      tenure: "Şirkette toplam çalışma süresi",
+      select: "Seç...",
+      phFullName: "örn. Ayşe Yılmaz",
+      phEmail: "a.yilmaz@ornek.com",
+      phRole: "örn. İK Uzmanı",
+      continue: "Devam et →",
+      back: "← Geri",
+      submit: "Kaydı tamamla ✓",
+      saving: "Kaydediliyor...",
+      saveError: "Profilin kaydedilirken hata oluştu: "
     }
-};
+  };
   const optionTranslations = {
     "en": {
-        "item_band_6": "Band 6",
-        "item_band_7": "Band 7",
-        "item_band_8": "Band 8",
-        "item_band_9": "Band 9",
-        "item_band_10": "Band 10",
-        "item_band_11": "Band 11+",
         "item_belgium": "Belgium",
         "item_france": "France",
         "item_germany": "Germany",
@@ -877,12 +742,6 @@
         "item_visible_during_matching_only": "Visible during matching only"
     },
     "tr": {
-        "item_band_6": "Band 6",
-        "item_band_7": "Band 7",
-        "item_band_8": "Band 8",
-        "item_band_9": "Band 9",
-        "item_band_10": "Band 10",
-        "item_band_11": "Band 11+",
         "item_belgium": "Belçika",
         "item_france": "Fransa",
         "item_germany": "Almanya",
@@ -986,7 +845,7 @@
     step1Sub: "Enter your basic details. Your name and email are never sent to the AI.",
     department: "Department", phDepartment: "e.g. HR",
     step2Label: "Step 2 / 5 — Development needs",
-    step2Title: "Why do you want a mentor?",
+    step2Title: "Why do you want to be a mentee?",
     step2Sub: "You can select multiple areas. This is the primary basis for matching you with a mentor.",
     devAreas: "Areas you want to develop",
     devAreasExtra: "Not listed above? Add your own", phDevExtra: "e.g. Public speaking, stakeholder management",
@@ -1012,7 +871,7 @@
     item_pref_senior_leader: "Senior leader", item_pref_no_pref: "No preference",
     step5Label: "Step 5 / 5 — Manager & consent",
     step5Title: "A few final details",
-    step5Sub: "Your manager approves the match first, so we need their details.",
+    step5Sub: "Manager details are optional. If you add them, your manager approves the match first.",
     managerName: "Manager's name", phManagerName: "e.g. Mehmet Yılmaz",
     managerEmail: "Manager's email", phManagerEmail: "e.g. m.yilmaz@example.com",
     menteeMsg: "A message to your future mentor", phMenteeMsg: "e.g. I'm eager to learn and open to honest feedback.",
@@ -1027,7 +886,8 @@
     validateDevArea: "Please select at least one area to develop (or write your own).",
     validateDevNeeds: "Please describe your development need.",
     validateGoal: "Please describe your career goal.",
-    validateManager: "Please enter your manager's name and email.",
+    validateManager: "If you add manager details, please enter both your manager's name and email.",
+    validateManagerEmail: "Please enter a valid email address for your manager.",
     validateKvkk: "Please confirm the data-protection consent to continue.",
     optional: "(optional)"
   });
@@ -1040,7 +900,7 @@
     step1Sub: "Temel bilgilerini gir. Adın ve e-postan yapay zekâya asla gönderilmez.",
     department: "Departman", phDepartment: "örn. İK",
     step2Label: "Adım 2 / 5 — Gelişim ihtiyacın",
-    step2Title: "Neden mentor istiyorsun?",
+    step2Title: "Neden mentee olmak istiyorsun?",
     step2Sub: "Birden fazla alan seçebilirsin. Mentor eşleştirmesinin temel dayanağı budur.",
     devAreas: "Gelişmek istediğin alanlar",
     devAreasExtra: "Listede yoksa kendin ekle", phDevExtra: "örn. Topluluk önünde konuşma, paydaş yönetimi",
@@ -1066,7 +926,7 @@
     item_pref_senior_leader: "Üst düzey lider", item_pref_no_pref: "Fark etmez",
     step5Label: "Adım 5 / 5 — Yönetici & onay",
     step5Title: "Son birkaç bilgi",
-    step5Sub: "Eşleşmeyi önce yöneticin onaylar, o yüzden bilgilerine ihtiyacımız var.",
+    step5Sub: "Yönetici bilgileri isteğe bağlı. Girersen eşleşme önce yöneticinin onayına gider.",
     managerName: "Yöneticinin adı", phManagerName: "örn. Mehmet Yılmaz",
     managerEmail: "Yöneticinin e-postası", phManagerEmail: "örn. m.yilmaz@ornek.com",
     menteeMsg: "Gelecekteki mentoruna mesajın", phMenteeMsg: "örn. Öğrenmeye hevesliyim ve dürüst geri bildirime açığım.",
@@ -1081,9 +941,10 @@
     validateDevArea: "Lütfen en az bir gelişim alanı seç (veya kendin yaz).",
     validateDevNeeds: "Lütfen gelişim ihtiyacını anlat.",
     validateGoal: "Lütfen kariyer hedefini yaz.",
-    validateManager: "Lütfen yöneticinin adını ve e-postasını gir.",
+    validateManager: "Yönetici bilgisi gireceksen adını ve e-postasını birlikte gir.",
+    validateManagerEmail: "Lütfen yöneticin için geçerli bir e-posta adresi gir.",
     validateKvkk: "Devam etmek için KVKK onayını işaretle.",
-    optional: "(opsiyonel)"
+    optional: "(isteğe bağlı)"
   });
 
   let currentLang = localStorage.getItem("mentorAppLang") || "en";
@@ -1101,6 +962,7 @@
   function applyTranslations() {
     document.documentElement.lang = currentLang;
     document.title = t('pageTitle');
+    renderHeaderSubtitle();
     const sel = document.getElementById('languageSelect');
     if (sel) sel.value = currentLang;
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -1113,6 +975,14 @@
     });
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn && !submitBtn.disabled) submitBtn.textContent = t('submit');
+  }
+
+  // Alt baslik: "<Firma adi> — Mentorluk Programı". Firma adi davet
+  // dogrulamasindan gelir; gelmeden once sadece program adi gorunur.
+  function renderHeaderSubtitle() {
+    const el = document.getElementById('headerSubtitle');
+    if (!el) return;
+    el.textContent = COMPANY_NAME ? `${COMPANY_NAME} — ${t('headerSubtitle')}` : t('headerSubtitle');
   }
 
   function goStep(n) {
@@ -1152,7 +1022,6 @@
       fullName: document.getElementById('fullName').value.trim(),
       email: document.getElementById('email').value.trim(),
       role: document.getElementById('role').value.trim(),
-      band: document.getElementById('band').value,
       department: document.getElementById('department').value.trim(),
       tenure: document.getElementById('tenure').value,
 
@@ -1188,7 +1057,10 @@
     if (d.devFunctionalAreas.length === 0 && !d.devAreasExtra) return t('validateDevArea');
     if (!d.developmentNeeds) return t('validateDevNeeds');
     if (!d.goals) return t('validateGoal');
-    if (!d.managerName || !d.managerEmail) return t('validateManager');
+    // Yonetici bilgisi OPSIYONEL. Ama biri girildiyse digeri de gerekli:
+    // e-posta yoksa onay istenemez, isim yoksa e-postada hitap edilemez.
+    if (!!d.managerName !== !!d.managerEmail) return t('validateManager');
+    if (d.managerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.managerEmail)) return t('validateManagerEmail');
     if (!d.kvkkConsent) return t('validateKvkk');
     return '';
   }

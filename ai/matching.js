@@ -38,8 +38,9 @@ KATI GIZLILIK KURALLARI:
 DEGERLENDIRME KRITERLERI (onem sirasiyla):
 1. Mentorun deneyim ve yetkinliklerinin, mentee'nin gelisim ihtiyacini
    dogrudan karsilayip karsilamadigi.
-2. Mentorun kademe/kidem seviyesinin mentee icin uygun olup olmadigi
-   (mentor genelde bir-iki kademe uzeride olmali).
+2. Mentorun rol ve kidem seviyesinin mentee icin uygun olup olmadigi
+   (mentor genelde daha kidemli bir rolde olmali; kademe bilgisi
+   verildiyse onu da dikkate al).
 3. Ortak dil ve calisma formati uyumu.
 4. Mentorun bos kapasitesi olup olmadigi.
 
@@ -164,7 +165,7 @@ async function rankMentors(mentee, mentors, language = "tr") {
   const anonymizedBlocks = mentors.map((mentor, i) => {
     const code = `M${i + 1}`;
     codeMap.set(code, mentor);
-    return anonymizeMentor(mentor, code);
+    return anonymizeMentor(mentor, code, knownNames);
   });
 
   const prompt = `## MENTEE GELISIM IHTIYACI

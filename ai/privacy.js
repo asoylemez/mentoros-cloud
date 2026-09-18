@@ -99,13 +99,21 @@ function scrub(text, knownNames = []) {
  * Bu fonksiyon fullName, email, id gibi alanlara BILEREK hic dokunmaz.
  * Yeni bir kimlik alani eklersen, buraya eklememeye dikkat et.
  */
-function anonymizeMentor(mentor, code) {
+function anonymizeMentor(mentor, code, knownNames = []) {
   const list = arr => (Array.isArray(arr) && arr.length ? arr.join(", ") : "-");
+
+  // Mentor kendi adini (veya baska bir mentorun adini) serbest metne
+  // yazmis olabilir. Bilinen isimler maskelenir; mentorun kendi adi
+  // listede olmasa bile eklenir.
+  const names = [...knownNames, mentor.fullName].filter(Boolean);
+  const clean = text => scrub(text, names);
 
   const lines = [
     `Kod: ${code}`,
     `Rol/Unvan: ${mentor.role || "-"}`,
-    `Kademe: ${mentor.band || "-"}`,
+    // Kademe kayit formlarindan kaldirildi; sadece eski kayitlarda dolu.
+    // Bossa satir hic yazilmaz ("Kademe: -" AI'i yaniltmasin).
+    ...(mentor.band ? [`Kademe: ${mentor.band}`] : []),
     `Kidem: ${mentor.tenure || "-"}`,
     `Fonksiyonel alanlar: ${list(mentor.functionalAreas)}`,
     `Sektorler: ${list(mentor.industries)}`,
@@ -117,10 +125,10 @@ function anonymizeMentor(mentor, code) {
     `Formatlar: ${list(mentor.formats)}`,
     `Diller: ${list(mentor.languages)}`,
     `Bos kapasite: ${mentor.remainingCapacity ?? 0}`,
-    `Kariyer ozeti: ${scrub(mentor.careerBio)}`,
-    `Mentorluk yaklasimi: ${scrub(mentor.mentorProfile)}`,
-    `Yetkinlik aciklamasi: ${scrub(mentor.competencyDescription)}`,
-    `Ek yetkinlikler: ${scrub(mentor.additionalCompetencies)}`
+    `Kariyer ozeti: ${clean(mentor.careerBio)}`,
+    `Mentorluk yaklasimi: ${clean(mentor.mentorProfile)}`,
+    `Yetkinlik aciklamasi: ${clean(mentor.competencyDescription)}`,
+    `Ek yetkinlikler: ${clean(mentor.additionalCompetencies)}`
   ];
 
   return lines.join("\n");

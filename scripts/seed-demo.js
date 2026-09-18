@@ -105,7 +105,6 @@ const MOTIVATIONS = [
 ];
 const MENTOR_PROFILE = ["Same function", "Different function", "Senior leader", "No preference"];
 
-const BANDS   = ["Band 6", "Band 7", "Band 8", "Band 9", "Band 10", "Band 11+"];
 const TENURES = ["Less than 2 years", "2–4 years", "5–7 years", "8–10 years", "10+ years"];
 const HOURS   = ["1-2", "2-4", "4-6", "6+"];
 const CITIES  = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Kocaeli"];
@@ -211,7 +210,6 @@ function makeMentor(i) {
     fullName: name,
     email: emailFor(name, i),
     role: `${funcs[0]} — ${pick(["Müdür", "Kıdemli Uzman", "Direktör", "Takım Lideri", "Grup Müdürü"])}`,
-    band: pick(BANDS.slice(2)),          // mentorlar daha kidemli
     country: "Türkiye",
     location: pick(CITIES),
     region: "Türkiye",
@@ -252,7 +250,6 @@ function makeMentee(i) {
     email: emailFor(name, 900 + i),
     department: funcs[0],
     role: `${funcs[0]} — ${pick(["Uzman", "Kıdemli Uzman", "Analist", "Takım Lideri", "Yeni Müdür"])}`,
-    band: pick(BANDS.slice(0, 4)),       // mentee'ler daha az kidemli
     country: "Türkiye",
     region: "Türkiye",
     location: pick(CITIES),
