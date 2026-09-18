@@ -59,7 +59,9 @@ CREATE TABLE IF NOT EXISTS mentors (
   tenure                    TEXT DEFAULT '',
 
   functional_areas          TEXT DEFAULT '[]',   -- JSON
+  functional_areas_extra    TEXT DEFAULT '',     -- serbest metin (listede olmayan alanlar)
   industries                TEXT DEFAULT '[]',   -- JSON
+  industries_extra          TEXT DEFAULT '',     -- serbest metin (listede olmayan sektorler)
   career_bio                TEXT DEFAULT '',
 
   behavioural_competencies  TEXT DEFAULT '[]',   -- JSON

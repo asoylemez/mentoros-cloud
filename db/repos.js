@@ -418,7 +418,8 @@ const mentors = {
     db.prepare(`
       INSERT INTO mentors (
         id, company_id, full_name, email, role, band, country, location,
-        region, tenure, functional_areas, industries, career_bio,
+        region, tenure, functional_areas, functional_areas_extra,
+        industries, industries_extra, career_bio,
         behavioural_competencies, technical_competencies, additional_competencies,
         skills, competency_description, experience_areas, mentor_profile,
         capacity, hours_per_month, active_mentee_count,
@@ -427,7 +428,8 @@ const mentors = {
         status, kvkk_consent, submitted_at, created_at, updated_at
       ) VALUES (
         @id, @companyId, @fullName, @email, @role, @band, @country, @location,
-        @region, @tenure, @functionalAreas, @industries, @careerBio,
+        @region, @tenure, @functionalAreas, @functionalAreasExtra,
+        @industries, @industriesExtra, @careerBio,
         @behaviouralCompetencies, @technicalCompetencies, @additionalCompetencies,
         @skills, @competencyDescription, @experienceAreas, @mentorProfile,
         @capacity, @hoursPerMonth, 0,
@@ -447,7 +449,9 @@ const mentors = {
       region: body.region || "",
       tenure: body.tenure || "",
       functionalAreas: toJson(body.functionalAreas),
+      functionalAreasExtra: String(body.functionalAreasExtra || "").trim(),
       industries: toJson(body.industries),
+      industriesExtra: String(body.industriesExtra || "").trim(),
       careerBio: body.careerBio || "",
       behaviouralCompetencies: toJson(body.behaviouralCompetencies),
       technicalCompetencies: toJson(body.technicalCompetencies),
@@ -507,7 +511,8 @@ const mentors = {
     const SCALAR = [
       "fullName", "email", "role", "band", "country", "location", "region",
       "tenure", "careerBio", "additionalCompetencies", "competencyDescription",
-      "mentorProfile", "hoursPerMonth", "availability", "messageToMentee"
+      "mentorProfile", "hoursPerMonth", "availability", "messageToMentee",
+      "functionalAreasExtra", "industriesExtra"
     ];
     const COLUMN = {
       fullName: "full_name", email: "email", role: "role", band: "band",
@@ -516,7 +521,8 @@ const mentors = {
       additionalCompetencies: "additional_competencies",
       competencyDescription: "competency_description",
       mentorProfile: "mentor_profile", hoursPerMonth: "hours_per_month",
-      availability: "availability", messageToMentee: "message_to_mentee"
+      availability: "availability", messageToMentee: "message_to_mentee",
+      functionalAreasExtra: "functional_areas_extra", industriesExtra: "industries_extra"
     };
     const ARRAY_COLUMN = {
       functionalAreas: "functional_areas", industries: "industries",

@@ -92,6 +92,15 @@ function run() {
     status: "TEXT NOT NULL DEFAULT 'active'",
     submitted_at: "TEXT DEFAULT ''"
   };
+  // Mentor kayit formu: listede olmayan fonksiyon alani / sektor icin
+  // serbest metin (mentee formundaki dev_areas_extra ile ayni mantik).
+  for (const col of ["functional_areas_extra", "industries_extra"]) {
+    if (!columnExists("mentors", col)) {
+      db.exec(`ALTER TABLE mentors ADD COLUMN ${col} TEXT DEFAULT ''`);
+      console.log(`  migration: mentors.${col} eklendi`);
+    }
+  }
+
   for (const [col, def] of Object.entries(menteeCols)) {
     if (!columnExists("mentees", col)) {
       db.exec(`ALTER TABLE mentees ADD COLUMN ${col} ${def}`);

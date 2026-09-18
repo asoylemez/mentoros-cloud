@@ -107,6 +107,13 @@ function anonymizeMentor(mentor, code, knownNames = []) {
   // listede olmasa bile eklenir.
   const names = [...knownNames, mentor.fullName].filter(Boolean);
   const clean = text => scrub(text, names);
+  // Liste + mentorun elle yazdigi ek (serbest metin -> scrub'dan gecer)
+  const withExtra = (arr, extra) => {
+    const items = Array.isArray(arr) ? arr.filter(Boolean) : [];
+    const text = clean(extra);
+    if (text) items.push(text);
+    return items.length ? items.join(", ") : "-";
+  };
 
   const lines = [
     `Kod: ${code}`,
@@ -115,8 +122,8 @@ function anonymizeMentor(mentor, code, knownNames = []) {
     // Bossa satir hic yazilmaz ("Kademe: -" AI'i yaniltmasin).
     ...(mentor.band ? [`Kademe: ${mentor.band}`] : []),
     `Kidem: ${mentor.tenure || "-"}`,
-    `Fonksiyonel alanlar: ${list(mentor.functionalAreas)}`,
-    `Sektorler: ${list(mentor.industries)}`,
+    `Fonksiyonel alanlar: ${withExtra(mentor.functionalAreas, mentor.functionalAreasExtra)}`,
+    `Sektorler: ${withExtra(mentor.industries, mentor.industriesExtra)}`,
     `Davranissal yetkinlikler: ${list(mentor.behaviouralCompetencies)}`,
     `Teknik yetkinlikler: ${list(mentor.technicalCompetencies)}`,
     `Beceriler: ${list(mentor.skills)}`,

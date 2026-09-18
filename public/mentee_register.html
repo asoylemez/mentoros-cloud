@@ -107,6 +107,12 @@
     .section-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
 
+    /* Zorunlu alan isareti. ::after kullanildigi icin ceviri kodu
+       etiketin metnini degistirse de yildiz kaybolmaz. */
+    .req::after { content: " *"; color: #b42318; font-weight: 600; }
+    .req-note { font-size: 12px; color: var(--text-muted); margin: -0.5rem 0 1.25rem; }
+    .req-note::before { content: "* "; color: #b42318; font-weight: 600; }
+
     .field { margin-bottom: 1.25rem; }
     .field > label {
       display: block;
@@ -317,14 +323,15 @@
 <div class="step-label" data-i18n="step1Label">Step 1 / 5 — Personal information</div>
 <div class="section-title" data-i18n="step1Title">Let's get to know you</div>
 <div class="section-sub" data-i18n="step1Sub">Enter your basic details. Your name and email are never sent to the AI.</div>
+<div class="req-note" data-i18n="reqLegend">Fields marked with an asterisk are required.</div>
 <div class="field-row">
-<div class="field"><label data-i18n="fullName" for="fullName">Full name</label>
+<div class="field"><label class="req" data-i18n="fullName" for="fullName">Full name</label>
 <input data-i18n-placeholder="phFullName" id="fullName" placeholder="e.g. Jane Smith" type="text"/></div>
-<div class="field"><label data-i18n="email" for="email">Your company email</label>
+<div class="field"><label class="req" data-i18n="email" for="email">Company email</label>
 <input data-i18n-placeholder="phEmail" id="email" placeholder="j.smith@example.com" type="email"/></div>
 </div>
 <div class="field-row">
-<div class="field"><label data-i18n="role" for="role">Current title / role</label>
+<div class="field"><label class="req" data-i18n="role" for="role">Current title / role</label>
 <input data-i18n-placeholder="phRole" id="role" placeholder="e.g. HR Specialist" type="text"/></div>
 <div class="field"><label data-i18n="department" for="department">Department</label>
 <input data-i18n-placeholder="phDepartment" id="department" placeholder="e.g. HR" type="text"/></div>
@@ -351,7 +358,7 @@
 <div class="section-title" data-i18n="step2Title">Why do you want a mentor?</div>
 <div class="section-sub" data-i18n="step2Sub">You can select multiple areas. This is the primary basis for matching you with a mentor.</div>
 <div class="field">
-<label data-i18n="devAreas">Areas you want to develop</label>
+<label class="req" data-i18n="devAreas">Areas you want to develop</label>
 <div class="tag-group" id="devFuncTags">
 <span class="tag" data-i18n="item_commercial_sales" data-value="Commercial / Sales" onclick="toggleTag(this)">Commercial / Sales</span>
 <span class="tag" data-i18n="item_marketing" data-value="Marketing" onclick="toggleTag(this)">Marketing</span>
@@ -372,7 +379,7 @@
 </div>
 <div class="divider"></div>
 <div class="field">
-<label data-i18n="developmentNeeds" for="developmentNeeds">Describe your development need</label>
+<label class="req" data-i18n="developmentNeeds" for="developmentNeeds">Describe your development need</label>
 <textarea data-i18n-placeholder="phDevNeeds" id="developmentNeeds" maxlength="400" oninput="updateChar('developmentNeeds','devNeedsCount',400)" placeholder="e.g. I want to improve my communication skills and develop a more strategic perspective..."></textarea>
 <div class="char-count" id="devNeedsCount">0 / 400</div>
 </div>
@@ -430,7 +437,7 @@
 </div>
 <div class="divider"></div>
 <div class="field">
-<label data-i18n="careerGoal" for="goals">Your career goal</label>
+<label class="req" data-i18n="careerGoal" for="goals">Your career goal</label>
 <textarea data-i18n-placeholder="phGoals" id="goals" maxlength="400" oninput="updateChar('goals','goalsCount',400)" placeholder="e.g. In 2–3 years I'd like to move into a managerial role..."></textarea>
 <div class="char-count" id="goalsCount">0 / 400</div>
 </div>
@@ -543,7 +550,7 @@
 </div>
 <div class="divider"></div>
 <div class="field">
-<label data-i18n="kvkkTitle">Data protection (KVKK / GDPR)</label>
+<label class="req" data-i18n="kvkkTitle">Data protection (KVKK / GDPR)</label>
 <div class="kvkk-box">
 <p data-i18n="kvkkText">Your personal data (name, email, manager details, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.</p>
 <label class="kvkk-check">
@@ -843,6 +850,7 @@
     step1Label: "Step 1 / 5 — Personal information",
     step1Title: "Let's get to know you",
     step1Sub: "Enter your basic details. Your name and email are never sent to the AI.",
+    reqLegend: "Fields marked with an asterisk are required.",
     department: "Department", phDepartment: "e.g. HR",
     step2Label: "Step 2 / 5 — Development needs",
     step2Title: "Why do you want to be a mentee?",
@@ -898,6 +906,7 @@
     step1Label: "Adım 1 / 5 — Kişisel bilgiler",
     step1Title: "Seni tanıyalım",
     step1Sub: "Temel bilgilerini gir. Adın ve e-postan yapay zekâya asla gönderilmez.",
+    reqLegend: "Yıldız (*) ile işaretli alanlar zorunludur.",
     department: "Departman", phDepartment: "örn. İK",
     step2Label: "Adım 2 / 5 — Gelişim ihtiyacın",
     step2Title: "Neden mentee olmak istiyorsun?",

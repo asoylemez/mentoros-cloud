@@ -344,8 +344,16 @@
       <input id="f_functionalAreas">
     </div>
     <div class="field">
+      <label data-i18n="fFunctionalExtra">Listede olmayan fonksiyon alanları</label>
+      <input id="f_functionalAreasExtra">
+    </div>
+    <div class="field">
       <label data-i18n="fIndustries">Sektörler <span data-i18n="commaSep">(virgülle ayırın)</span></label>
       <input id="f_industries">
+    </div>
+    <div class="field">
+      <label data-i18n="fIndustriesExtra">Listede olmayan sektörler</label>
+      <input id="f_industriesExtra">
     </div>
     <div class="field">
       <label data-i18n="fBehavioural">Davranışsal yetkinlikler <span data-i18n="commaSep">(virgülle ayırın)</span></label>
@@ -413,10 +421,6 @@
       <div class="field">
         <label data-i18n="fAvailability">Mevcut uygunluk</label>
         <input id="f_availability">
-      </div>
-      <div class="field">
-        <label data-i18n="fVisibility">Görünürlük tercihi <span data-i18n="commaSep">(virgülle ayırın)</span></label>
-        <input id="f_visibilityPreference">
       </div>
       <div class="field">
         <label data-i18n="fStatus">Durum (eşleştirme)</label>
@@ -520,13 +524,14 @@ const T = {
     fCountry: "Yaşadığınız ülke",
     fRegion: "Bölge / segment",
     fAdditional: "Yukarıda olmayan eklemek istediğiniz bir yetkinlik var mı?",
+    fFunctionalExtra: "Listede olmayan fonksiyon alanları",
+    fIndustriesExtra: "Listede olmayan sektörler",
     fMenteeLevels: "Hangi seviyedeki kişilere mentorluk yapmak istersiniz?",
     fCapacity: "Kapasite (kaç mentee)",
     fHours: "Ayda ne kadar zaman ayırabilirsiniz?",
     fMotivations: "Neden mentor olmak istiyorsunuz?",
     fMessage: "Gelecekteki mentee'nize mesajınız",
     fAvailability: "Mevcut uygunluk",
-    fVisibility: "Görünürlük tercihi",
     fStatus: "Durum (eşleştirme)",
     fLanguages: "Diller",
     fFormats: "Formatlar",
@@ -606,13 +611,14 @@ const T = {
     fCountry: "Country you live in",
     fRegion: "Region / segment",
     fAdditional: "Any competency not listed above that you'd like to add?",
+    fFunctionalExtra: "Functional areas not in the list",
+    fIndustriesExtra: "Industries not in the list",
     fMenteeLevels: "Which levels would you prefer to mentor?",
     fCapacity: "Capacity (how many mentees)",
     fHours: "How much time can you commit per month?",
     fMotivations: "Why do you want to be a mentor?",
     fMessage: "Your message to a future mentee",
     fAvailability: "Current availability",
-    fVisibility: "Visibility preference",
     fStatus: "Status (matching)",
     fLanguages: "Languages",
     fFormats: "Formats",
@@ -790,7 +796,8 @@ function filtered() {
       ...(m.behaviouralCompetencies || []),
       ...(m.technicalCompetencies || []),
       ...(m.skills || []),
-      ...(m.experienceAreas || [])
+      ...(m.experienceAreas || []),
+      m.functionalAreasExtra, m.industriesExtra
     ].join(" ").toLowerCase();
 
     return hay.includes(q);
@@ -879,11 +886,12 @@ const ARRAY_FIELDS = [
   "functionalAreas", "industries", "behaviouralCompetencies",
   "technicalCompetencies", "skills", "experienceAreas",
   "menteeLevels", "formats", "languages",
-  "motivations", "visibilityPreference"
+  "motivations"
 ];
 const TEXT_FIELDS = [
   "fullName", "email", "role", "band", "tenure",
   "careerBio", "mentorProfile", "additionalCompetencies",
+  "functionalAreasExtra", "industriesExtra",
   "hoursPerMonth", "availability", "messageToMentee"
 ];
 

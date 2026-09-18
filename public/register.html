@@ -108,6 +108,12 @@
     .section-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
 
+    /* Zorunlu alan isareti. ::after kullanildigi icin ceviri kodu
+       etiketin metnini degistirse de yildiz kaybolmaz. */
+    .req::after { content: " *"; color: #b42318; font-weight: 600; }
+    .req-note { font-size: 12px; color: var(--text-muted); margin: -0.5rem 0 1.25rem; }
+    .req-note::before { content: "* "; color: #b42318; font-weight: 600; }
+
     .field { margin-bottom: 1.25rem; }
     .field > label {
       display: block;
@@ -347,19 +353,20 @@
 <div class="step-label" data-i18n="step1Label">Step 1 / 5 — Personal information</div>
 <div class="section-title" data-i18n="step1Title">Let's get to know you</div>
 <div class="section-sub" data-i18n="step1Sub">Enter your basic details. This information will be used during the matching process.</div>
+<div class="req-note" data-i18n="reqLegend">Fields marked with an asterisk are required.</div>
 <div class="field-row">
 <div class="field">
-<label data-i18n="fullName" for="fullName">Full name</label>
+<label class="req" data-i18n="fullName" for="fullName">Full name</label>
 <input data-i18n-placeholder="phFullName" id="fullName" placeholder="e.g. Jane Smith" type="text"/>
 </div>
 <div class="field">
-<label data-i18n="email" for="email">Company email</label>
+<label class="req" data-i18n="email" for="email">Company email</label>
 <input data-i18n-placeholder="phEmail" id="email" placeholder="j.smith@example.com" type="email"/>
 </div>
 </div>
 <div class="field-row">
 <div class="field">
-<label data-i18n="role" for="role">Current title / role</label>
+<label class="req" data-i18n="role" for="role">Current title / role</label>
 <input data-i18n-placeholder="phRole" id="role" placeholder="e.g. Commercial Director" type="text"/>
 </div>
 <div class="field">
@@ -383,7 +390,7 @@
 <div class="section-title" data-i18n="step2Title">Where does your experience lie?</div>
 <div class="section-sub" data-i18n="step2Sub">You can select multiple areas. This is the primary basis for mentee matching.</div>
 <div class="field">
-<label data-i18n="functionalAreas">Functional areas of expertise</label>
+<label class="req" data-i18n="functionalAreas">Functional areas of expertise</label>
 <div class="tag-group" id="funcTags">
 <span class="tag" data-i18n="item_commercial_sales" data-value="Commercial / Sales" onclick="toggleTag(this)">Commercial / Sales</span>
 <span class="tag" data-i18n="item_marketing" data-value="Marketing" onclick="toggleTag(this)">Marketing</span>
@@ -398,6 +405,10 @@
 <span class="tag" data-i18n="item_r_d_innovation" data-value="R&amp;D / Innovation" onclick="toggleTag(this)">R&amp;D / Innovation</span>
 </div>
 </div>
+<div class="field">
+<label data-i18n="funcExtra" for="funcExtra">Anything not listed above you'd like to add?</label>
+<input data-i18n-placeholder="phFuncExtra" id="funcExtra" maxlength="200" placeholder="e.g. Corporate communications, investor relations" type="text"/>
+</div>
 <div class="divider"></div>
 <div class="field">
 <label data-i18n="industries">Industries worked in (including previous employers)</label>
@@ -411,6 +422,10 @@
 <span class="tag copper-tag" data-i18n="item_healthcare" data-value="Healthcare" onclick="toggleTag(this,'copper')">Healthcare</span>
 <span class="tag copper-tag" data-i18n="item_energy" data-value="Energy" onclick="toggleTag(this,'copper')">Energy</span>
 </div>
+</div>
+<div class="field">
+<label data-i18n="industryExtra" for="industryExtra">Anything not listed above you'd like to add?</label>
+<input data-i18n-placeholder="phIndustryExtra" id="industryExtra" maxlength="200" placeholder="e.g. Banking, tourism, telecommunications" type="text"/>
 </div>
 <div class="divider"></div>
 <div class="field">
@@ -427,6 +442,7 @@
 <div class="step-label" data-i18n="step3Label">Step 3 / 5 — Competencies</div>
 <div class="section-title" data-i18n="step3Title">Where do you feel strongest?</div>
 <div class="section-sub" data-i18n="step3Sub">Select the areas where you feel confident guiding others.</div>
+<div class="req-note" data-i18n="compReqNote">Select or add at least one competency on this step.</div>
 <div class="field">
 <label data-i18n="behavioural">Behavioural competencies</label>
 <div class="tag-group" id="behaviouralTags">
@@ -475,7 +491,7 @@
 <div class="section-title" data-i18n="step4Title">How would you like to mentor?</div>
 <div class="section-sub" data-i18n="step4Sub">These details are critical for accurate matching.</div>
 <div class="field">
-<label data-i18n="capacity">How many mentees can you take on at once?</label>
+<label class="req" data-i18n="capacity">How many mentees can you take on at once?</label>
 <div class="capacity-row" id="capacityCards">
 <div class="cap-card" onclick="selectOne(this,'.cap-card')">
 <div class="cap-num">1</div>
@@ -571,7 +587,7 @@
 <div class="section-title" data-i18n="step5Title">A few final questions</div>
 <div class="section-sub" data-i18n="step5Sub">This helps us improve matching quality and understand what drives you.</div>
 <div class="field">
-<label data-i18n="availability">Current availability</label>
+<label class="req" data-i18n="availability">Current availability</label>
 <div class="avail-grid" id="availabilityCards">
 <div class="avail-card" data-value="Available" onclick="selectOne(this,'.avail-card')">
 <div class="avail-icon">
@@ -621,15 +637,7 @@
 <div class="char-count" id="msgCount">0 / 400</div>
 </div>
 <div class="field">
-<label data-i18n="visibility">Visibility preference</label>
-<div class="tag-group" id="visibilityTags">
-<span class="tag" data-i18n="item_visible_to_hr_only" data-value="Visible to HR only" onclick="toggleTag(this)">Visible to HR only</span>
-<span class="tag" data-i18n="item_visible_to_managers_too" data-value="Visible to managers too" onclick="toggleTag(this)">Visible to managers too</span>
-<span class="tag" data-i18n="item_visible_during_matching_only" data-value="Visible during matching only" onclick="toggleTag(this)">Visible during matching only</span>
-</div>
-</div>
-<div class="field">
-<label data-i18n="kvkkTitle">Data protection (KVKK / GDPR)</label>
+<label class="req" data-i18n="kvkkTitle">Data protection (KVKK / GDPR)</label>
 <div style="background:#f7f8fb;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:6px;">
 <p data-i18n="kvkkText" style="font-size:12.5px;color:var(--text-muted);line-height:1.6;margin:0 0 10px;">Your personal data (name, email, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.</p>
 <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
@@ -744,6 +752,12 @@
         "behavioural": "Behavioural competencies",
         "technical": "Technical competencies",
         "extraComp": "Anything not listed above you'd like to add?",
+        "funcExtra": "Anything not listed above you'd like to add?",
+        "phFuncExtra": "e.g. Corporate communications, investor relations",
+        "industryExtra": "Anything not listed above you'd like to add?",
+        "phIndustryExtra": "e.g. Banking, tourism, telecommunications",
+        "reqLegend": "Fields marked with an asterisk are required.",
+        "compReqNote": "Select or add at least one competency on this step.",
         "step4Label": "Step 4 / 5 — Mentoring preferences",
         "step4Title": "How would you like to mentor?",
         "step4Sub": "These details are critical for accurate matching.",
@@ -759,7 +773,6 @@
         "motivation": "Why do you want to be a mentor?",
         "mentorMsg": "Message to your future mentee",
         "optional": "(optional)",
-        "visibility": "Visibility preference",
         "submit": "Complete registration ✓",
         "continue": "Continue →",
         "back": "← Back",
@@ -787,7 +800,7 @@
         "validateName": "Please enter your full name.",
         "validateEmail": "Please enter your company email address.",
         "validateRole": "Please enter your current title / role.",
-        "validateArea": "Please select at least one functional area of expertise.",
+        "validateArea": "Please select at least one functional area of expertise (or write your own).",
         "validateComp": "Please select or add at least one competency.",
         "validateCapacity": "Please select mentor capacity.",
         "validateAvailability": "Please select current availability.",
@@ -819,6 +832,12 @@
         "behavioural": "Davranışsal yetkinlikler",
         "technical": "Teknik yetkinlikler",
         "extraComp": "Yukarıda olmayan eklemek istediğiniz bir yetkinlik var mı?",
+        "funcExtra": "Yukarıda olmayan eklemek istediğiniz bir alan varsa yazın",
+        "phFuncExtra": "örn. Kurumsal iletişim, yatırımcı ilişkileri",
+        "industryExtra": "Yukarıda olmayan eklemek istediğiniz bir sektör varsa yazın",
+        "phIndustryExtra": "örn. Bankacılık, turizm, telekomünikasyon",
+        "reqLegend": "Yıldız (*) ile işaretli alanlar zorunludur.",
+        "compReqNote": "Bu adımda en az bir yetkinlik seçin veya ekleyin.",
         "step4Label": "Adım 4 / 5 — Mentorluk tercihleri",
         "step4Title": "Nasıl mentorluk yapmak istersiniz?",
         "step4Sub": "Bu bilgiler doğru eşleştirme için kritiktir.",
@@ -834,7 +853,6 @@
         "motivation": "Neden mentor olmak istiyorsunuz?",
         "mentorMsg": "Gelecekteki mentee’nize mesajınız",
         "optional": "(isteğe bağlı)",
-        "visibility": "Görünürlük tercihi",
         "submit": "Kaydı tamamla ✓",
         "continue": "Devam et →",
         "back": "← Geri",
@@ -861,7 +879,7 @@
         "validateName": "Lütfen adınızı ve soyadınızı girin.",
         "validateEmail": "Lütfen şirket e-posta adresinizi girin.",
         "validateRole": "Lütfen mevcut unvan / rol bilginizi girin.",
-        "validateArea": "Lütfen en az bir uzmanlık alanı seçin.",
+        "validateArea": "Lütfen en az bir uzmanlık alanı seçin (veya kendiniz yazın).",
         "validateComp": "Lütfen en az bir yetkinlik seçin veya ekleyin.",
         "validateCapacity": "Lütfen mentor kapasitesini seçin.",
         "validateAvailability": "Lütfen mevcut uygunluk durumunu seçin.",
@@ -957,9 +975,6 @@
         "item_developing_my_leadership": "Developing my leadership",
         "item_strengthening_the_organisation": "Strengthening the organisation",
         "item_personal_growth": "Personal growth",
-        "item_visible_to_hr_only": "Visible to HR only",
-        "item_visible_to_managers_too": "Visible to managers too",
-        "item_visible_during_matching_only": "Visible during matching only"
     },
     "tr": {
         "item_belgium": "Belçika",
@@ -1047,9 +1062,6 @@
         "item_developing_my_leadership": "Liderliğimi geliştirmek",
         "item_strengthening_the_organisation": "Organizasyonu güçlendirmek",
         "item_personal_growth": "Kişisel gelişim",
-        "item_visible_to_hr_only": "Sadece HR görebilsin",
-        "item_visible_to_managers_too": "Yöneticiler de görebilsin",
-        "item_visible_during_matching_only": "Sadece eşleştirme sırasında görünsün"
     }
 };
   Object.assign(translations.en, optionTranslations.en);
@@ -1206,10 +1218,11 @@
     const menteeLevels = getSelectedTagsById('menteeLevelTags');
     const languages = getSelectedTagsById('languageTags');
     const motivations = getSelectedTagsById('motivationTags');
-    const visibilityPreference = getSelectedTagsById('visibilityTags');
 
     const careerBio = document.getElementById('careerBio').value.trim();
     const additionalCompetencies = document.getElementById('extraComp').value.trim();
+    const functionalAreasExtra = document.getElementById('funcExtra').value.trim();
+    const industriesExtra = document.getElementById('industryExtra').value.trim();
     const messageToMentee = document.getElementById('mentorMsg').value.trim();
     const availability = getAvailability();
     const capacity = getCapacity();
@@ -1237,7 +1250,9 @@
       tenure,
 
       functionalAreas,
+      functionalAreasExtra,
       industries,
+      industriesExtra,
       careerBio,
 
       behaviouralCompetencies,
@@ -1258,7 +1273,6 @@
       availability,
       motivations,
       messageToMentee,
-      visibilityPreference,
 
       activeMenteeCount: 0,
       status,
@@ -1271,7 +1285,7 @@
     if (!data.fullName) return t('validateName');
     if (!data.email) return t('validateEmail');
     if (!data.role) return t('validateRole');
-    if (data.functionalAreas.length === 0) return t('validateArea');
+    if (data.functionalAreas.length === 0 && !data.functionalAreasExtra) return t('validateArea');
     if (data.behaviouralCompetencies.length === 0 && data.technicalCompetencies.length === 0 && !data.additionalCompetencies) {
       return t('validateComp');
     }

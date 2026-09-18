@@ -234,7 +234,6 @@ function makeMentor(i) {
     availability: pick(["Available", "Available", "Available", "At capacity"]),
     motivations: sample(MOTIVATIONS, int(1, 3)),
     messageToMentee: mentorMessage(),
-    visibilityPreference: ["Visible to HR only"],
 
     status: "active",
     kvkkConsent: 1
