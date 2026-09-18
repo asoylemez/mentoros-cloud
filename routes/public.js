@@ -7,7 +7,7 @@ const {
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
 const mailer = require("../mail/mailer");
-const { wrap, requireLicense } = require("./_helpers");
+const { wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -349,7 +349,6 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
 router.post(
   "/public/workspace/:id/development-plan",
   requireWorkspaceToken,
-  requireLicense,
   wrap(async (req, res) => {
     const ms = req.mentorship;
     const mentor = mentors.get(ms.mentorId);
@@ -450,7 +449,6 @@ router.patch(
 router.post(
   "/public/workspace/:id/guided-session",
   requireWorkspaceToken,
-  requireLicense,
   wrap(async (req, res) => {
     const ms = req.mentorship;
 

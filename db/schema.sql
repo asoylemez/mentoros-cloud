@@ -369,20 +369,6 @@ CREATE INDEX IF NOT EXISTS idx_email_ref ON email_log(ref_id);
 CREATE INDEX IF NOT EXISTS idx_email_company ON email_log(company_id, sent_at DESC);
 
 -- ------------------------------------------------------------
--- Kurulum kimligi ve deneme takibi
---
--- Deneme suresinin ne zaman basladigi burada tutulur. Ayrica
--- data/ klasoru disinda bir isaret dosyasi da yazilir; ikisinden
--- EN ERKEN tarih gecerli sayilir. Boylece veritabanini silip
--- denemeyi sifirlamak islevsiz kalir.
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS install (
-  id            INTEGER PRIMARY KEY CHECK (id = 1),
-  installed_at  TEXT NOT NULL,
-  last_seen_at  TEXT NOT NULL
-);
-
--- ------------------------------------------------------------
 -- Kapanis anketleri
 --
 -- Mentorluk bitiminde IK, mentor ve mentee'ye AYRI AYRI anket

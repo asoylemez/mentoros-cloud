@@ -4,7 +4,7 @@ const config = require("../config");
 const { mentors, mentorships, meetings } = require("../db/repos");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
-const { requireApiKey, requireCompany, wrap, requireLicense } = require("./_helpers");
+const { requireApiKey, requireCompany, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -231,7 +231,7 @@ router.patch(
 // AI: GELISIM PLANI
 // =====================================================================
 
-router.post("/development-plan", requireApiKey, requireLicense, wrap(async (req, res) => {
+router.post("/development-plan", requireApiKey, wrap(async (req, res) => {
   const {
     mentorshipId,
     menteeRole,
@@ -292,7 +292,7 @@ router.post("/development-plan", requireApiKey, requireLicense, wrap(async (req,
 // cagiriyordu ama karsiligi olmadigi icin sayfa kirikti.
 // =====================================================================
 
-router.post("/guided-session", requireApiKey, requireLicense, wrap(async (req, res) => {
+router.post("/guided-session", requireApiKey, wrap(async (req, res) => {
   const {
     step = 1,
     mentorshipId = "",

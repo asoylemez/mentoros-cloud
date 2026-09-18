@@ -297,30 +297,6 @@
 
   <div class="devkey-warn" id="devKeyWarn"></div>
 
-  <!-- Lisans -->
-  <div class="card" id="licenseCard">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-      <span class="dot" id="licDot"></span>
-      <h2 data-i18n="licTitle" style="margin:0">Lisans</h2>
-    </div>
-    <div class="card-sub" id="licSummary"></div>
-
-    <div id="licBanner" class="result" style="display:none"></div>
-
-    <label for="licKey" data-i18n="licKeyLabel">Lisans anahtarı</label>
-    <input type="text" id="licKey" placeholder="MENTOROS-..." autocomplete="off"
-           spellcheck="false" style="font-family:Consolas,monospace;font-size:12px">
-    <div class="hint" data-i18n="licHint">
-      Tedarikçinizden aldığınız anahtarın tamamını yapıştırın.
-    </div>
-
-    <div class="row">
-      <button class="primary" id="licSaveBtn" data-i18n="licActivate">Etkinleştir</button>
-    </div>
-
-    <div class="result" id="licResult"></div>
-  </div>
-
   <!-- Bağlantı -->
   <div class="card">
     <h2 data-i18n="connTitle">Claude Bağlantısı</h2>
@@ -590,36 +566,13 @@ const T = {
     hintAnthropic: 'Anahtar yoksa: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com → Settings → API Keys → Create Key</a><br>Bu, Claude.ai aboneliğinden ayrı bir şeydir; kullandığınız kadar ödersiniz.',
     hintBedrock: "AWS konsolunda <strong>Bedrock → Model access</strong> bölümünden Anthropic modellerine erişim izni almış olmanız gerekir.",
     hintVertex: "Sunucuda önce şu komutun çalıştırılmış olması gerekir: <code>gcloud auth application-default login</code>",
-    licTitle: "Lisans",
-    licKeyLabel: "Lisans anahtarı",
-    licHint: "Tedarikçinizden aldığınız anahtarın tamamını yapıştırın.",
-    licActivate: "Etkinleştir",
-    licActivating: "Doğrulanıyor…",
-    licNeedKey: "Lütfen lisans anahtarını yapıştırın.",
 
-    licTrialSummary: d => `Deneme sürümü — ${d} gün kaldı`,
-    licTrialTitle: d => `Deneme sürümü: ${d} gün kaldı`,
-    licTrialDetail: "Tüm özellikler açık. Süre dolduğunda yeni eşleştirme durur; mevcut çalışma alanlarınız ve toplantı notlarınız erişilebilir kalır.",
 
-    licExpiringTitle: d => `Deneme süreniz ${d} gün içinde doluyor`,
-    licExpiringDetail: "Kesintisiz devam etmek için tedarikçinizden lisans anahtarı isteyin ve buraya girin.",
 
-    licExpiredSummary: "Süre doldu — yeni eşleştirme duraklatıldı",
-    licExpiredTitle: "20 günlük deneme süresi doldu",
-    licExpiredDetail: "Mevcut mentorluklarınız, çalışma alanlarınız ve toplantı notlarınız erişilebilir durumda. Yeni eşleştirme yapabilmek için lisans anahtarınızı girin.",
 
-    licLicExpiredTitle: "Lisans süresi doldu",
-    licLicExpiredDetail: "Verileriniz erişilebilir durumda. Yenilenmiş bir anahtar için tedarikçinizle iletişime geçin.",
 
-    licInvalidSummary: "Geçersiz lisans anahtarı",
-    licInvalidTitle: "Kayıtlı lisans anahtarı doğrulanamıyor",
-    licInvalidDetail: "Anahtarı yeniden girin veya tedarikçinizden yeni bir anahtar isteyin.",
 
-    licPerpetual: c => `Lisanslı — ${c} (süresiz)`,
-    licUntil: (c, d, n) => `Lisanslı — ${c} · ${d} tarihine kadar (${n} gün)`,
 
-    licClockTitle: "Sistem saati uyarısı:",
-    licClockDetail: "Bu bilgisayarın saati geriye alınmış görünüyor. Deneme süresi hesabı en erken kayıtlı tarihe göre yapılır.",
 
     devKeyWarn: '<strong>Dikkat:</strong> Sistem şu anda <strong>tedarikçinin geçici anahtarıyla</strong> çalışıyor — bu anahtar sunucudaki <code>.env</code> dosyasından geliyor, kurumunuza ait değil. Kullanım ücreti kuruma değil tedarikçiye yansır. Aşağıdaki formdan <strong>kurumunuzun kendi Claude erişimini</strong> bağlayın; bağladığınız anda geçici anahtar devre dışı kalır.',
     pwTitle: "Giriş Şifresi",
@@ -691,36 +644,13 @@ const T = {
     hintAnthropic: 'No key yet? <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com → Settings → API Keys → Create Key</a><br>This is separate from a Claude.ai subscription; you pay for what you use.',
     hintBedrock: "You must first request access to Anthropic models in the AWS console under <strong>Bedrock → Model access</strong>.",
     hintVertex: "Run this command on the server first: <code>gcloud auth application-default login</code>",
-    licTitle: "Lisans",
-    licKeyLabel: "Lisans anahtarı",
-    licHint: "Tedarikçinizden aldığınız anahtarın tamamını yapıştırın.",
-    licActivate: "Etkinleştir",
-    licActivating: "Doğrulanıyor…",
-    licNeedKey: "Lütfen lisans anahtarını yapıştırın.",
 
-    licTrialSummary: d => `Deneme sürümü — ${d} gün kaldı`,
-    licTrialTitle: d => `Deneme sürümü: ${d} gün kaldı`,
-    licTrialDetail: "Tüm özellikler açık. Süre dolduğunda yeni eşleştirme durur; mevcut çalışma alanlarınız ve toplantı notlarınız erişilebilir kalır.",
 
-    licExpiringTitle: d => `Deneme süreniz ${d} gün içinde doluyor`,
-    licExpiringDetail: "Kesintisiz devam etmek için tedarikçinizden lisans anahtarı isteyin ve buraya girin.",
 
-    licExpiredSummary: "Süre doldu — yeni eşleştirme duraklatıldı",
-    licExpiredTitle: "20 günlük deneme süresi doldu",
-    licExpiredDetail: "Mevcut mentorluklarınız, çalışma alanlarınız ve toplantı notlarınız erişilebilir durumda. Yeni eşleştirme yapabilmek için lisans anahtarınızı girin.",
 
-    licLicExpiredTitle: "Lisans süresi doldu",
-    licLicExpiredDetail: "Verileriniz erişilebilir durumda. Yenilenmiş bir anahtar için tedarikçinizle iletişime geçin.",
 
-    licInvalidSummary: "Geçersiz lisans anahtarı",
-    licInvalidTitle: "Kayıtlı lisans anahtarı doğrulanamıyor",
-    licInvalidDetail: "Anahtarı yeniden girin veya tedarikçinizden yeni bir anahtar isteyin.",
 
-    licPerpetual: c => `Lisanslı — ${c} (süresiz)`,
-    licUntil: (c, d, n) => `Lisanslı — ${c} · ${d} tarihine kadar (${n} gün)`,
 
-    licClockTitle: "Sistem saati uyarısı:",
-    licClockDetail: "Bu bilgisayarın saati geriye alınmış görünüyor. Deneme süresi hesabı en erken kayıtlı tarihe göre yapılır.",
 
     devKeyWarn: '<strong>Warning:</strong> The system is currently running on a <strong>supplier\'s temporary key</strong> — it comes from the <code>.env</code> file on the server and does not belong to your organisation. Usage is billed to the supplier, not to you. Connect <strong>your own Claude access</strong> using the form below; the temporary key is bypassed the moment you do.',
     pwTitle: "Sign-in Password",
@@ -745,36 +675,13 @@ const T = {
     smtpTest: "Test Connection",
     smtpTesting: "Sending test email…",
     smtpHint: 'For port 587 leave SSL <b>unchecked</b> (STARTTLS is used). For port 465 check it. With Office 365 / Google Workspace you may need an <b>app password</b> rather than the normal one.',
-    licTitle: "License",
-    licKeyLabel: "License key",
-    licHint: "Paste the full key you received from your supplier.",
-    licActivate: "Activate",
-    licActivating: "Verifying…",
-    licNeedKey: "Please paste the license key.",
 
-    licTrialSummary: d => `Trial — ${d} day${d === 1 ? "" : "s"} remaining`,
-    licTrialTitle: d => `Trial: ${d} day${d === 1 ? "" : "s"} remaining`,
-    licTrialDetail: "All features are available. When the trial ends, new matching pauses — your existing workspaces and meeting notes stay accessible.",
 
-    licExpiringTitle: d => `Your trial ends in ${d} day${d === 1 ? "" : "s"}`,
-    licExpiringDetail: "To continue without interruption, request a license key from your supplier and enter it here.",
 
-    licExpiredSummary: "Expired — new matching is paused",
-    licExpiredTitle: "The 20-day trial has ended",
-    licExpiredDetail: "Your existing mentorships, workspaces and meeting notes remain accessible. Enter your license key to resume matching.",
 
-    licLicExpiredTitle: "The license has expired",
-    licLicExpiredDetail: "Your data remains accessible. Contact your supplier for a renewed key.",
 
-    licInvalidSummary: "Invalid license key",
-    licInvalidTitle: "The stored license key cannot be verified",
-    licInvalidDetail: "Re-enter the key, or ask your supplier for a new one.",
 
-    licPerpetual: c => `Licensed — ${c} (perpetual)`,
-    licUntil: (c, d, n) => `Licensed — ${c} · until ${d} (${n} days)`,
 
-    licClockTitle: "System clock warning:",
-    licClockDetail: "This machine's clock appears to have been set back. The trial is calculated from the earliest recorded date.",
 
     privacyNote: '<strong>Why this matters:</strong> In a data-protection audit you can answer "what do you send to the AI?" with evidence rather than guesswork. Open a record and verify the masked fields (<mark>[ISIM]</mark>, <mark>[EPOSTA]</mark>, <mark>M1</mark>) with your own eyes — real names never leave the building.'
   }
@@ -932,8 +839,6 @@ async function loadStatus() {
           (ai.provider === "anthropic" && ai.anthropicApiKeyMasked
             ? ` · ${ai.anthropicApiKeyMasked}` : ""));
 
-  // Lisans
-  if (data.license) renderLicense(data.license);
 
   // Varsayilan sifre uyarisi
   if (data.auth) {
@@ -1032,102 +937,6 @@ $("testBtn").onclick = async () => {
   }
 };
 
-/* ---------- Lisans ---------- */
-
-function renderLicense(lic) {
-  const dot = $("licDot");
-  const summary = $("licSummary");
-  const banner = $("licBanner");
-
-  $("licKey").value = "";
-  $("licKey").placeholder = lic.keyMasked || "MENTOROS-...";
-
-  const show = (cls, title, detail) => {
-    banner.className = "result show " + cls;
-    banner.innerHTML =
-      `<div class="result-title">${esc(title)}</div>` +
-      (detail ? `<div class="result-detail">${esc(detail)}</div>` : "");
-  };
-
-  banner.style.display = "";
-
-  switch (lic.state) {
-    case "licensed":
-      dot.className = "dot ok";
-      summary.textContent = lic.perpetual
-        ? t("licPerpetual", lic.company)
-        : t("licUntil", lic.company, (lic.expiresAt || "").slice(0, 10), lic.daysLeft);
-      banner.style.display = "none";
-      break;
-
-    case "trial":
-      dot.className = "dot ok";
-      summary.textContent = t("licTrialSummary", lic.trialDaysLeft);
-      show("ok", t("licTrialTitle", lic.trialDaysLeft), t("licTrialDetail"));
-      break;
-
-    case "trial_expiring":
-      dot.className = "dot warn";
-      summary.textContent = t("licTrialSummary", lic.trialDaysLeft);
-      show("err", t("licExpiringTitle", lic.trialDaysLeft), t("licExpiringDetail"));
-      break;
-
-    case "trial_expired":
-      dot.className = "dot err";
-      summary.textContent = t("licExpiredSummary");
-      show("err", t("licExpiredTitle"), t("licExpiredDetail"));
-      break;
-
-    case "license_expired":
-      dot.className = "dot err";
-      summary.textContent = t("licExpiredSummary");
-      show("err", t("licLicExpiredTitle"), t("licLicExpiredDetail"));
-      break;
-
-    case "invalid_license":
-      dot.className = "dot err";
-      summary.textContent = t("licInvalidSummary");
-      show("err", t("licInvalidTitle"), t("licInvalidDetail"));
-      break;
-  }
-
-  // Saat geri alinmis olabilir - sessizce gecme.
-  if (lic.clockWarning) {
-    banner.style.display = "";
-    banner.innerHTML +=
-      `<div class="result-action"><strong>${esc(t("licClockTitle"))}</strong> ` +
-      `${esc(t("licClockDetail"))}</div>`;
-  }
-}
-
-$("licSaveBtn").onclick = async () => {
-  const btn = $("licSaveBtn");
-  const key = $("licKey").value.trim();
-
-  if (!key) {
-    showResult($("licResult"), { ok: false, title: t("licNeedKey") });
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = t("licActivating");
-
-  try {
-    const data = await api("/admin/license", {
-      method: "PUT",
-      body: JSON.stringify({ key, lang: LANG })
-    });
-
-    renderLicense(data.license);
-    showResult($("licResult"), { ok: true, title: data.message });
-
-  } catch (e) {
-    showResult($("licResult"), { ok: false, title: t("errorTitle"), detail: e.message });
-  } finally {
-    btn.disabled = false;
-    btn.textContent = t("licActivate");
-  }
-};
 
 /* ---------- Sifre ---------- */
 

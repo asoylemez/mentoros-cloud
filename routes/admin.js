@@ -7,7 +7,6 @@ const settings = require("../db/settings");
 const audit = require("../ai/audit");
 const { testConnection, resetClient } = require("../ai/client");
 const mailer = require("../mail/mailer");
-const license = require("../license/state");
 const { wrap } = require("./_helpers");
 
 const router = express.Router();
@@ -155,7 +154,6 @@ router.get("/admin/status", requireAdmin, wrap(async (req, res) => {
       isSuperAdmin: true,
       companyCount: require("../db/repos").companies.list().length
     },
-    license: license.status(),
     privacy: {
       piiScrubbing: config.privacy.scrubPii
     },
@@ -206,63 +204,6 @@ router.put("/admin/smtp-config", requireAdmin, wrap(async (req, res) => {
 
 router.post("/admin/test-smtp", requireAdmin, wrap(async (req, res) => {
   res.json(await mailer.testConnection(req.body?.lang || "tr"));
-}));
-
-// =====================================================================
-// LISANS
-// =====================================================================
-
-router.put("/admin/license", requireAdmin, wrap(async (req, res) => {
-  const { key, lang = "en" } = req.body;
-  const tr = lang === "tr";
-
-  if (!key || !String(key).trim()) {
-    return res.status(400).json({
-      error: tr ? "Lisans anahtari gerekli." : "A license key is required."
-    });
-  }
-
-  const result = license.activate(key);
-
-  if (!result.ok) {
-    // Neyin yanlis oldugunu SOYLE - "gecersiz" tek basina ise yaramaz.
-    const reasons = {
-      format: {
-        tr: "Anahtar bicimi hatali. Tamamini kopyaladiginizdan emin olun (MENTOROS- ile baslar).",
-        en: "The key format is wrong. Make sure you copied all of it (it starts with MENTOROS-)."
-      },
-      tampered: {
-        tr: "Anahtar dogrulanamadi. Kopyalarken bir karakter eksik veya fazla olabilir.",
-        en: "The key could not be verified. A character may be missing or extra."
-      },
-      expired: {
-        tr: "Bu anahtarin suresi zaten dolmus.",
-        en: "This key has already expired."
-      },
-      no_public_key: {
-        tr: "Bu kurulum lisans dogrulamasi icin yapilandirilmamis. Tedarikciye bildirin.",
-        en: "This installation is not configured for license verification. Contact your supplier."
-      },
-      empty: { tr: "Lisans anahtari bos.", en: "The license key is empty." }
-    };
-
-    const r = reasons[result.reason] || reasons.tampered;
-
-    return res.status(400).json({
-      error: tr ? r.tr : r.en,
-      code: result.reason
-    });
-  }
-
-  res.json({
-    success: true,
-    message: tr ? "Lisans etkinlestirildi." : "License activated.",
-    license: license.status()
-  });
-}));
-
-router.get("/admin/license", requireAdmin, wrap(async (req, res) => {
-  res.json(license.status());
 }));
 
 // =====================================================================

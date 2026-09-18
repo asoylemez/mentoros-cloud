@@ -4,7 +4,7 @@ const config = require("../config");
 const { mentors, mentees, mentorships, matchRequests } = require("../db/repos");
 const { rankMentors } = require("../ai/matching");
 const { composeMenteeNeed, shortNeedSummary } = require("../lib/menteeNeed");
-const { requireApiKey, requireCompany, wrap, requireLicense } = require("./_helpers");
+const { requireApiKey, requireCompany, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -89,7 +89,7 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
 // ESLESTIRME
 // =====================================================================
 
-router.post("/match", requireApiKey, requireLicense, wrap(async (req, res) => {
+router.post("/match", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
   if (!companyId) return;
   const language = req.body.language || "tr";
@@ -192,7 +192,7 @@ router.post("/match", requireApiKey, requireLicense, wrap(async (req, res) => {
 // ESLESME TALEBI + ONAY
 // =====================================================================
 
-router.post("/match-request", requireApiKey, requireLicense, wrap(async (req, res) => {
+router.post("/match-request", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
   if (!companyId) return;
   const { mentorId, mentorName } = req.body;

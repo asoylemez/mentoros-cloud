@@ -114,21 +114,6 @@ function run() {
     console.log("  migration: mentors.kvkk_consent eklendi");
   }
 
-  // Kurulum kimligi / deneme takibi
-  const hasInstall = db.prepare(
-    `SELECT name FROM sqlite_master WHERE type='table' AND name='install'`
-  ).get();
-
-  if (!hasInstall) {
-    db.exec(`
-      CREATE TABLE install (
-        id           INTEGER PRIMARY KEY CHECK (id = 1),
-        installed_at TEXT NOT NULL,
-        last_seen_at TEXT NOT NULL
-      );
-    `);
-    console.log("  migration: install tablosu eklendi");
-  }
 
   // Denetim kaydi artik kalici (once sadece bellekteydi).
   const hasAudit = db.prepare(

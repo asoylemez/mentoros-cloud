@@ -141,40 +141,6 @@ app.use(require("./routes/surveys"));   // kapanis anketleri
 
 // --- Saglik kontrolu --------------------------------------------------
 
-/**
- * Lisans durumu ozeti.
- *
- * Kimlik dogrulamasi ISTEMEZ - IK sayfalari bunu okuyup uyari bandi
- * gosterir. Sadece durum ve kalan gun doner; anahtar veya firma
- * bilgisi ICERMEZ.
- */
-app.get("/license-status", (req, res) => {
-  /**
-   * Bulut surumunde deneme/lisans kavrami yok. IK sayfalarindaki uyari
-   * bandi da gorunmemeli - musteriye anlamsiz bir "deneme bitiyor"
-   * uyarisi gostermek guven kaybettirir.
-   */
-  if (config.cloud) {
-    return res.json({
-      state: "cloud",
-      active: true,
-      trialDaysLeft: null,
-      daysLeft: null,
-      clockWarning: false
-    });
-  }
-
-  const s = require("./license/state").status();
-
-  res.json({
-    state: s.state,
-    active: s.active,
-    trialDaysLeft: s.trialDaysLeft ?? null,
-    daysLeft: s.daysLeft ?? null,
-    clockWarning: !!s.clockWarning
-  });
-});
-
 app.get("/health", (req, res) => {
   const ai = settings.getAiConfigPublic();
 
