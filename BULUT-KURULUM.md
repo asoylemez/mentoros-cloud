@@ -145,6 +145,11 @@ dosyaları da vardır. Güvenli kopya için sunucuyu kısa süre durdurup
 
 Sağlayıcının otomatik yedeği olsa bile **kendi kopyanızı da tutun**.
 
+**En kolay yol:** `superadmin` ile giriş yapın → Yönetim paneli →
+**Yedekler** kartı → "Şimdi yedek al ve indir". Tek bir `.db` dosyası
+iner; uygulama çalışırken alınmış tutarlı bir kopyadır, `-wal`/`-shm`
+gerekmez. Kart, son indirmenin üzerinden 7 günden fazla geçtiyse uyarır.
+
 ---
 
 ## 8. Gizlilik notu

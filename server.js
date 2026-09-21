@@ -133,6 +133,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(require("./routes/public"));      // token bazli, API anahtari YOK
 app.use(require("./routes/admin"));       // yonetici paneli (ayri sifre)
 app.use(require("./routes/companies"));
+app.use(require("./routes/backups"));   // yedek indirme (yalnizca super admin)
 app.use(require("./routes/people"));
 app.use(require("./routes/matching"));
 app.use(require("./routes/mentorships"));

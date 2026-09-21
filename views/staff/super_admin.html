@@ -99,6 +99,12 @@
   .pill.err  { background: #fee2e2; color: #991b1b; }
   .pill.off  { background: #e5e7eb; color: #4b5563; }
 
+  .bk-disk { font-size: 13px; color: var(--muted); }
+  .bk-bar { height: 8px; background: #eef0f4; border-radius: 6px; overflow: hidden; margin: 6px 0 4px; max-width: 420px; }
+  .bk-fill { height: 100%; background: var(--navy); }
+  .bk-fill.warn { background: var(--warn); }
+  .bk-fill.err  { background: var(--err); }
+
   .counts { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
@@ -201,6 +207,35 @@
     <h2>Hesaplar</h2>
     <p class="card-sub">Süresi dolan hesap giriş yapamaz; verisi silinmez, tarih uzatılınca erişim geri açılır.</p>
     <div id="list"><div class="empty">Yükleniyor…</div></div>
+  </div>
+
+  <!-- Yedekler -->
+  <div class="card" id="backupCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">Yedekler</h2>
+      <span class="pill off" id="bkLastPill">Yükleniyor…</span>
+    </div>
+    <p class="card-sub" style="margin-top:6px">
+      Sunucu her gün otomatik yedek alır ve 14 gün saklar. Bu yedekler veritabanıyla
+      <strong>aynı diskte</strong> durur; disk kaybolursa ikisi birlikte gider.
+      Haftada en az bir kez güncel yedeği indirip sunucu dışında saklayın.
+    </p>
+
+    <div class="bk-disk" id="bkDisk"></div>
+
+    <div style="margin:14px 0 6px">
+      <button class="primary" id="bkNowBtn" onclick="downloadSnapshot()">Şimdi yedek al ve indir</button>
+      <div class="hint">O anın tutarlı bir kopyasını tek dosya (.db) olarak indirir. Sunucu diskinde yer kaplamaz.</div>
+    </div>
+
+    <div id="bkList" style="margin-top:14px"><div class="empty">Yükleniyor…</div></div>
+
+    <div class="warn-note">
+      İndirilen dosya <strong>tüm kuruluşların kişisel verilerini</strong> içerir (isimler, e-postalar,
+      toplantı notları). Erişimi kısıtlı ya da şifreli bir yerde saklayın; e-postayla göndermeyin.
+      Claude API anahtarı ve SMTP şifresi dosyada şifreli durur; geri yüklemede aynı
+      <code>SETTINGS_SECRET</code> değeri gerekir.
+    </div>
   </div>
 
 </div>
@@ -506,6 +541,151 @@ async function removeCompany(id) {
   }
 }
 
+/* ---------------- YEDEKLER ---------------- */
+
+function fmtBytes(n) {
+  if (!n) return "0 KB";
+  const u = ["B", "KB", "MB", "GB"];
+  let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return (i >= 2 ? n.toFixed(1) : Math.round(n)) + " " + u[i];
+}
+
+function fmtDate(iso) {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleString("tr-TR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+  });
+}
+
+function backupKind(name, automatic) {
+  if (automatic) return "Otomatik";
+  if (/geri-yukleme-oncesi/.test(name)) return "Geri yükleme öncesi";
+  return "Elle";
+}
+
+async function loadBackups() {
+  let data;
+  try {
+    data = await api("/backups");
+  } catch (e) {
+    if (e.message !== "session") {
+      document.getElementById("bkList").innerHTML =
+        `<div class="empty">Yedek bilgisi alınamadı: ${esc(e.message)}</div>`;
+    }
+    return;
+  }
+
+  // Son indirme hatirlaticisi: 7 gunu gecerse uyar.
+  const pill = document.getElementById("bkLastPill");
+  if (!data.lastDownloadAt) {
+    pill.className = "pill err";
+    pill.textContent = "Henüz dışarı yedek indirilmedi";
+  } else {
+    const days = Math.floor((Date.now() - Date.parse(data.lastDownloadAt)) / 86400000);
+    pill.className = "pill " + (days > 7 ? "warn" : "ok");
+    pill.textContent = "Son indirme: " + (days === 0 ? "bugün" : `${days} gün önce`);
+    pill.title = fmtDate(data.lastDownloadAt);
+  }
+
+  // Disk durumu
+  const diskEl = document.getElementById("bkDisk");
+  const parts = [
+    `Veritabanı: <strong>${fmtBytes(data.databaseSize)}</strong>`,
+    `Sunucudaki yedekler: <strong>${fmtBytes(data.backupsSize)}</strong>`
+  ];
+  if (data.disk && data.disk.total) {
+    const pct = Math.min(100, Math.round((data.disk.used / data.disk.total) * 100));
+    const cls = pct >= 90 ? "err" : pct >= 75 ? "warn" : "";
+    diskEl.innerHTML =
+      `Kalıcı disk: <strong>${fmtBytes(data.disk.used)}</strong> / ${fmtBytes(data.disk.total)} dolu (%${pct})` +
+      `<div class="bk-bar"><div class="bk-fill ${cls}" style="width:${pct}%"></div></div>` +
+      parts.join(" · ") +
+      (pct >= 75 ? `<div style="color:var(--warn);margin-top:4px">Disk dolmaya yaklaşıyor. Render'da diski büyütmeyi veya yedek saklama süresini (BACKUP_KEEP_DAYS) kısaltmayı düşünün.</div>` : "");
+  } else {
+    diskEl.innerHTML = parts.join(" · ");
+  }
+
+  // Liste
+  const listEl = document.getElementById("bkList");
+  if (!data.backups.length) {
+    listEl.innerHTML = `<div class="empty">Sunucuda henüz otomatik yedek yok. İlk yedek, sunucu açıldıktan yaklaşık bir dakika sonra alınır.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = `
+    <table>
+      <thead><tr><th>Tarih</th><th>Tür</th><th>Boyut</th><th></th></tr></thead>
+      <tbody>
+        ${data.backups.map(b => `
+          <tr>
+            <td>${esc(fmtDate(b.createdAt) === "–" ? b.name : fmtDate(b.createdAt))}</td>
+            <td>${esc(backupKind(b.name, b.automatic))}</td>
+            <td>${fmtBytes(b.size)}</td>
+            <td style="text-align:right">
+              ${b.downloadable
+                ? `<button class="sm" onclick="downloadBackup('${esc(b.name)}', this)">İndir</button>`
+                : `<span class="counts">dosya yok</span>`}
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+/**
+ * Dosyayi fetch ile alip tarayiciya kaydettirir. Duz bir baglanti yerine
+ * boyle yapilmasinin sebebi: oturum dusmusse veya bir hata olursa kullanici
+ * JSON hata metni iceren bir ".db" dosyasi indirmesin, anlasilir bir mesaj
+ * gorsun.
+ */
+async function fetchAndSave(url, method, btn, busyText) {
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = busyText;
+
+  try {
+    const res = await fetch(API + url, { method, credentials: "same-origin" });
+
+    if (res.status === 401 || res.status === 403) {
+      location.href = "/login.html?next=%2Fsuper_admin.html";
+      return;
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "İndirme başarısız");
+    }
+
+    const blob = await res.blob();
+    const cd = res.headers.get("Content-Disposition") || "";
+    const name = (cd.match(/filename="([^"]+)"/) || [])[1] || "mentoros-yedek.db";
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+
+    show(`Yedek indirildi: ${name}`, "ok");
+    loadBackups();
+  } catch (e) {
+    show(e.message, "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+}
+
+function downloadSnapshot() {
+  fetchAndSave("/backups/snapshot", "POST",
+    document.getElementById("bkNowBtn"), "Yedek hazırlanıyor…");
+}
+
+function downloadBackup(name, btn) {
+  fetchAndSave(`/backups/${encodeURIComponent(name)}/download`, "GET", btn, "İndiriliyor…");
+}
+
 async function logout() {
   await fetch(API + "/company-logout", { method: "POST", credentials: "same-origin" });
   location.href = "/login.html";
@@ -513,6 +693,7 @@ async function logout() {
 
 document.getElementById("newExp").value = oneYearFromNow();
 load();
+loadBackups();
 </script>
 </body>
 </html>

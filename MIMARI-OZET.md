@@ -94,7 +94,7 @@ sınanmıştır.
 
 | | Kullanıcı adı | Nerede saklanır | Yetkisi |
 |---|---|---|---|
-| Sağlayıcı (yönetici) | `superadmin` | Ortam değişkeni (veritabanında değil) | Hesap açar, süre uzatır; kuruluş verisine erişemez |
+| Sağlayıcı (yönetici) | `superadmin` | Ortam değişkeni (veritabanında değil) | Hesap açar, süre uzatır; kuruluş ekranlarına giremez. Veritabanının yedeğini (tüm kuruluşları kapsar) indirebilir |
 | Kuruluş | örn. `dernek` | Veritabanı (bcrypt ile şifrelenmiş) | Yalnızca kendi verisi |
 
 **Oturum ayrıntıları:**
@@ -171,9 +171,15 @@ bulut sürümü için doğru değildir.
   Dağıtım sırasında birkaç saniyelik kesinti olur.
 - **Sunucu yeniden başladığında** açık oturumlar düşer; kullanıcılar
   yeniden giriş yapar. Veri etkilenmez.
-- **Yedekleme sağlayıcının sorumluluğunda değildir.** Veritabanı dosyasının
-  düzenli kopyası alınmalıdır. SQLite `WAL` kipinde çalıştığı için
-  `-wal` ve `-shm` yardımcı dosyaları da birlikte kopyalanmalıdır.
+- **Günlük otomatik yedek** alınır ve 14 gün saklanır. Bu yedekler
+  veritabanıyla aynı kalıcı diskte (`/var/data/yedekler`) durur.
+- **Sunucu dışı yedek:** Sağlayıcı yönetim panelinden anlık ya da mevcut
+  bir yedeği tek dosya (`.db`) olarak indirir. Dosya tutarlı bir anlık
+  görüntüdür (`VACUUM INTO`); ayrıca `-wal`/`-shm` dosyası gerekmez. Her
+  indirme sunucu kaydına yazılır. Dosya tüm kuruluşların verisini
+  içerdiği için erişimi kısıtlı bir yerde saklanmalıdır.
+- **Barındırma sağlayıcısı (Render) yedeklemeden sorumlu değildir;**
+  sunucu dışı kopya düzenli alınmalıdır.
 
 ---
 
