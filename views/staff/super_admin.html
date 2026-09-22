@@ -89,6 +89,10 @@
 
   .name { font-weight: 700; color: var(--navy); }
   .uname { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 13px; color: var(--muted); }
+  .pw { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .pw-val { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 13px; color: var(--text); min-width: 76px; }
+  .pw-none { font-size: 12px; color: var(--muted); }
+  button.xs { padding: 3px 8px; font-size: 12px; }
 
   .pill {
     display: inline-block; padding: 3px 9px; border-radius: 20px;
@@ -183,7 +187,7 @@
       <div class="field">
         <label>Kullanıcı adı</label>
         <input id="newId" placeholder="ornek-dernek" autocapitalize="off" spellcheck="false"/>
-        <div class="hint">Sadece harf, rakam ve tire.</div>
+        <div class="hint">Girdiğiniz hâliyle saklanır. Girişte büyük/küçük harf fark etmez.</div>
       </div>
       <div class="field">
         <label>Şifre</label>
@@ -285,8 +289,8 @@
   <div class="modal">
     <h3>Hesap hazır</h3>
     <p class="card-sub">
-      Bu bilgileri şimdi kaydedin. Şifre bir daha gösterilemez —
-      sunucuda yalnızca şifrelenmiş hâli saklanır.
+      Bu bilgileri kuruluşa iletin. Şifreyi daha sonra da Hesaplar
+      listesinden "Göster" ile görebilirsiniz.
     </p>
 
     <div class="cred-box" id="credBox"></div>
@@ -384,14 +388,22 @@ function render() {
   el.innerHTML = `
     <table>
       <thead><tr>
-        <th>Kuruluş</th><th>Kullanıcı adı</th><th>Durum</th>
+        <th>Kuruluş</th><th>Kullanıcı adı</th><th>Şifre</th><th>Durum</th>
         <th>Bitiş</th><th>Veri</th><th></th>
       </tr></thead>
       <tbody>
         ${companies.map(c => `
           <tr>
             <td class="name">${esc(c.name)}</td>
-            <td class="uname">${esc(c.companyId)}</td>
+            <td class="uname">${esc(c.loginName)}</td>
+            <td>${c.hasPassword
+              ? `<div class="pw">
+                   <span class="pw-val" id="pw-${esc(c.companyId)}">••••••••</span>
+                   <button class="xs" onclick="togglePassword('${esc(c.companyId)}', this)">Göster</button>
+                   <button class="xs" onclick="copyPassword('${esc(c.companyId)}')">Kopyala</button>
+                 </div>`
+              : `<span class="pw-none" title="Bu hesap, şifre saklama özelliğinden önce oluşturuldu. Düzenle'den yeni şifre belirlediğinizde burada görünür.">Kayıtlı değil — Düzenle'den yeni şifre belirleyin</span>`}
+            </td>
             <td>${statusPill(c)}</td>
             <td>${c.expiresAt ? esc(c.expiresAt) : '<span class="counts">süresiz</span>'}</td>
             <td class="counts">
@@ -448,13 +460,13 @@ function showCreds(company, password) {
   lastCreds =
     `${company.name}\n` +
     `Adres      : ${url}\n` +
-    `Kullanıcı  : ${company.companyId}\n` +
+    `Kullanıcı  : ${company.loginName || company.companyId}\n` +
     `Şifre      : ${password}\n` +
     `Geçerlilik : ${company.expiresAt || "süresiz"}`;
 
   document.getElementById("credBox").innerHTML = `
     <div class="cred-line"><span>Adres</span><span>${esc(url)}</span></div>
-    <div class="cred-line"><span>Kullanıcı adı</span><span>${esc(company.companyId)}</span></div>
+    <div class="cred-line"><span>Kullanıcı adı</span><span>${esc(company.loginName || company.companyId)}</span></div>
     <div class="cred-line"><span>Şifre</span><span>${esc(password)}</span></div>
     <div class="cred-line"><span>Geçerlilik</span><span>${esc(company.expiresAt || "süresiz")}</span></div>`;
 
@@ -473,12 +485,50 @@ function openEdit(id) {
 
   editingId = id;
   document.getElementById("editTitle").textContent = c.name;
-  document.getElementById("editSub").textContent = "Kullanıcı adı: " + c.companyId;
+  document.getElementById("editSub").textContent = "Kullanıcı adı: " + c.loginName;
   document.getElementById("editName").value = c.name;
   document.getElementById("editExp").value = c.expiresAt || "";
   document.getElementById("editStatus").value = c.status;
   document.getElementById("editPass").value = "";
   document.getElementById("editModal").classList.add("show");
+}
+
+/* ---------------- SIFRE GOSTER / KOPYALA ---------------- */
+
+async function fetchPassword(id) {
+  const data = await api("/companies/" + encodeURIComponent(id) + "/password");
+  return data.password;
+}
+
+async function togglePassword(id, btn) {
+  const el = document.getElementById("pw-" + id);
+  if (btn.dataset.shown === "1") {
+    el.textContent = "••••••••";
+    btn.textContent = "Göster";
+    btn.dataset.shown = "";
+    return;
+  }
+  try {
+    el.textContent = await fetchPassword(id);
+    btn.textContent = "Gizle";
+    btn.dataset.shown = "1";
+    // Ekran paylasiminda acik kalmasin: 30 sn sonra kendiliginden gizle
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => {
+      if (btn.dataset.shown === "1") togglePassword(id, btn);
+    }, 30000);
+  } catch (e) {
+    if (e.message !== "session") show(e.message, "err");
+  }
+}
+
+async function copyPassword(id) {
+  try {
+    await navigator.clipboard.writeText(await fetchPassword(id));
+    show("Şifre panoya kopyalandı.");
+  } catch (e) {
+    if (e.message !== "session") show(e.message || "Kopyalanamadı.", "err");
+  }
 }
 
 function closeModal(id) {

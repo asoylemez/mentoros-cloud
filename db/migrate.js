@@ -18,6 +18,14 @@ function run() {
   }
 
   // Firma erisiminin bitis tarihi (bir yillik sifre gecerliligi).
+  // Super admin: kullanici adinin girildigi hali + gorulebilir sifre
+  for (const col of ["login_name", "password_enc"]) {
+    if (!columnExists("companies", col)) {
+      db.exec(`ALTER TABLE companies ADD COLUMN ${col} TEXT DEFAULT ''`);
+      console.log(`  migration: companies.${col} eklendi`);
+    }
+  }
+
   if (!columnExists("companies", "expires_at")) {
     db.exec(`ALTER TABLE companies ADD COLUMN expires_at TEXT DEFAULT ''`);
     console.log("  migration: companies.expires_at eklendi");

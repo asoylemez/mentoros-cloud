@@ -55,7 +55,9 @@ router.post("/companies", staffAuth.requireSuperAdmin, wrap(async (req, res) => 
   }
 
   const company = companies.create({
-    companyId: slug, name, domain, password, status, expiresAt
+    companyId: slug,
+    loginName: String(companyId).trim(),   // "Paladin" -> gorunen hali
+    name, domain, password, status, expiresAt
   });
 
   res.json({ success: true, companyId: company.companyId, company });
@@ -72,6 +74,35 @@ router.get("/companies", staffAuth.requireSuperAdmin, wrap(async (req, res) => {
  * Sifre alani BOS birakilirsa mevcut sifre KORUNUR. Boylece sadece
  * adi degistirmek isteyen biri kazara sifreyi sifirlamaz.
  */
+/**
+ * Kayitli sifreyi goster - SADECE super admin.
+ *
+ * Liste ucu sifreyi DONDURMEZ; sifre yalnizca "Goster"e basilinca bu
+ * uctan tek hesap icin gelir. Sebep: ekran paylasimi / demo sirasinda
+ * liste acik kalsa bile sifreler ekranda gorunmesin. Her gosterim
+ * sunucu log'una yazilir.
+ */
+router.get("/companies/:id/password", staffAuth.requireSuperAdmin, wrap(async (req, res) => {
+  const company = companies.get(req.params.id);
+  if (!company) {
+    return res.status(404).json({ error: "Company not found" });
+  }
+
+  const password = companies.revealPassword(company.companyId);
+  res.set("Cache-Control", "no-store");
+
+  if (password === null) {
+    return res.status(404).json({
+      error: "Bu hesabin sifresi kayitli degil. Duzenle'den yeni sifre belirleyin. / " +
+             "No stored password for this account. Set a new one via Edit.",
+      code: "no_stored_password"
+    });
+  }
+
+  console.log(`  [hesap] sifre goruntulendi: ${company.companyId} (super admin, ip ${req.ip || "-"})`);
+  res.json({ password });
+}));
+
 router.patch("/companies/:id", staffAuth.requireSuperAdmin, wrap(async (req, res) => {
   const { name, domain, status, password, expiresAt } = req.body;
 

@@ -97,6 +97,16 @@ sınanmıştır.
 | Sağlayıcı (yönetici) | `superadmin` | Ortam değişkeni (veritabanında değil) | Hesap açar, süre uzatır; kuruluş ekranlarına giremez. Veritabanının yedeğini (tüm kuruluşları kapsar) indirebilir |
 | Kuruluş | örn. `dernek` | Veritabanı (bcrypt ile şifrelenmiş) | Yalnızca kendi verisi |
 
+Kuruluş parolası iki biçimde saklanır: giriş kontrolü için **bcrypt
+hash'i** ve sağlayıcının parolayı unutan kuruluşa iletebilmesi için
+**AES-256-GCM ile şifrelenmiş bir kopya**. Şifreleme anahtarı
+(`SETTINGS_SECRET`) veritabanında değil, sunucunun ortam değişkeninde
+durur; veritabanı dosyası tek başına ele geçirilse bile parolalar
+okunamaz. Parola yalnızca sağlayıcı panelinde, tek hesap için ve
+istek üzerine gösterilir; her gösterim sunucu kaydına yazılır.
+Kuruluşların başka sistemlerde kullandıkları parolaları burada
+kullanmamaları önerilir.
+
 **Oturum ayrıntıları:**
 
 - Çerez `HttpOnly` (JavaScript okuyamaz), `Secure` (yalnızca HTTPS),

@@ -215,5 +215,6 @@ function getAiConfigPublic() {
 
 module.exports = {
   get, set, remove, mask,
+  encrypt, decrypt,
   getAiConfig, getAiConfigPublic
 };

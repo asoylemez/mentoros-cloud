@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const { encrypt, decrypt } = require("./settings");
 
 const {
   db,
@@ -23,8 +24,19 @@ const {
  */
 const DUMMY_HASH = bcrypt.hashSync("mentoros-timing-equaliser", 10);
 
+/**
+ * Eski hesaplarda login_name bos: girilen hali bilinmiyor, anahtar
+ * (company_id) gosterilir - giriste zaten o da calisir.
+ */
+function withLoginName(c) {
+  if (!c) return c;
+  c.loginName = c.loginName || c.companyId;
+  c.hasPassword = !!c.hasPassword;
+  return c;
+}
+
 const companies = {
-  create({ companyId, name, domain, password, status, expiresAt }) {
+  create({ companyId, loginName, name, domain, password, status, expiresAt }) {
     const id = slugify(companyId);
     if (!id) throw new Error("companyId gerekli");
     if (!password) throw new Error("password gerekli");
@@ -33,20 +45,27 @@ const companies = {
 
     db.prepare(`
       INSERT INTO companies
-        (company_id, name, domain, password_hash, status, expires_at, created_at, updated_at)
-      VALUES (@companyId, @name, @domain, @passwordHash, @status, @expiresAt, @createdAt, @updatedAt)
+        (company_id, login_name, name, domain, password_hash, password_enc,
+         status, expires_at, created_at, updated_at)
+      VALUES (@companyId, @loginName, @name, @domain, @passwordHash, @passwordEnc,
+         @status, @expiresAt, @createdAt, @updatedAt)
       ON CONFLICT(company_id) DO UPDATE SET
+        login_name    = excluded.login_name,
         name          = excluded.name,
         domain        = excluded.domain,
         password_hash = excluded.password_hash,
+        password_enc  = excluded.password_enc,
         status        = excluded.status,
         expires_at    = excluded.expires_at,
         updated_at    = excluded.updated_at
     `).run({
       companyId: id,
+      // Girildigi hali; verilmediyse companyId oldugu gibi.
+      loginName: String(loginName || companyId).trim(),
       name: name || id,
       domain: domain || "",
       passwordHash: bcrypt.hashSync(String(password), 10),
+      passwordEnc: encrypt(String(password)),
       status: status || "active",
       expiresAt: expiresAt || companies.defaultExpiry(),
       createdAt: ts,
@@ -54,6 +73,19 @@ const companies = {
     });
 
     return companies.get(id);
+  },
+
+  /**
+   * Super admin icin kayitli sifrenin acik hali.
+   * null: bu ozellikten once olusturulmus (kopya yok) veya SETTINGS_SECRET
+   * degismis (kopya cozulemiyor) -> sifreyi yeniden belirlemek gerekir.
+   */
+  revealPassword(companyId) {
+    const row = db.prepare(
+      `SELECT password_enc FROM companies WHERE company_id = ?`
+    ).get(slugify(companyId));
+    if (!row || !row.password_enc) return null;
+    return decrypt(row.password_enc);
   },
 
   /** Varsayilan erisim suresi: bugunden itibaren bir yil. */
@@ -65,20 +97,22 @@ const companies = {
 
   get(companyId) {
     const row = db.prepare(
-      `SELECT company_id, name, domain, status, expires_at, created_at, updated_at
+      `SELECT company_id, login_name, name, domain, status, expires_at,
+              created_at, updated_at, (password_enc <> '') AS has_password
          FROM companies WHERE company_id = ?`
     ).get(slugify(companyId));
-    return camelize(row);
+    return withLoginName(camelize(row));
   },
 
   list() {
     const rows = db.prepare(
-      `SELECT company_id, name, domain, status, expires_at, created_at, updated_at
+      `SELECT company_id, login_name, name, domain, status, expires_at,
+              created_at, updated_at, (password_enc <> '') AS has_password
          FROM companies ORDER BY created_at DESC`
     ).all();
 
     return rows.map(row => {
-      const c = camelize(row);
+      const c = withLoginName(camelize(row));
       c.expired = companies.isExpired(c.expiresAt);
       c.daysLeft = companies.daysLeft(c.expiresAt);
       c.counts = companies.counts(c.companyId);
@@ -211,8 +245,9 @@ const companies = {
 
     // Sifre SADECE yeni bir deger geldiyse degisir.
     if (password) {
-      sets.push("password_hash = @passwordHash");
+      sets.push("password_hash = @passwordHash", "password_enc = @passwordEnc");
       params.passwordHash = bcrypt.hashSync(String(password), 10);
+      params.passwordEnc = encrypt(String(password));
     }
 
     if (!sets.length) return existing;

@@ -19,7 +19,13 @@ CREATE TABLE IF NOT EXISTS companies (
   company_id     TEXT PRIMARY KEY,          -- slug: "acme-holding"
   name           TEXT NOT NULL,
   domain         TEXT DEFAULT '',
-  password_hash  TEXT NOT NULL,             -- bcrypt. Duz metin sifre YOK.
+  password_hash  TEXT NOT NULL,             -- bcrypt. Giris kontrolu BUNUNLA yapilir.
+  -- Super admin'in sifreyi sonradan gorebilmesi icin AES-256-GCM ile
+  -- sifrelenmis kopya (anahtar: SETTINGS_SECRET, veritabaninda DEGIL).
+  password_enc   TEXT DEFAULT '',
+  -- Kullanici adinin girildigi hali ("Paladin", "Demo_2"). company_id
+  -- bunun kucuk harfli / tireli halidir ve verinin anahtaridir.
+  login_name     TEXT DEFAULT '',
   status         TEXT NOT NULL DEFAULT 'active'
                  CHECK (status IN ('active', 'inactive')),
 
