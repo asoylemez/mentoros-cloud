@@ -69,22 +69,45 @@ async function startServer() {
   };
 
   const child = spawn(process.execPath, ["server.js"], {
-    cwd: ROOT, env, stdio: ["ignore", "pipe", "pipe"]
+    cwd: ROOT, env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true
   });
   let log = "";
+  let exited = null;      // exit code, once the server process has stopped
+  let spawnError = null;
   child.stdout.on("data", d => { log += d; });
   child.stderr.on("data", d => { log += d; });
+  child.on("exit", (code, signal) => { exited = code !== null ? `code ${code}` : `signal ${signal}`; });
+  child.on("error", e => { spawnError = e; });
 
   const base = `http://127.0.0.1:${port}`;
-  for (let i = 0; i < 60; i++) {
+  let lastError = "";
+  const deadline = Date.now() + 30000;
+
+  while (Date.now() < deadline && exited === null && !spawnError) {
     try {
       const r = await fetch(base + "/health");
       if (r.ok) return { child, base, tmp, superPassword };
-    } catch { /* not up yet */ }
+      lastError = `/health answered HTTP ${r.status}`;
+    } catch (e) {
+      lastError = (e.cause && (e.cause.code || e.cause.message)) || e.message;
+    }
     await new Promise(r => setTimeout(r, 250));
   }
-  child.kill();
-  throw new Error("Temporary server did not start.\n" + log);
+
+  if (exited === null) child.kill();
+  fs.rmSync(tmp, { recursive: true, force: true });
+
+  const why = spawnError ? `the server process could not be started (${spawnError.message})`
+    : exited !== null ? `the server process stopped (${exited})`
+    : `the server process is running but did not answer ${base}/health within 30 s (last error: ${lastError || "none"})`;
+
+  throw new Error(
+    `Temporary server did not start: ${why}.\n` +
+    `  Node ${process.version} on ${process.platform}, port ${port}, folder ${ROOT}\n` +
+    `  ----- server output -----\n` +
+    (log.trim() ? log : "  (the server printed nothing)\n") +
+    `  -------------------------`
+  );
 }
 
 // ---------------------------------------------------------------------
@@ -107,13 +130,19 @@ async function api(cookie, method, url, body) {
   return { status: r.status, json };
 }
 
+/** First Set-Cookie header (Headers.getSetCookie is missing on older Node). */
+function firstSetCookie(r) {
+  if (typeof r.headers.getSetCookie === "function") return r.headers.getSetCookie()[0] || "";
+  return r.headers.get("set-cookie") || "";
+}
+
 async function login(username, password) {
   const r = await fetch(BASE + "/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
   });
-  const cookie = (r.headers.getSetCookie()[0] || "").split(";")[0];
+  const cookie = firstSetCookie(r).split(";")[0];
   if (r.status !== 200 || !cookie) throw new Error(`Sign-in failed for ${username}: HTTP ${r.status}`);
   return cookie;
 }
@@ -123,6 +152,9 @@ async function login(username, password) {
 // ---------------------------------------------------------------------
 
 async function main() {
+  if (typeof fetch !== "function") {
+    throw new Error(`Node ${process.version} is too old: this test needs Node 18 or newer (the project expects 20-22).`);
+  }
   const server = await startServer();
   BASE = server.base;
 
@@ -191,7 +223,8 @@ async function run(server) {
     developmentNeed: "Wants to grow as a team lead"
   })).mentorshipId;
   const meetingA = (await mk(A, `/mentorships/${msA}/meetings`, {
-    meetingDate: "2026-09-01", title: "Kick-off",
+    meetingDate: "2026-09-01", title: "Kick-off", durationMinutes: "01:20",
+    agenda: "PRIVATE AGENDA TEXT",
     actionItems: [{ text: "Read the plan", status: "open" }]
   })).meetingId;
   const reqA = (await mk(A, "/match-request", {
@@ -209,6 +242,14 @@ async function run(server) {
     fullName: "Banu Mentee", email: "banu@b.example", role: "Specialist",
     developmentNeeds: "Wants to learn negotiation"
   })).id;
+  // B's own mentorship - its workspace link is a valid token, but only
+  // for B's workspace.
+  const wsB = new URL((await mk(B, "/mentorships", {
+    mentorId: mentorB, menteeId: menteeB, mentorName: "Bora Mentor", menteeName: "Banu Mentee",
+    developmentNeed: "Wants to learn negotiation"
+  })).workspaceUrl);
+  const msB = wsB.searchParams.get("id");
+  const tokenB = wsB.searchParams.get("token");
 
   // --- 3. Positive controls: A still reaches its own records ----------
   console.log("\n2) OWN RECORDS STILL WORK (positive control)\n");
@@ -279,6 +320,46 @@ async function run(server) {
   check("B: A's email history not visible", histB.status === 200 && histB.json.length === 0,
         `HTTP ${histB.status}, ${histB.json?.length} row(s)`);
 
+  // --- 4b. Workspace link of B on A's meeting ------------------------
+  const pubAct = await api(null, "PATCH",
+    `/public/workspace/${msB}/meetings/${meetingA}/action?token=${tokenB}`, { index: 0, status: "done" });
+  check("B's workspace link cannot change A's meeting action -> 404", pubAct.status === 404, `HTTP ${pubAct.status}`);
+
+  // --- 4c. Meeting tracking ------------------------------------------
+  console.log("\n3b) MEETING TRACKING\n");
+
+  const noDur = await api(A, "POST", `/mentorships/${msA}/meetings`, { meetingDate: "2026-09-05", title: "No duration" });
+  check("HR API: meeting note without duration -> 400", noDur.status === 400 && noDur.json?.code === "duration_required",
+        `HTTP ${noDur.status}`);
+  const badDur = await api(A, "POST", `/mentorships/${msA}/meetings`, { meetingDate: "2026-09-05", title: "Bad", durationMinutes: "12:01" });
+  check("HR API: duration over 12:00 -> 400", badDur.status === 400, `HTTP ${badDur.status}`);
+  const wsNoDur = await api(null, "POST", `/public/workspace/${msB}/meetings?token=${tokenB}`, { meetingDate: "2026-09-05", title: "No duration" });
+  check("workspace: meeting note without duration -> 400", wsNoDur.status === 400 && wsNoDur.json?.code === "duration_required",
+        `HTTP ${wsNoDur.status}`);
+  const wsOk = await api(null, "POST", `/public/workspace/${msB}/meetings?token=${tokenB}`, { meetingDate: "2026-09-06", title: "B meeting", durationMinutes: 45 });
+  check("workspace: meeting note with duration saved", wsOk.status === 200 && wsOk.json?.meeting?.durationMinutes === 45,
+        `HTTP ${wsOk.status}`);
+
+  check("unauthenticated /meeting-tracking rejected", (await api(null, "GET", "/meeting-tracking")).status === 401);
+
+  const trA = await api(A, "GET", "/meeting-tracking");
+  const rowA = trA.json?.rows?.find(r => r.id === msA);
+  check("A: tracking shows its mentorship with 1 meeting, 1 h 20 min",
+        trA.status === 200 && rowA && rowA.meetingCount === 1 && rowA.totalMinutes === 80,
+        rowA ? `${rowA.meetingCount} meeting(s), ${rowA.totalMinutes} min` : `HTTP ${trA.status}`);
+  check("A: tracking counts only A (1 mentorship)", trA.json?.stats?.total === 1, `total ${trA.json?.stats?.total}`);
+  const rawA = JSON.stringify(trA.json || {});
+  check("A: tracking carries no meeting content (title, agenda, actions)",
+        !rawA.includes("Kick-off") && !rawA.includes("PRIVATE AGENDA") && !rawA.includes("Read the plan"));
+
+  const trB = await api(B, "GET", "/meeting-tracking");
+  const rawB = JSON.stringify(trB.json || {});
+  check("B: tracking shows nothing of A",
+        trB.status === 200 && trB.json.stats.total === 1 && !rawB.includes(msA) && !rawB.includes("Ayse") && !rawB.includes("Ali Mentee"),
+        `total ${trB.json?.stats?.total}`);
+  check("B: tracking shows its own 45 min meeting",
+        trB.json?.rows?.[0]?.totalMinutes === 45, `${trB.json?.rows?.[0]?.totalMinutes} min`);
+
   // --- 5. A's data is exactly as before -------------------------------
   console.log("\n4) ORGANISATION A's DATA IS UNTOUCHED\n");
 
@@ -299,10 +380,11 @@ async function run(server) {
   const req = await api(A, "GET", `/match-request/${reqA}`);
   check("A's match request still exists", req.status === 200, `HTTP ${req.status}`);
 
-  const msB = (await api(B, "GET", "/mentorships")).json || [];
+  const listB = (await api(B, "GET", "/mentorships")).json || [];
   const reqB = (await api(B, "GET", "/match-requests")).json || [];
-  check("nothing was created for B from A's records", msB.length === 0 && reqB.length === 0,
-        `${msB.length} mentorship(s), ${reqB.length} request(s)`);
+  check("nothing was created for B from A's records",
+        listB.length === 1 && listB[0].id === msB && reqB.length === 0,
+        `${listB.length} mentorship(s), ${reqB.length} request(s)`);
 
   // --- 6. A's own changes still work ----------------------------------
   console.log("\n5) ORGANISATION A CAN STILL CHANGE ITS OWN RECORDS\n");

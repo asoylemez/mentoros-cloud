@@ -58,7 +58,7 @@ async function main() {
   const staffApis = [
     "/mentors", "/mentees", "/mentorships", "/match-requests",
     "/matching-candidates", "/email/status", "/invite-link",
-    "/email/history/x"
+    "/email/history/x", "/meeting-tracking"
   ];
   for (const ep of staffApis) {
     const r = await get(ep);
@@ -92,7 +92,9 @@ async function main() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: USER, password: PASSWORD })
     });
-    const raw = login.headers.getSetCookie()[0] || "";
+    const raw = typeof login.headers.getSetCookie === "function"
+      ? (login.headers.getSetCookie()[0] || "")
+      : (login.headers.get("set-cookie") || "");
     const cookie = raw.split(";")[0];
     check("sign-in succeeded", login.status === 200 && !!cookie, `HTTP ${login.status}`);
 
@@ -105,6 +107,18 @@ async function main() {
         const r = await get(ep, C);
         check(`own list ${ep}`, r.status === 200, `HTTP ${r.status}`);
       }
+
+      // Meeting tracking: dates and durations only, never content.
+      const tr = await get("/meeting-tracking", C);
+      const tj = tr.status === 200 ? await tr.json() : null;
+      check("meeting tracking answers with summary figures",
+            !!tj && typeof tj.stats?.total === "number" && Array.isArray(tj.rows), `HTTP ${tr.status}`);
+      const extraKeys = new Set();
+      for (const r of tj?.rows || []) for (const m of r.meetings || []) {
+        for (const k of Object.keys(m)) if (k !== "date" && k !== "durationMinutes") extraKeys.add(k);
+      }
+      check("meeting tracking carries only dates and durations",
+            !!tj && extraKeys.size === 0, extraKeys.size ? [...extraKeys].join(", ") : "");
 
       // An id that is not this organisation's must look exactly like a
       // missing one. A random id is used: nothing is read or changed.

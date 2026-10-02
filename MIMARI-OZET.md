@@ -62,6 +62,12 @@ Sertifika Let's Encrypt tarafından verilir ve otomatik yenilenir.
 - **Kapsam:** Mentor ve mentee profilleri, eşleşmeler, toplantı notları,
   anket sonuçları, e-posta kayıtları
 
+İK ekranındaki Toplantı Takibi bölümü yalnızca toplantı tarihlerini ve
+sürelerini gösterir; sunucu bu bölüme not içeriği (başlık, gündem,
+konuşulanlar, aksiyonlar) göndermez. Not içeriği çalışma sayfasındadır.
+Çalışma sayfası bağlantısını İK dağıttığı için İK de o sayfayı
+açabilir; bu, kuruluşun kendi kullanım kuralına bırakılmıştır.
+
 Veri Türkiye'de değil, Avrupa Birliği içinde barındırılmaktadır.
 Kullanıcıların Türkiye'den erişmesi için sunucunun Türkiye'de olması
 gerekmez; gecikme yaklaşık 50 ms'dir ve kullanıcı tarafından hissedilmez.

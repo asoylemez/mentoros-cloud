@@ -85,6 +85,7 @@
       align-items: center;
       gap: 8px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+      margin-bottom: 16px;
     }
 
     .language-control label {
@@ -395,6 +396,39 @@
       .survey-cols { grid-template-columns: 1fr; }
     }
 
+    /* ---------- Meeting tracking ---------- */
+
+    .section-sub { color: var(--muted); font-size: 13px; margin: -6px 0 12px; }
+    .track-wrap {
+      background: white; border: 1px solid var(--border); border-radius: 14px;
+      overflow-x: auto; margin-bottom: 8px;
+    }
+    .track-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .track-table th {
+      text-align: left; font-size: 12.5px; font-weight: 600; color: var(--muted);
+      padding: 11px 14px; background: #f7f8fb; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .track-table td { padding: 10px 12px; border-bottom: 1px solid #eef0f5; vertical-align: middle; white-space: nowrap; }
+    .track-table tr.track-row { cursor: pointer; }
+    .track-table tr.track-row:hover td { background: #fafbfd; }
+    .track-table tr.track-row:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+    /* the widest column may wrap; dates and times stay on one line */
+    .track-table .pair { color: var(--navy); font-weight: 600; white-space: normal; min-width: 210px; }
+    .track-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pill {
+      display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 9px;
+      border-radius: 999px; background: #eef0f4; color: #5b6172; white-space: nowrap;
+    }
+    .pill.ok { background: #e7f4ec; color: #2f7d4f; }
+    .pill.warn { background: #fff4e5; color: #96601d; }
+    .track-detail td { background: #fafbfd; padding: 10px 14px 14px 30px; }
+    .track-meetings { display: flex; flex-wrap: wrap; gap: 6px; }
+    .track-meetings span {
+      font-size: 12.5px; background: white; border: 1px solid var(--border);
+      border-radius: 7px; padding: 4px 9px; font-variant-numeric: tabular-nums;
+    }
+    .track-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .stat-card.flag .stat-number { color: #96601d; }
   </style>
 </head>
 
@@ -434,9 +468,9 @@
       </div>
     </div>
 
+    <!-- Everything below sits in .container (centred, max width). This
+         div used to be closed right away, so the page ran edge to edge. -->
     <div class="container">
-
-      </div>
 
       <div class="language-control">
         <label for="languageSelect" data-i18n="languageLabel">Language</label>
@@ -445,13 +479,17 @@
           <option value="tr">Türkçe</option>
         </select>
       </div>
-    </div>
 
     <div id="errorBox"></div>
     <div id="stats"><div class="loading" data-i18n="loadingDashboard">Loading dashboard...</div></div>
 
     <h2 class="section-title" data-i18n="pendingApprovalsTitle">Eşleşme Talepleri</h2>
     <div id="approvalList"></div>
+
+    <h2 class="section-title" data-i18n="trackingTitle">Meeting Tracking</h2>
+    <div class="section-sub" data-i18n="trackingSub">Only the dates and durations of meetings are shown here, not what was discussed.</div>
+    <div id="trackingStats"></div>
+    <div id="trackingTable"></div>
 
     <h2 class="section-title" data-i18n="activeMentorshipsTitle">Active Mentorships</h2>
     <div id="mentorshipList"></div>
@@ -490,6 +528,17 @@ const translations = {
     rejectedRequests: "Rejected Requests",
     noApprovalRequests: "No approval requests yet.",
     noMentorships: "No mentorships created yet.",
+    trackingTitle: "Meeting Tracking",
+    trackingSub: "Only the dates and durations of meetings are shown here, not what was discussed.",
+    trackingFailed: "Meeting tracking could not be loaded.",
+    trackTotal: "Total mentorships", trackActive: "Active mentorships", trackCompleted: "Completed",
+    trackNeverMet: "Never met", trackSilent: "Silent for {n}+ days",
+    colPair: "Mentor → Mentee", colMeetings: "Meetings", colTotal: "Total time", colAvg: "Average",
+    colFirst: "First", colLast: "Last", colSince: "Since last", colNext: "Next",
+    noMeetingYet: "No meetings yet", today: "Today", daysAgo: "{n} days ago",
+    hoursShort: "h", minutesShort: "min",
+    durationUnknown: "duration not given",
+    durationPartial: "{n} meeting(s) have no duration recorded; totals and averages count only the rest.",
     mentorApproval: "Mentor approval",
     managerApproval: "Manager approval",
     rejectedBy: "Declined by",
@@ -591,6 +640,17 @@ const translations = {
     rejectedRequests: "Reddedilen Talepler",
     noApprovalRequests: "Henüz onay talebi yok.",
     noMentorships: "Henüz oluşturulmuş mentorluk yok.",
+    trackingTitle: "Toplantı Takibi",
+    trackingSub: "Burada yalnızca toplantıların tarihleri ve süreleri görünür, konuşulanlar görünmez.",
+    trackingFailed: "Toplantı takibi yüklenemedi.",
+    trackTotal: "Toplam mentorluk", trackActive: "Aktif mentorluk", trackCompleted: "Tamamlanan",
+    trackNeverMet: "Hiç görüşmemiş", trackSilent: "{n}+ gündür sessiz",
+    colPair: "Mentor → Mentee", colMeetings: "Toplantı", colTotal: "Toplam süre", colAvg: "Ortalama",
+    colFirst: "İlk", colLast: "Son", colSince: "Geçen süre", colNext: "Sonraki",
+    noMeetingYet: "Henüz toplantı yok", today: "Bugün", daysAgo: "{n} gün önce",
+    hoursShort: "sa", minutesShort: "dk",
+    durationUnknown: "süre girilmemiş",
+    durationPartial: "{n} toplantıda süre girilmemiş; toplam ve ortalama yalnızca süresi girilenlerden hesaplanır.",
     mentorApproval: "Mentor onayı",
     managerApproval: "Yönetici onayı",
     rejectedBy: "Reddeden:",
@@ -692,6 +752,7 @@ function setLanguage(lang) {
   renderStats();
   renderApprovals();
   renderMentorships();
+  renderTracking();
 }
 
 function applyTranslations() {
@@ -726,6 +787,7 @@ async function loadDashboard() {
     renderStats();
     renderApprovals();
     renderMentorships();
+    await loadTracking();
 
   } catch (error) {
     document.getElementById("errorBox").innerHTML = `
@@ -1355,6 +1417,115 @@ function escapeJs(value) {
     .replaceAll("\\", "\\\\")
     .replaceAll("'", "\\'")
     .replaceAll('"', "&quot;");
+}
+
+/* ==================================================================
+   MEETING TRACKING
+   Dates and durations only; the server never sends meeting content
+   to this screen (GET /meeting-tracking).
+   ================================================================== */
+
+var TRACKING = null;   // var: setLanguage() may run before this line
+const openTrack = new Set();
+
+async function loadTracking() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/meeting-tracking`);
+    if (!res.ok) throw new Error();
+    TRACKING = await res.json();
+  } catch {
+    TRACKING = false;   // false = failed (null = not loaded yet)
+  }
+  renderTracking();
+}
+
+/** 95 -> "1 sa 35 dk" / "1 h 35 min" */
+function formatMinutes(total) {
+  if (total == null) return "—";
+  const h = Math.floor(total / 60), m = total % 60;
+  const H = t("hoursShort"), M = t("minutesShort");
+  return h ? `${h} ${H}${m ? ` ${m} ${M}` : ""}` : `${m} ${M}`;
+}
+
+function sinceText(days) {
+  if (days == null) return `<span class="pill">${escapeHtml(t("noMeetingYet"))}</span>`;
+  const silent = TRACKING && days >= TRACKING.silentDays;
+  const text = days === 0 ? t("today") : t("daysAgo").replace("{n}", days);
+  return `<span class="pill ${silent ? "warn" : "ok"}">${escapeHtml(text)}</span>`;
+}
+
+function renderTracking() {
+  const statsBox = document.getElementById("trackingStats");
+  const tableBox = document.getElementById("trackingTable");
+  if (TRACKING === null) return;            // still loading
+  if (!TRACKING) {
+    statsBox.innerHTML = "";
+    tableBox.innerHTML = `<div class="empty">${escapeHtml(t("trackingFailed"))}</div>`;
+    return;
+  }
+  const s = TRACKING.stats;
+  const card = (n, label, flag) => `
+    <div class="stat-card${flag && n ? " flag" : ""}">
+      <div class="stat-number">${n}</div>
+      <div class="stat-label">${escapeHtml(label)}</div>
+    </div>`;
+  statsBox.innerHTML = `<div class="stats-grid">
+    ${card(s.total, t("trackTotal"))}
+    ${card(s.active, t("trackActive"))}
+    ${card(s.completed, t("trackCompleted"))}
+    ${card(s.neverMet, t("trackNeverMet"), true)}
+    ${card(s.silent, t("trackSilent").replace("{n}", TRACKING.silentDays), true)}
+  </div>`;
+
+  if (!TRACKING.rows.length) {
+    tableBox.innerHTML = `<div class="empty">${escapeHtml(t("noMentorships"))}</div>`;
+    return;
+  }
+
+  let rows = "";
+  for (const r of TRACKING.rows) {
+    const open = openTrack.has(r.id);
+    const next = r.nextMeetingDate
+      ? `${formatDate(r.nextMeetingDate)}${r.nextMeetingTime ? " " + escapeHtml(r.nextMeetingTime) : ""}` : "—";
+    rows += `
+      <tr class="track-row" tabindex="0" role="button" aria-expanded="${open}"
+          onclick="toggleTrack('${escapeJs(r.id)}')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTrack('${escapeJs(r.id)}')}">
+        <td class="pair">${open ? "▾" : "▸"} ${escapeHtml(r.mentorName)} → ${escapeHtml(r.menteeName)}
+          ${r.status !== "active" ? `<span class="badge ${escapeHtml(r.status)}" style="margin-left:6px">${escapeHtml(statusText(r.status))}</span>` : ""}</td>
+        <td class="num">${r.meetingCount}</td>
+        <td class="num">${r.timedCount ? formatMinutes(r.totalMinutes) : "—"}</td>
+        <td class="num">${r.avgMinutes != null ? formatMinutes(r.avgMinutes) : "—"}</td>
+        <td>${r.firstMeeting ? formatDate(r.firstMeeting) : "—"}</td>
+        <td>${r.lastMeeting ? formatDate(r.lastMeeting) : "—"}</td>
+        <td>${sinceText(r.daysSinceLast)}</td>
+        <td>${next}</td>
+      </tr>`;
+    if (open) {
+      const list = r.meetings.length
+        ? r.meetings.map((m, i) =>
+            `<span>${i + 1}. ${formatDate(m.date)} · ${m.durationMinutes != null ? formatMinutes(m.durationMinutes) : escapeHtml(t("durationUnknown"))}</span>`).join("")
+        : `<span>${escapeHtml(t("noMeetingYet"))}</span>`;
+      const untimed = r.meetingCount - r.timedCount;
+      rows += `<tr class="track-detail"><td colspan="8">
+        <div class="track-meetings">${list}</div>
+        ${untimed > 0 && r.timedCount ? `<div class="track-note">${escapeHtml(t("durationPartial").replace("{n}", untimed))}</div>` : ""}
+      </td></tr>`;
+    }
+  }
+
+  tableBox.innerHTML = `<div class="track-wrap"><table class="track-table">
+    <thead><tr>
+      <th>${escapeHtml(t("colPair"))}</th><th class="num">${escapeHtml(t("colMeetings"))}</th>
+      <th class="num">${escapeHtml(t("colTotal"))}</th><th class="num">${escapeHtml(t("colAvg"))}</th>
+      <th>${escapeHtml(t("colFirst"))}</th><th>${escapeHtml(t("colLast"))}</th>
+      <th>${escapeHtml(t("colSince"))}</th><th>${escapeHtml(t("colNext"))}</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function toggleTrack(id) {
+  if (openTrack.has(id)) openTrack.delete(id); else openTrack.add(id);
+  renderTracking();
 }
 
 setLanguage(currentLanguage);

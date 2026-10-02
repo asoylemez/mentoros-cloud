@@ -2,7 +2,8 @@ const express = require("express");
 
 const config = require("../config");
 const {
-  companies, mentors, mentees, mentorships, meetings, matchRequests
+  companies, mentors, mentees, mentorships, meetings, matchRequests,
+  meetingDuration
 } = require("../db/repos");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
@@ -396,6 +397,13 @@ router.post(
     if (!req.body.meetingDate || !req.body.title) {
       return res.status(400).json({ error: "Date and title are required." });
     }
+    // The duration is required: it feeds HR meeting tracking.
+    if (meetingDuration(req.body.duration ?? req.body.durationMinutes) === null) {
+      return res.status(400).json({
+        error: "The meeting duration is required (HH:MM, between 00:01 and 12:00).",
+        code: "duration_required"
+      });
+    }
 
     const meeting = meetings.create(req.params.id, req.body);
 
@@ -431,6 +439,14 @@ router.patch(
   "/public/workspace/:id/meetings/:meetingId/action",
   requireWorkspaceToken,
   wrap(async (req, res) => {
+    // The token opens ONE workspace: the meeting must belong to it.
+    // (Without this, any valid workspace link could change the action
+    // items of any meeting whose id it knew - in any organisation.)
+    const meeting = meetings.get(req.params.meetingId);
+    if (!meeting || meeting.mentorshipId !== req.params.id) {
+      return res.status(404).json({ error: "Meeting not found.", code: "not_found" });
+    }
+
     const updated = meetings.updateActionStatus(
       req.params.meetingId,
       Number(req.body.index),

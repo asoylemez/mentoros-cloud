@@ -72,6 +72,13 @@ function run() {
     console.log("  migration: meetings.next_meeting_time eklendi");
   }
 
+  // Meeting length in minutes (HR meeting tracking). NULL = not recorded:
+  // notes saved before the duration became required.
+  if (!columnExists("meetings", "duration_minutes")) {
+    db.exec(`ALTER TABLE meetings ADD COLUMN duration_minutes INTEGER`);
+    console.log("  migration: meetings.duration_minutes added");
+  }
+
   // Calisma alaninin kapanacagi tarih (IK belirler; bilgi amacli).
   if (!columnExists("mentorships", "closing_date")) {
     db.exec(`ALTER TABLE mentorships ADD COLUMN closing_date TEXT DEFAULT ''`);

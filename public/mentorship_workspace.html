@@ -804,6 +804,15 @@
                 </div>
               </div>
 
+              <!-- How long the meeting lasted (required). The HR meeting
+                   tracking section shows only meeting dates and durations. -->
+              <label for="meetingDuration" data-i18n="meetingDuration">Meeting duration (hh:mm) *</label>
+              <input type="text" id="meetingDuration" inputmode="numeric" autocomplete="off"
+                     maxlength="5" placeholder="01:20" aria-required="true" aria-describedby="meetingDurationHelp" />
+              <div class="small-help" id="meetingDurationHelp" data-i18n="meetingDurationHelp">
+                Hours and minutes, e.g. 01:20 = 1 hour 20 minutes.
+              </div>
+
               <label for="title" data-i18n="meetingTitleRequired">Meeting Title *</label>
               <input type="text" id="title" data-i18n-placeholder="meetingTitlePlaceholder" placeholder="e.g. First mentoring session" required />
 
@@ -916,6 +925,11 @@
         savePlan: "Save Plan",
         addMeetingNote: "Add Meeting Note",
         meetingDateRequired: "Meeting Date *",
+        meetingDuration: "Meeting duration (hh:mm) *",
+        meetingDurationHelp: "Hours and minutes, e.g. 01:20 = 1 hour 20 minutes.",
+        durationInvalid: "Enter the meeting duration as hours:minutes, e.g. 01:20 (between 00:01 and 12:00).",
+        hoursShort: "h",
+        minutesShort: "min",
         createdBy: "Created By",
         meetingTitleRequired: "Meeting Title *",
         agenda: "Agenda",
@@ -1002,6 +1016,11 @@
         savePlan: "Planı Kaydet",
         addMeetingNote: "Toplantı Notu Ekle",
         meetingDateRequired: "Toplantı Tarihi *",
+        meetingDuration: "Toplantı süresi (ss:dd) *",
+        meetingDurationHelp: "Saat ve dakika, örn. 01:20 = 1 saat 20 dakika.",
+        durationInvalid: "Toplantı süresini saat:dakika olarak girin, örn. 01:20 (00:01 ile 12:00 arası).",
+        hoursShort: "sa",
+        minutesShort: "dk",
         createdBy: "Oluşturan",
         meetingTitleRequired: "Toplantı Başlığı *",
         agenda: "Gündem",
@@ -1517,7 +1536,7 @@
           <div class="meeting-head">
             <div>
               <div class="meeting-title">${index + 1}. ${escapeHtml(meeting.title || t("meeting"))}</div>
-              <div class="meeting-date">${formatDate(meeting.meetingDate)} · ${t("createdByText")} ${escapeHtml(formatCreatedBy(meeting.createdBy || "unknown"))}</div>
+              <div class="meeting-date">${formatDate(meeting.meetingDate)}${meeting.durationMinutes ? ` · ${formatDuration(Number(meeting.durationMinutes))}` : ""} · ${t("createdByText")} ${escapeHtml(formatCreatedBy(meeting.createdBy || "unknown"))}</div>
             </div>
           </div>
 
@@ -1591,8 +1610,51 @@
         .replaceAll("'", "&#039;");
     }
 
+    /* Meeting duration "hh:mm" -> minutes (null when not valid). Same
+       rule as the server (db/repos.js -> meetingDuration). */
+    function durationToMinutes(text) {
+      const m = String(text || "").trim().match(/^(\d{1,2}):([0-5]\d)$/);
+      if (!m) return null;
+      const n = Number(m[1]) * 60 + Number(m[2]);
+      return n >= 1 && n <= 720 ? n : null;
+    }
+
+    /** 80 -> "1 sa 20 dk" / "1 h 20 min" */
+    function formatDuration(total) {
+      const h = Math.floor(total / 60), m = total % 60;
+      const H = t("hoursShort"), M = t("minutesShort");
+      return h ? `${h} ${H}${m ? ` ${m} ${M}` : ""}` : `${m} ${M}`;
+    }
+
+    // Typing digits fills in the colon: "120" -> "1:20", "0120" -> "01:20".
+    (function () {
+      const el = document.getElementById("meetingDuration");
+      el.addEventListener("input", () => {
+        el.setCustomValidity("");
+        const digits = el.value.replace(/\D/g, "").slice(0, 4);
+        if (el.value.includes(":") && /^\d{0,2}:\d{0,2}$/.test(el.value)) return;
+        el.value = digits.length > 2 ? `${digits.slice(0, digits.length - 2)}:${digits.slice(-2)}` : digits;
+      });
+      el.addEventListener("blur", () => {
+        // one or two digits alone are minutes: "45" -> "00:45"
+        if (/^\d{1,2}$/.test(el.value)) el.value = `00:${el.value.padStart(2, "0")}`;
+        const m = el.value.match(/^(\d{1,2}):(\d{2})$/);
+        if (m) el.value = `${m[1].padStart(2, "0")}:${m[2]}`;
+      });
+    })();
+
     document.getElementById("meetingForm").addEventListener("submit", async function(event) {
       event.preventDefault();
+
+      const durationEl = document.getElementById("meetingDuration");
+      durationEl.dispatchEvent(new Event("blur"));       // "45" -> "00:45" before checking
+      const durationMinutes = durationToMinutes(durationEl.value);
+      if (durationMinutes === null) {
+        durationEl.setCustomValidity(t("durationInvalid"));
+        durationEl.reportValidity();
+        durationEl.focus();
+        return;
+      }
 
       const saveBtn = document.getElementById("saveBtn");
       saveBtn.disabled = true;
@@ -1610,6 +1672,7 @@
         nextMeetingTime: document.getElementById("nextMeetingTimeInput").value,
         nextMeetingGuests: document.getElementById("nextMeetingGuestsInput").value,
         createdBy: document.getElementById("createdBy").value,
+        durationMinutes,
         language: currentLanguage
       };
 

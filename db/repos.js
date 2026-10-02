@@ -1246,6 +1246,29 @@ const mentorships = {
 // MEETINGS
 // =====================================================================
 
+/**
+ * Meeting length, stored in MINUTES. Accepts "HH:MM" as typed in the
+ * workspace ("01:20" = 80) or a whole number of minutes. Valid: 1 minute
+ * to 12 hours. Anything else -> null ("not recorded").
+ *
+ * Both routes that save a meeting note (HR API and workspace) refuse a
+ * note without a valid duration; NULL only remains on notes saved before
+ * the duration became required. The workspace page uses the same rule
+ * (durationToMinutes in mentorship_workspace.html) - change both together.
+ */
+const DURATION_MAX_MINUTES = 12 * 60;
+
+function meetingDuration(value) {
+  if (value === null || value === undefined || value === "") return null;
+  let n;
+  const text = String(value).trim();
+  const hhmm = text.match(/^(\d{1,2}):([0-5]\d)$/);
+  if (hhmm) n = Number(hhmm[1]) * 60 + Number(hhmm[2]);
+  else if (/^\d+$/.test(text)) n = Number(text);
+  else return null;
+  return n >= 1 && n <= DURATION_MAX_MINUTES ? n : null;
+}
+
 function hydrateMeeting(row) {
   const m = camelize(row);
   if (!m) return null;
@@ -1262,13 +1285,13 @@ const meetings = {
       INSERT INTO meetings (
         id, mentorship_id, meeting_date, title, agenda, discussed,
         progress_since_last_meeting, action_items,
-        next_meeting_focus, next_meeting_date, next_meeting_time, created_by,
-        created_at, updated_at
+        next_meeting_focus, next_meeting_date, next_meeting_time,
+        duration_minutes, created_by, created_at, updated_at
       ) VALUES (
         @id, @mentorshipId, @meetingDate, @title, @agenda, @discussed,
         @progressSinceLastMeeting, @actionItems,
-        @nextMeetingFocus, @nextMeetingDate, @nextMeetingTime, @createdBy,
-        @createdAt, @updatedAt
+        @nextMeetingFocus, @nextMeetingDate, @nextMeetingTime,
+        @durationMinutes, @createdBy, @createdAt, @updatedAt
       )
     `).run({
       id,
@@ -1288,6 +1311,7 @@ const meetings = {
       nextMeetingFocus: body.nextMeetingFocus || "",
       nextMeetingDate: body.nextMeetingDate || "",
       nextMeetingTime: body.nextMeetingTime || "",
+      durationMinutes: meetingDuration(body.duration ?? body.durationMinutes),
       createdBy: body.createdBy || "unknown",
       createdAt: ts,
       updatedAt: ts
@@ -1444,5 +1468,6 @@ module.exports = {
   matchRequests,
   mentorships,
   meetings,
+  meetingDuration,
   surveys
 };

@@ -1,7 +1,7 @@
 const express = require("express");
 
 const config = require("../config");
-const { mentors, mentees, mentorships, meetings } = require("../db/repos");
+const { mentors, mentees, mentorships, meetings, meetingDuration } = require("../db/repos");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
 const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
@@ -186,6 +186,13 @@ router.post("/mentorships/:id/meetings", requireApiKey, wrap(async (req, res) =>
   if (!meetingDate || !title) {
     return res.status(400).json({ error: "meetingDate and title are required" });
   }
+  // The duration is required: it feeds HR meeting tracking.
+  if (meetingDuration(req.body.duration ?? req.body.durationMinutes) === null) {
+    return res.status(400).json({
+      error: "The meeting duration is required (HH:MM, between 00:01 and 12:00).",
+      code: "duration_required"
+    });
+  }
 
   const meeting = meetings.create(req.params.id, req.body);
 
@@ -322,6 +329,70 @@ router.post("/guided-session", requireApiKey, wrap(async (req, res) => {
   });
 
   res.json(guidance);
+}));
+
+// =====================================================================
+// HR: MEETING TRACKING  (dates and durations only - never the content)
+//
+// What was discussed stays between mentor and mentee: this endpoint
+// returns, per mentorship, only the meeting dates and durations and the
+// figures derived from them. Titles, agendas, notes and action items are
+// never selected here.
+// =====================================================================
+
+const SILENT_DAYS = 45;          // active, but no meeting for this long
+const DAY = 86400000;
+
+router.get("/meeting-tracking", requireApiKey, wrap(async (req, res) => {
+  const companyId = requireCompany(req, res);
+  if (!companyId) return;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const today = Date.parse(todayStr + "T00:00:00Z");
+  const upcoming = d => !!d && String(d).slice(0, 10) >= todayStr;
+
+  const rows = mentorships.listByCompany(companyId).map(ms => {
+    const items = meetings.listByMentorship(ms.id).map(m => ({
+      date: m.meetingDate,
+      durationMinutes: m.durationMinutes == null ? null : Number(m.durationMinutes)
+    }));
+    const timed = items.filter(m => m.durationMinutes != null);
+    const total = timed.reduce((a, m) => a + m.durationMinutes, 0);
+    const last = items.length ? items[items.length - 1].date : null;
+    const lastTs = last ? Date.parse(String(last).slice(0, 10) + "T00:00:00Z") : NaN;
+
+    return {
+      id: ms.id,
+      mentorName: ms.mentorName || "",
+      menteeName: ms.menteeName || "",
+      status: ms.status,
+      meetings: items,
+      meetingCount: items.length,
+      timedCount: timed.length,
+      totalMinutes: total,
+      avgMinutes: timed.length ? Math.round(total / timed.length) : null,
+      firstMeeting: items.length ? items[0].date : null,
+      lastMeeting: last,
+      daysSinceLast: Number.isFinite(lastTs) ? Math.max(0, Math.floor((today - lastTs) / DAY)) : null,
+      // Only an UPCOMING date is "next": when a note is saved without a
+      // next date, the mentorship keeps the meeting's own (past) date.
+      nextMeetingDate: upcoming(ms.nextMeetingDate) ? ms.nextMeetingDate : "",
+      nextMeetingTime: upcoming(ms.nextMeetingDate) ? (ms.nextMeetingTime || "") : ""
+    };
+  });
+
+  const active = rows.filter(r => r.status === "active");
+  res.json({
+    silentDays: SILENT_DAYS,
+    stats: {
+      total: rows.length,
+      active: active.length,
+      completed: rows.filter(r => r.status === "completed").length,
+      neverMet: active.filter(r => r.meetingCount === 0).length,
+      silent: active.filter(r => r.daysSinceLast != null && r.daysSinceLast >= SILENT_DAYS).length
+    },
+    rows
+  });
 }));
 
 module.exports = router;
