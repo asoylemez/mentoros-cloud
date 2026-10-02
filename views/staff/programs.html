@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Programlar — MentorOS</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --copper: #b5651d;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #23262d;
+    --muted: #6b7280;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --warn: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff);
+    color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text {
+    font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  select, input, textarea {
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 14px; background: #fff; color: var(--text);
+    width: 100%;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--navy);
+  }
+  select.compact { width: auto; padding: 7px 10px; font-size: 13px; }
+
+  button {
+    padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  button.danger { background: #fff; border-color: var(--err); color: var(--err); }
+  button.danger:hover:not(:disabled) { background: #fef2f2; }
+  button.sm { padding: 6px 11px; font-size: 13px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  h2 { font-size: 15px; color: var(--navy); margin-bottom: 5px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+  /* Davet */
+  .invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .invite-row input { flex: 1; min-width: 250px; background: #f9fafb; font-size: 13px; }
+
+  /* İstatistik */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 15px 17px; }
+  .stat-value { font-size: 23px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Tablo */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; padding: 11px 12px; background: #fafbfc;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .3px; white-space: nowrap;
+  }
+  td { padding: 12px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  tr:hover td { background: #fafbfc; }
+
+  .name { font-weight: 600; color: var(--navy); }
+  .email { color: var(--muted); font-size: 12px; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; background: #eef1f6; color: var(--navy); margin: 1px 2px 1px 0;
+  }
+  .badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.active   { background: #dcfce7; color: #15803d; }
+  .badge.inactive { background: #f3f4f6; color: #6b7280; }
+  .badge.full     { background: #fef3c7; color: #92400e; }
+
+  .cap-bar { width: 62px; height: 5px; background: #eceef1; border-radius: 3px; margin-top: 4px; }
+  .cap-fill { height: 100%; border-radius: 3px; background: var(--copper); }
+
+  .actions { display: flex; gap: 6px; white-space: nowrap; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+  /* Modal */
+  .modal {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(15,20,35,.55); padding: 24px;
+    overflow-y: auto;
+  }
+  .modal.open { display: block; }
+  .modal-box {
+    background: #fff; border-radius: 12px; max-width: 760px;
+    margin: 20px auto; padding: 26px 28px;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; gap: 12px;
+  }
+  .modal-close {
+    border: none; background: none; font-size: 22px; color: var(--muted);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 500;
+  }
+  textarea { min-height: 78px; resize: vertical; line-height: 1.5; }
+
+  .section-head {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--muted); font-weight: 600;
+    margin: 22px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .modal-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 13px 15px; font-size: 13px; color: #92400e;
+    line-height: 1.5; margin-bottom: 16px; display: none;
+  }
+  .warn-box.show { display: block; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff; padding: 12px 22px;
+    border-radius: 8px; font-size: 14px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+</style>
+<style>
+  /* Programme page */
+  .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .badge.planned  { background: #e0e7ff; color: #3730a3; }
+  .badge.ended    { background: #fef3c7; color: #92400e; }
+  .badge.archived { background: #f3f4f6; color: #6b7280; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  .desc { color: var(--muted); font-size: 12px; margin-top: 2px; max-width: 360px; }
+  tr.is-archived td { opacity: .65; }
+  .form-error { color: var(--err); font-size: 13px; margin-top: 4px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS</div>
+        <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:2px;">Mentorluk Programı Yönetim Platformu</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact">
+        <option value="tr">Türkçe</option>
+        <option value="en">English</option>
+      </select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <div class="head-row">
+    <div>
+      <h1 data-i18n="pageTitle">Mentorluk Programları</h1>
+      <div class="sub" data-i18n="pageSub">Programları başlangıç ve bitiş tarihleriyle tanımlayın. Mentor ve mentee'leri kayıt ekranlarından programlara yerleştirin.</div>
+    </div>
+    <button class="primary" id="newBtn" data-i18n="newProgram">+ Yeni program</button>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="thProgram">Program</th>
+            <th data-i18n="thDates">Tarihler</th>
+            <th data-i18n="thStatus">Durum</th>
+            <th class="num" data-i18n="thMentors">Mentor</th>
+            <th class="num" data-i18n="thMentees">Mentee</th>
+            <th class="num" data-i18n="thActive">Aktif ilişki</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyBox" style="display:none" data-i18n="empty">
+      Henüz program yok. "Yeni program" ile ilk programınızı oluşturun.
+    </div>
+    <div class="hint" data-i18n="howTo">
+      Mentorlar birden fazla programda olabilir; bir mentee tek programda olur. Atamayı Mentor Kayıtları ve Mentee Kayıtları ekranlarından yapın.
+    </div>
+  </div>
+</div>
+
+<!-- ============ PROGRAMME FORM ============ -->
+<div class="modal" id="modal">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-head">
+      <div><h2 id="mTitle">—</h2></div>
+      <button class="modal-close" id="mClose">&times;</button>
+    </div>
+
+    <div class="field"><label for="f_name" data-i18n="fName">Program adı *</label>
+      <input id="f_name" maxlength="120"></div>
+    <div class="grid2">
+      <div class="field"><label for="f_startDate" data-i18n="fStart">Başlangıç tarihi *</label>
+        <input id="f_startDate" type="date"></div>
+      <div class="field"><label for="f_endDate" data-i18n="fEnd">Bitiş tarihi *</label>
+        <input id="f_endDate" type="date"></div>
+    </div>
+    <div class="field"><label for="f_description" data-i18n="fDescription">Açıklama</label>
+      <textarea id="f_description" maxlength="1000"></textarea></div>
+    <div class="form-error" id="mError" role="alert"></div>
+
+    <div class="modal-foot">
+      <span></span>
+      <div style="display:flex;gap:8px">
+        <button id="mCancel" data-i18n="cancel">Vazgeç</button>
+        <button class="primary" id="mSave" data-i18n="save">Kaydet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COMPANY_ID = "default";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+const T = {
+  tr: {
+    pageTitle: "Mentorluk Programları",
+    pageSub: "Programları başlangıç ve bitiş tarihleriyle tanımlayın. Mentor ve mentee'leri kayıt ekranlarından programlara yerleştirin.",
+    logout: "Çıkış", newProgram: "+ Yeni program",
+    thProgram: "Program", thDates: "Tarihler", thStatus: "Durum",
+    thMentors: "Mentor", thMentees: "Mentee", thActive: "Aktif ilişki",
+    empty: "Henüz program yok. \"Yeni program\" ile ilk programınızı oluşturun.",
+    howTo: "Mentorlar birden fazla programda olabilir; bir mentee tek programda olur. Atamayı Mentor Kayıtları ve Mentee Kayıtları ekranlarından yapın.",
+    st_planned: "Planlanan", st_active: "Devam ediyor", st_ended: "Sona erdi", st_archived: "Arşivlendi",
+    edit: "Düzenle", archive: "Arşivle", unarchive: "Arşivden çıkar", del: "Sil",
+    newTitle: "Yeni program", editTitle: "Programı düzenle",
+    fName: "Program adı *", fStart: "Başlangıç tarihi *", fEnd: "Bitiş tarihi *", fDescription: "Açıklama",
+    cancel: "Vazgeç", save: "Kaydet", saving: "Kaydediliyor…", saved: "Kaydedildi ✓", deleted: "Silindi ✓",
+    archived: "Arşivlendi ✓", unarchived: "Arşivden çıkarıldı ✓",
+    archiveConfirm: "\"{name}\" arşivlensin mi?\n\nArşivlenen program kimseye yeni atanamaz. Mevcut atamalar ve kayıtlar korunur; istediğinizde arşivden çıkarabilirsiniz.",
+    deleteConfirm: "\"{name}\" silinsin mi?\n\nKişiler silinmez: mentorların bu programla bağı kalkar, bu programdaki mentee'ler \"programa atanmamış\" olur.",
+    inUse: "Bu programda eşleşme talebi veya mentorluk ilişkisi var; silinemez, yalnızca arşivlenebilir.\n\nŞimdi arşivlensin mi?",
+    err_name_required: "Program adı zorunlu.", err_name_taken: "Bu adda bir program zaten var.",
+    err_name_too_long: "Program adı en fazla 120 karakter olabilir.", err_description_too_long: "Açıklama en fazla 1000 karakter olabilir.",
+    err_dates_required: "Başlangıç ve bitiş tarihi zorunlu.", err_end_before_start: "Bitiş tarihi başlangıçtan önce olamaz.",
+    loadFailed: "Programlar yüklenemedi."
+  },
+  en: {
+    pageTitle: "Mentoring Programmes",
+    pageSub: "Define programmes with a start and an end date. Place mentors and mentees into programmes from the registries.",
+    logout: "Log out", newProgram: "+ New programme",
+    thProgram: "Programme", thDates: "Dates", thStatus: "Status",
+    thMentors: "Mentors", thMentees: "Mentees", thActive: "Active mentorships",
+    empty: "No programmes yet. Create your first one with \"New programme\".",
+    howTo: "A mentor can be in several programmes; a mentee is in one. Assign people from the Mentor Registry and the Mentee Registry.",
+    st_planned: "Planned", st_active: "Running", st_ended: "Ended", st_archived: "Archived",
+    edit: "Edit", archive: "Archive", unarchive: "Unarchive", del: "Delete",
+    newTitle: "New programme", editTitle: "Edit programme",
+    fName: "Programme name *", fStart: "Start date *", fEnd: "End date *", fDescription: "Description",
+    cancel: "Cancel", save: "Save", saving: "Saving…", saved: "Saved ✓", deleted: "Deleted ✓",
+    archived: "Archived ✓", unarchived: "Unarchived ✓",
+    archiveConfirm: "Archive \"{name}\"?\n\nAn archived programme cannot be newly assigned to anyone. Existing assignments and records are kept; you can unarchive it at any time.",
+    deleteConfirm: "Delete \"{name}\"?\n\nNo person is deleted: mentors lose this programme, mentees in it become \"not assigned\".",
+    inUse: "This programme has match requests or mentorships, so it cannot be deleted - only archived.\n\nArchive it now?",
+    err_name_required: "The programme name is required.", err_name_taken: "A programme with this name already exists.",
+    err_name_too_long: "The programme name can be at most 120 characters.", err_description_too_long: "The description can be at most 1000 characters.",
+    err_dates_required: "Start and end dates are required.", err_end_before_start: "The end date cannot be before the start date.",
+    loadFailed: "Programmes could not be loaded."
+  }
+};
+
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+if (!T[LANG]) LANG = "tr";
+const t = k => (T[LANG] && T[LANG][k]) || T.tr[k] || k;
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = t("pageTitle") + " — MentorOS";
+  $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  render();
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { location.href = "/index.html?company=" + encodeURIComponent(COMPANY_ID); };
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data.error || "Error"); e.data = data; e.status = res.status; throw e; }
+  return data;
+}
+function toast(msg, isErr) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => { el.className = "toast"; }, 2600);
+}
+const fmtDate = d => d ? new Date(d + "T00:00:00").toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR",
+  { year: "numeric", month: "short", day: "numeric" }) : "–";
+
+/* ---- List ---- */
+let PROGRAMS = [];
+let LOADED = false;
+
+async function load() {
+  try {
+    PROGRAMS = await api("/programs");
+    LOADED = true;
+  } catch (e) {
+    toast(t("loadFailed"), true);
+  }
+  render();
+}
+
+function render() {
+  const tbody = $("rows");
+  if (!LOADED) return;
+  $("emptyBox").style.display = PROGRAMS.length ? "none" : "block";
+  tbody.innerHTML = PROGRAMS.map(p => `
+    <tr class="${p.archived ? "is-archived" : ""}">
+      <td><div class="name">${esc(p.name)}</div>${p.description ? `<div class="desc">${esc(p.description)}</div>` : ""}</td>
+      <td style="white-space:nowrap">${fmtDate(p.startDate)} – ${fmtDate(p.endDate)}</td>
+      <td><span class="badge ${esc(p.status)}">${esc(t("st_" + p.status))}</span></td>
+      <td class="num">${p.mentorCount}</td>
+      <td class="num">${p.menteeCount}</td>
+      <td class="num">${p.activeMentorshipCount}</td>
+      <td class="actions">
+        <button class="sm" onclick="openForm('${esc(p.id)}')">${t("edit")}</button>
+        <button class="sm" onclick="toggleArchive('${esc(p.id)}')">${p.archived ? t("unarchive") : t("archive")}</button>
+        <button class="sm danger" onclick="removeProgram('${esc(p.id)}')">${t("del")}</button>
+      </td>
+    </tr>`).join("");
+}
+
+/* ---- Form ---- */
+let EDITING = null;      // programme being edited, null = new
+
+window.openForm = function (id) {
+  EDITING = id ? PROGRAMS.find(p => p.id === id) : null;
+  $("mTitle").textContent = EDITING ? t("editTitle") : t("newTitle");
+  $("f_name").value = EDITING ? EDITING.name : "";
+  $("f_startDate").value = EDITING ? EDITING.startDate : "";
+  $("f_endDate").value = EDITING ? EDITING.endDate : "";
+  $("f_description").value = EDITING ? EDITING.description : "";
+  $("mError").textContent = "";
+  $("modal").classList.add("open");
+  $("f_name").focus();
+};
+function closeModal() { $("modal").classList.remove("open"); EDITING = null; }
+$("newBtn").onclick = () => openForm(null);
+$("mClose").onclick = closeModal;
+$("mCancel").onclick = closeModal;
+$("modal").onclick = e => { if (e.target === $("modal")) closeModal(); };
+
+$("mSave").onclick = async () => {
+  const body = {
+    name: $("f_name").value.trim(),
+    startDate: $("f_startDate").value,
+    endDate: $("f_endDate").value,
+    description: $("f_description").value.trim()
+  };
+  // Same checks as the server, so the message appears before a round trip.
+  let code = "";
+  if (!body.name) code = "name_required";
+  else if (!body.startDate || !body.endDate) code = "dates_required";
+  else if (body.endDate < body.startDate) code = "end_before_start";
+  if (code) { $("mError").textContent = t("err_" + code); return; }
+
+  const btn = $("mSave"); btn.disabled = true; btn.textContent = t("saving");
+  try {
+    if (EDITING) await api(`/programs/${EDITING.id}`, { method: "PATCH", body: JSON.stringify(body) });
+    else await api("/programs", { method: "POST", body: JSON.stringify(body) });
+    closeModal();
+    await load();
+    toast(t("saved"));
+  } catch (e) {
+    const c = e.data && e.data.code;
+    $("mError").textContent = (c && T[LANG]["err_" + c]) || e.message;
+  } finally { btn.disabled = false; btn.textContent = t("save"); }
+};
+
+/* ---- Archive / delete ---- */
+window.toggleArchive = async function (id) {
+  const p = PROGRAMS.find(x => x.id === id);
+  if (!p) return;
+  if (!p.archived && !confirm(t("archiveConfirm").replace("{name}", p.name))) return;
+  try {
+    await api(`/programs/${id}`, { method: "PATCH", body: JSON.stringify({ archived: !p.archived }) });
+    await load();
+    toast(p.archived ? t("unarchived") : t("archived"));
+  } catch (e) { toast(e.message, true); }
+};
+
+window.removeProgram = async function (id) {
+  const p = PROGRAMS.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(t("deleteConfirm").replace("{name}", p.name))) return;
+  try {
+    await api(`/programs/${id}`, { method: "DELETE" });
+    await load();
+    toast(t("deleted"));
+  } catch (e) {
+    if (e.data && e.data.code === "program_in_use") {
+      if (p.archived) { toast(e.message, true); return; }
+      if (confirm(t("inUse"))) {
+        try {
+          await api(`/programs/${id}`, { method: "PATCH", body: JSON.stringify({ archived: true }) });
+          await load();
+          toast(t("archived"));
+        } catch (e2) { toast(e2.message, true); }
+      }
+      return;
+    }
+    toast(e.message, true);
+  }
+};
+
+$("logoutBtn").onclick = async () => {
+  await fetch("/company-logout", { method: "POST" });
+  location.href = "/login.html";
+};
+
+applyLang();
+load();
+</script>
+</body>
+</html>

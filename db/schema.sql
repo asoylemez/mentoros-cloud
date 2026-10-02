@@ -277,8 +277,9 @@ CREATE TABLE IF NOT EXISTS mentorships (
 
 CREATE INDEX IF NOT EXISTS idx_ms_company ON mentorships(company_id);
 CREATE INDEX IF NOT EXISTS idx_ms_mentor  ON mentorships(mentor_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ms_unique_pair
-  ON mentorships(company_id, mentor_id, mentee_id);
+-- The unique "one mentorship per mentor-mentee pair" index is created in
+-- db/migrate.js (migratePrograms): it includes program_id, a column that
+-- older databases only get there.
 
 -- ------------------------------------------------------------
 -- Toplantilar

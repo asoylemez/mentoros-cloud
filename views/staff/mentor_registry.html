@@ -177,6 +177,14 @@
   .toast.err { background: var(--err); }
 
   .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+
+  /* Programmes */
+  .tag.prog { background: #e0e7ff; color: #3730a3; }
+  .tag.prog.archived { background: #f3f4f6; color: #6b7280; }
+  .unassigned { color: var(--muted); font-size: 12px; font-style: italic; }
+  .check-list { display: flex; flex-direction: column; gap: 6px; }
+  .check-list label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); cursor: pointer; }
+  .check-list input { width: auto; }
 </style>
 </head>
 <body>
@@ -275,6 +283,7 @@
         <option value="inactive" data-i18n="filterInactive">Pasif</option>
         <option value="free" data-i18n="filterFree">Boş kapasitesi olan</option>
       </select>
+      <select id="programFilter" class="compact" aria-label="Program"></select>
       <button id="refreshBtn" data-i18n="refresh">Yenile</button>
     </div>
 
@@ -284,6 +293,7 @@
           <tr>
             <th data-i18n="thMentor">Mentor</th>
             <th data-i18n="thRole">Rol / Kademe</th>
+            <th data-i18n="thProgram">Program</th>
             <th data-i18n="thExpertise">Uzmanlık</th>
             <th data-i18n="thCapacity">Kapasite</th>
             <th data-i18n="thStatus">Durum</th>
@@ -313,6 +323,16 @@
     </div>
 
     <div class="warn-box" id="mWarn"></div>
+
+    <div class="section-head" data-i18n="secPrograms">Programlar</div>
+    <div id="programField">
+      <div class="check-list" id="f_programs"></div>
+      <div class="hint" data-i18n="programManyHint">Bir mentor birden fazla programda olabilir. Kapasitesi toplamdır.</div>
+    </div>
+    <div class="hint" id="noProgramsHint" style="display:none;margin-top:0">
+      <span data-i18n="noProgramsYet">Henüz program yok.</span>
+      <a href="/programs.html" data-i18n="goPrograms">Programlar sayfasından oluşturun</a>
+    </div>
 
     <div class="section-head" data-i18n="secBasic">Temel Bilgiler</div>
     <div class="grid2">
@@ -493,6 +513,11 @@ const T = {
     refresh: "Yenile",
     thMentor: "Mentor",
     thRole: "Rol / Kademe",
+    thProgram: "Program", secPrograms: "Programlar",
+    programManyHint: "Bir mentor birden fazla programda olabilir. Kapasitesi toplamdır.",
+    programAll: "Tüm programlar", programNone: "Programa atanmamış",
+    noProgramsYet: "Henüz program yok.", goPrograms: "Programlar sayfasından oluşturun",
+    archivedSuffix: "(arşivlendi)",
     thExpertise: "Uzmanlık",
     thCapacity: "Kapasite",
     thStatus: "Durum",
@@ -580,6 +605,11 @@ const T = {
     refresh: "Refresh",
     thMentor: "Mentor",
     thRole: "Role / Band",
+    thProgram: "Programme", secPrograms: "Programmes",
+    programManyHint: "A mentor can be in several programmes. The capacity is a total.",
+    programAll: "All programmes", programNone: "Not assigned to a programme",
+    noProgramsYet: "No programmes yet.", goPrograms: "Create one on the Programmes page",
+    archivedSuffix: "(archived)",
     thExpertise: "Expertise",
     thCapacity: "Capacity",
     thStatus: "Status",
@@ -651,6 +681,7 @@ function applyLang() {
     el.placeholder = t(el.dataset.i18nPh);
   });
 
+  renderProgramFilter();   // option labels follow the language
   render();
 }
 
@@ -772,6 +803,35 @@ $("sendInvite").onclick = async () => {
 
 /* ---------------- MENTOR LİSTESİ ---------------- */
 
+/* ---------------- PROGRAMMES ---------------- */
+
+let PROGRAMS = [];
+
+async function loadPrograms() {
+  try { PROGRAMS = await api("/programs"); } catch { PROGRAMS = []; }
+  renderProgramFilter();
+}
+const programById = id => PROGRAMS.find(p => p.id === id);
+const programLabel = p => p.name + (p.archived ? " " + t("archivedSuffix") : "");
+
+function renderProgramFilter() {
+  const sel = $("programFilter");
+  if (!sel) return;
+  const keep = sel.value || "all";
+  sel.style.display = PROGRAMS.length ? "" : "none";
+  sel.innerHTML =
+    `<option value="all">${esc(t("programAll"))}</option>` +
+    `<option value="none">${esc(t("programNone"))}</option>` +
+    PROGRAMS.map(p => `<option value="${esc(p.id)}">${esc(programLabel(p))}</option>`).join("");
+  sel.value = [...sel.options].some(o => o.value === keep) ? keep : "all";
+}
+function programCell(m) {
+  const list = (m.programIds || []).map(programById).filter(Boolean);
+  return list.length
+    ? list.map(p => `<span class="tag prog${p.archived ? " archived" : ""}">${esc(p.name)}</span>`).join("")
+    : `<span class="unassigned">${esc(t("programNone"))}</span>`;
+}
+
 let MENTORS = [];
 
 async function loadMentors() {
@@ -782,8 +842,12 @@ async function loadMentors() {
 function filtered() {
   const q = $("search").value.trim().toLowerCase();
   const f = $("statusFilter").value;
+  const pf = $("programFilter").value || "all";
 
   return MENTORS.filter(m => {
+    const ids = m.programIds || [];
+    if (pf === "none" && ids.length) return false;
+    if (pf !== "all" && pf !== "none" && !ids.includes(pf)) return false;
     if (f === "active" && m.status !== "active") return false;
     if (f === "inactive" && m.status !== "inactive") return false;
     if (f === "free" && !(m.remainingCapacity > 0)) return false;
@@ -856,6 +920,7 @@ function render() {
           ${esc(m.role || "–")}
           ${m.band ? `<div class="email">${esc(m.band)}</div>` : ""}
         </td>
+        <td>${programCell(m)}</td>
         <td>
           ${expertise.map(e => `<span class="tag">${esc(e)}</span>`).join("") || "–"}
         </td>
@@ -875,7 +940,8 @@ function render() {
 
 $("search").oninput = render;
 $("statusFilter").onchange = render;
-$("refreshBtn").onclick = async () => { await loadMentors(); toast("✓"); };
+$("programFilter").onchange = render;
+$("refreshBtn").onclick = async () => { await loadPrograms(); await loadMentors(); toast("✓"); };
 
 /* ---------------- DÜZENLEME ---------------- */
 
@@ -911,6 +977,17 @@ window.openMentor = function (id) {
 
   $("f_capacity").value = m.capacity ?? 1;
   $("f_status").value = m.status || "active";
+
+  // Programmes: every programme that is not archived, plus any archived
+  // one the mentor is already in (it can be kept or removed, not added).
+  const mine = m.programIds || [];
+  const hasPrograms = PROGRAMS.length > 0;
+  $("programField").style.display = hasPrograms ? "" : "none";
+  $("noProgramsHint").style.display = hasPrograms ? "none" : "block";
+  $("f_programs").innerHTML = PROGRAMS
+    .filter(p => !p.archived || mine.includes(p.id))
+    .map(p => `<label><input type="checkbox" value="${esc(p.id)}"${mine.includes(p.id) ? " checked" : ""}>
+                ${esc(programLabel(p))}</label>`).join("");
 
   // Aktif mentee'si varsa silme riskini önceden söyle
   const warn = $("mWarn");
@@ -958,6 +1035,18 @@ $("mSave").onclick = async () => {
       method: "PATCH",
       body: JSON.stringify(body)
     });
+
+    // Programmes are saved separately, as the whole list.
+    if (PROGRAMS.length) {
+      const chosen = [...$("f_programs").querySelectorAll("input:checked")].map(i => i.value);
+      const before = [...(EDITING.programIds || [])].sort().join(",");
+      if (chosen.slice().sort().join(",") !== before) {
+        await api(`/mentors/${EDITING.id}/programs`, {
+          method: "PUT",
+          body: JSON.stringify({ programIds: chosen })
+        });
+      }
+    }
 
     closeModal();
     await loadMentors();
@@ -1009,6 +1098,7 @@ $("logoutBtn").onclick = async () => {
   applyLang();
   await checkSmtp();
   await loadInvite(false);
+  await loadPrograms();
   await loadMentors();
 })();
 </script>

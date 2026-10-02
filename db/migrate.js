@@ -177,6 +177,93 @@ function run() {
     `);
     console.log("  migration: email_log tablosu eklendi");
   }
+
+  migratePrograms();
+}
+
+/**
+ * MENTORING PROGRAMMES
+ *
+ * An organisation can run several programmes ("Leadership 2026",
+ * "Graduate programme"), each with a start and an end date.
+ *   - a mentor can be in SEVERAL programmes  -> program_mentors
+ *   - a mentee is in ONE programme           -> mentees.program_id
+ *   - a match request / mentorship remembers the programme it was made
+ *     in                                     -> *.program_id
+ * '' (empty) = not assigned to a programme. An organisation without
+ * programmes works exactly as before.
+ */
+function migratePrograms() {
+  const hasPrograms = db.prepare(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='programs'`
+  ).get();
+
+  if (!hasPrograms) {
+    db.exec(`
+      CREATE TABLE programs (
+        id           TEXT PRIMARY KEY,
+        company_id   TEXT NOT NULL,
+        name         TEXT NOT NULL,
+        description  TEXT NOT NULL DEFAULT '',
+        start_date   TEXT NOT NULL,              -- YYYY-MM-DD
+        end_date     TEXT NOT NULL,              -- YYYY-MM-DD
+        archived     INTEGER NOT NULL DEFAULT 0,
+        created_at   TEXT NOT NULL,
+        updated_at   TEXT NOT NULL,
+        FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE
+      );
+      CREATE INDEX idx_programs_company ON programs(company_id);
+      CREATE UNIQUE INDEX idx_programs_name ON programs(company_id, name COLLATE NOCASE);
+    `);
+    console.log("  migration: programs table added");
+  }
+
+  const hasProgramMentors = db.prepare(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='program_mentors'`
+  ).get();
+
+  if (!hasProgramMentors) {
+    db.exec(`
+      CREATE TABLE program_mentors (
+        program_id   TEXT NOT NULL,
+        mentor_id    TEXT NOT NULL,
+        company_id   TEXT NOT NULL,
+        added_at     TEXT NOT NULL,
+        PRIMARY KEY (program_id, mentor_id),
+        FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE,
+        FOREIGN KEY (mentor_id)  REFERENCES mentors(id)  ON DELETE CASCADE
+      );
+      CREATE INDEX idx_program_mentors_mentor ON program_mentors(mentor_id);
+    `);
+    console.log("  migration: program_mentors table added");
+  }
+
+  for (const table of ["mentees", "match_requests", "mentorships"]) {
+    if (!columnExists(table, "program_id")) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN program_id TEXT NOT NULL DEFAULT ''`);
+      console.log(`  migration: ${table}.program_id added`);
+    }
+  }
+
+  // One mentorship per mentor-mentee pair PER PROGRAMME (was: per
+  // organisation). Otherwise a pair matched in programme X could never
+  // be matched again in programme Y. The index is managed only here -
+  // schema.sql no longer creates the old one.
+  const oldIndex = db.prepare(
+    `SELECT name FROM sqlite_master WHERE type='index' AND name='idx_ms_unique_pair'`
+  ).get();
+  if (oldIndex) {
+    db.exec(`DROP INDEX idx_ms_unique_pair`);
+    console.log("  migration: mentorships unique pair index removed (now per programme)");
+  }
+  const newIndex = db.prepare(
+    `SELECT name FROM sqlite_master WHERE type='index' AND name='idx_ms_unique_pair_program'`
+  ).get();
+  if (!newIndex) {
+    db.exec(`CREATE UNIQUE INDEX idx_ms_unique_pair_program
+               ON mentorships(company_id, mentor_id, mentee_id, program_id)`);
+    console.log("  migration: mentorships unique pair-per-programme index added");
+  }
 }
 
 module.exports = { run };

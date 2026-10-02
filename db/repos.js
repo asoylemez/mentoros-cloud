@@ -434,6 +434,10 @@ const ARRAY_FIELDS = [
 function hydrateMentor(row) {
   const m = camelize(row);
   if (!m) return null;
+  // Programmes this mentor is in (a mentor can be in several).
+  m.programIds = db.prepare(
+    `SELECT program_id FROM program_mentors WHERE mentor_id = ? ORDER BY added_at`
+  ).all(m.id).map(r => r.program_id);
   for (const field of ARRAY_FIELDS) {
     if (field in m) m[field] = parseArray(m[field]);
   }
@@ -1461,6 +1465,172 @@ function hydrateSurvey(row) {
   return survey;
 }
 
+// =====================================================================
+// PROGRAMMES
+//
+// An organisation can run several mentoring programmes, each with a start
+// and an end date. Status is never stored - it is worked out from the
+// dates every time, so it cannot go stale:
+//   archived  set by HR
+//   planned   today is before the start date
+//   active    start <= today <= end
+//   ended     today is after the end date
+// =====================================================================
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isRealDate(text) {
+  if (!DATE_RE.test(text || "")) return false;
+  const d = new Date(text + "T00:00:00Z");
+  return !isNaN(d) && d.toISOString().slice(0, 10) === text;
+}
+
+function programStatus(p, today = new Date().toISOString().slice(0, 10)) {
+  if (p.archived) return "archived";
+  if (today < p.startDate) return "planned";
+  if (today > p.endDate) return "ended";
+  return "active";
+}
+
+function hydrateProgram(row) {
+  const p = camelize(row);
+  if (!p) return null;
+  p.archived = !!p.archived;
+  p.status = programStatus(p);
+  return p;
+}
+
+const programs = {
+  /**
+   * Checks the fields HR typed. Returns { error } or { value }.
+   * `current` is the stored programme when editing (fields left out of
+   * the body keep their value).
+   */
+  validate(companyId, body, current = null) {
+    const pick = (k, d = "") => (body[k] === undefined ? (current ? current[k] : d) : body[k]);
+    const name = String(pick("name")).trim();
+    const description = String(pick("description")).trim();
+    const startDate = String(pick("startDate")).trim();
+    const endDate = String(pick("endDate")).trim();
+
+    if (!name) return { error: "The programme name is required.", code: "name_required" };
+    if (name.length > 120) return { error: "The programme name can be at most 120 characters.", code: "name_too_long" };
+    if (description.length > 1000) return { error: "The description can be at most 1000 characters.", code: "description_too_long" };
+    if (!isRealDate(startDate) || !isRealDate(endDate)) {
+      return { error: "Start and end dates are required (YYYY-MM-DD).", code: "dates_required" };
+    }
+    if (endDate < startDate) {
+      return { error: "The end date cannot be before the start date.", code: "end_before_start" };
+    }
+
+    const clash = db.prepare(`
+      SELECT id FROM programs
+       WHERE company_id = ? AND name = ? COLLATE NOCASE AND id != ?
+    `).get(slugify(companyId), name, current ? current.id : "");
+    if (clash) return { error: "A programme with this name already exists.", code: "name_taken" };
+
+    return { value: { name, description, startDate, endDate } };
+  },
+
+  create(companyId, value) {
+    const id = newId();
+    const ts = now();
+    db.prepare(`
+      INSERT INTO programs (id, company_id, name, description, start_date, end_date,
+                            archived, created_at, updated_at)
+      VALUES (@id, @companyId, @name, @description, @startDate, @endDate, 0, @ts, @ts)
+    `).run({ id, companyId: slugify(companyId), ...value, ts });
+    return programs.get(id);
+  },
+
+  get(id) {
+    return hydrateProgram(db.prepare(`SELECT * FROM programs WHERE id = ?`).get(id));
+  },
+
+  /** With head counts, newest start first. */
+  listByCompany(companyId) {
+    const cid = slugify(companyId);
+    return db.prepare(`
+      SELECT p.*,
+        (SELECT COUNT(*) FROM program_mentors pm WHERE pm.program_id = p.id) AS mentor_count,
+        (SELECT COUNT(*) FROM mentees me WHERE me.program_id = p.id AND me.company_id = p.company_id) AS mentee_count,
+        (SELECT COUNT(*) FROM mentorships ms WHERE ms.program_id = p.id AND ms.status = 'active') AS active_mentorship_count
+        FROM programs p
+       WHERE p.company_id = ?
+       ORDER BY p.archived ASC, p.start_date DESC, p.name COLLATE NOCASE
+    `).all(cid).map(hydrateProgram);
+  },
+
+  update(id, value) {
+    db.prepare(`
+      UPDATE programs
+         SET name = @name, description = @description,
+             start_date = @startDate, end_date = @endDate, updated_at = @ts
+       WHERE id = @id
+    `).run({ id, ...value, ts: now() });
+    return programs.get(id);
+  },
+
+  setArchived(id, archived) {
+    db.prepare(`UPDATE programs SET archived = ?, updated_at = ? WHERE id = ?`)
+      .run(archived ? 1 : 0, now(), id);
+    return programs.get(id);
+  },
+
+  /** How many match requests / mentorships were made in this programme. */
+  usage(id) {
+    return {
+      matchRequests: db.prepare(`SELECT COUNT(*) n FROM match_requests WHERE program_id = ?`).get(id).n,
+      mentorships: db.prepare(`SELECT COUNT(*) n FROM mentorships WHERE program_id = ?`).get(id).n
+    };
+  },
+
+  /**
+   * Deletes an EMPTY programme (no match request, no mentorship - the
+   * route checks). People are never deleted: mentors lose the membership
+   * (FK cascade), mentees become "not assigned".
+   */
+  remove(id) {
+    const tx = db.transaction(() => {
+      db.prepare(`UPDATE mentees SET program_id = '', updated_at = ? WHERE program_id = ?`).run(now(), id);
+      db.prepare(`DELETE FROM program_mentors WHERE program_id = ?`).run(id);
+      db.prepare(`DELETE FROM programs WHERE id = ?`).run(id);
+    });
+    tx();
+  },
+
+  /** Replaces the programmes of one mentor. Ids must be checked by the caller. */
+  setMentorPrograms(companyId, mentorId, programIds) {
+    const cid = slugify(companyId);
+    const tx = db.transaction(() => {
+      const keep = new Set(programIds);
+      const current = db.prepare(`SELECT program_id FROM program_mentors WHERE mentor_id = ?`)
+        .all(mentorId).map(r => r.program_id);
+      for (const pid of current) {
+        if (!keep.has(pid)) {
+          db.prepare(`DELETE FROM program_mentors WHERE program_id = ? AND mentor_id = ?`).run(pid, mentorId);
+        }
+      }
+      const ts = now();
+      for (const pid of keep) {
+        db.prepare(`
+          INSERT OR IGNORE INTO program_mentors (program_id, mentor_id, company_id, added_at)
+          VALUES (?, ?, ?, ?)
+        `).run(pid, mentorId, cid, ts);
+      }
+    });
+    tx();
+    return mentors.get(mentorId);
+  },
+
+  /** Puts one mentee into one programme ('' = not assigned). */
+  setMenteeProgram(menteeId, programId) {
+    db.prepare(`UPDATE mentees SET program_id = ?, updated_at = ? WHERE id = ?`)
+      .run(programId || "", now(), menteeId);
+    return mentees.get(menteeId);
+  }
+};
+
 module.exports = {
   companies,
   mentors,
@@ -1469,5 +1639,7 @@ module.exports = {
   mentorships,
   meetings,
   meetingDuration,
-  surveys
+  surveys,
+  programs,
+  programStatus
 };

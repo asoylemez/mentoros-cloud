@@ -86,7 +86,7 @@ async function startServer() {
   while (Date.now() < deadline && exited === null && !spawnError) {
     try {
       const r = await fetch(base + "/health");
-      if (r.ok) return { child, base, tmp, superPassword };
+      if (r.ok) return { child, base, tmp, superPassword, dbPath: env.DB_PATH };
       lastError = `/health answered HTTP ${r.status}`;
     } catch (e) {
       lastError = (e.cause && (e.cause.code || e.cause.message)) || e.message;
@@ -401,6 +401,127 @@ async function run(server) {
 
   const del = await api(A, "DELETE", `/match-request/${reqA}`);
   check("A: deletes its own match request", del.status === 200, `HTTP ${del.status}`);
+
+  await programmeChecks(server, { A, B, mentorA, menteeA, menteeA2, mentorB, menteeB, msA });
+}
+
+// ---------------------------------------------------------------------
+// MENTORING PROGRAMMES
+// ---------------------------------------------------------------------
+
+async function programmeChecks(server, ids) {
+  const { A, B, mentorA, menteeA, menteeA2, mentorB, menteeB, msA } = ids;
+  console.log("\n6) MENTORING PROGRAMMES\n");
+
+  check("unauthenticated /programs rejected", (await api(null, "GET", "/programs")).status === 401);
+
+  const mkProg = (cookie, body) => api(cookie, "POST", "/programs", body);
+  const X = await mkProg(A, { name: "Leadership 2026", startDate: "2026-01-01", endDate: "2026-12-31", description: "Senior track" });
+  const Y = await mkProg(A, { name: "Graduate programme", startDate: "2026-03-01", endDate: "2026-09-30" });
+  check("A: creates two programmes", X.status === 200 && Y.status === 200, `HTTP ${X.status}/${Y.status}`);
+  const pX = X.json?.program?.id, pY = Y.json?.program?.id;
+
+  const bad = [
+    [{ startDate: "2026-01-01", endDate: "2026-02-01" }, "name_required"],
+    [{ name: "Z", startDate: "2026-05-01", endDate: "2026-04-01" }, "end_before_start"],
+    [{ name: "Z", startDate: "2026-02-30", endDate: "2026-04-01" }, "dates_required"],
+    [{ name: "leadership 2026", startDate: "2026-01-01", endDate: "2026-02-01" }, "name_taken"]
+  ];
+  for (const [body, code] of bad) {
+    const r = await mkProg(A, body);
+    check(`programme validation: ${code} -> 400`, r.status === 400 && r.json?.code === code, `HTTP ${r.status} ${r.json?.code}`);
+  }
+
+  // Organisation B cannot touch A's programmes
+  const listB = (await api(B, "GET", "/programs")).json || [];
+  check("B: does not see A's programmes", listB.length === 0, `${listB.length} programme(s)`);
+  for (const [m, u, body] of [
+    ["PATCH",  `/programs/${pX}`, { name: "CHANGED BY B" }],
+    ["PATCH",  `/programs/${pX}`, { archived: true }],
+    ["DELETE", `/programs/${pX}`],
+    ["PUT",    `/mentors/${mentorB}/programs`, { programIds: [pX] }],
+    ["PUT",    `/mentees/${menteeB}/program`, { programId: pX }],
+    ["PUT",    `/mentors/${mentorA}/programs`, { programIds: [] }],
+    ["PUT",    `/mentees/${menteeA2}/program`, { programId: "" }]
+  ]) {
+    const r = await api(B, m, u, body);
+    check(`B: ${m} ${u.replace(/[0-9a-f]{24}/g, ":id")} -> 404`, r.status === 404, `HTTP ${r.status}`);
+  }
+
+  // Placing people
+  const pm = await api(A, "PUT", `/mentors/${mentorA}/programs`, { programIds: [pX, pY] });
+  check("A: mentor placed in two programmes",
+        pm.status === 200 && pm.json?.mentor?.programIds?.length === 2, `HTTP ${pm.status}`);
+
+  const engaged = await api(A, "PUT", `/mentees/${menteeA}/program`, { programId: pX });
+  check("A: moving a mentee with an active mentorship warns first (409)",
+        engaged.status === 409 && engaged.json?.code === "mentee_engaged", `HTTP ${engaged.status}`);
+  const forced = await api(A, "PUT", `/mentees/${menteeA}/program?force=true`, { programId: pX });
+  check("A: ... and is placed after confirming", forced.status === 200 && forced.json?.mentee?.programId === pX,
+        `HTTP ${forced.status}`);
+  const free = await api(A, "PUT", `/mentees/${menteeA2}/program`, { programId: pY });
+  check("A: free mentee placed without warning", free.status === 200 && free.json?.mentee?.programId === pY,
+        `HTTP ${free.status}`);
+
+  const progs = (await api(A, "GET", "/programs")).json || [];
+  const rx = progs.find(p => p.id === pX), ry = progs.find(p => p.id === pY);
+  check("A: programme head counts are right",
+        rx?.mentorCount === 1 && rx?.menteeCount === 1 && ry?.mentorCount === 1 && ry?.menteeCount === 1,
+        `X ${rx?.mentorCount}/${rx?.menteeCount}, Y ${ry?.mentorCount}/${ry?.menteeCount}`);
+  check("A: status is worked out from the dates", rx?.status === (new Date().toISOString().slice(0, 10) > "2026-12-31" ? "ended" : "active"),
+        rx?.status);
+
+  // Archive
+  const arch = await api(A, "PATCH", `/programs/${pY}`, { archived: true });
+  check("A: archives a programme", arch.status === 200 && arch.json?.program?.status === "archived", `HTTP ${arch.status}`);
+  const keep = await api(A, "PUT", `/mentors/${mentorA}/programs`, { programIds: [pX, pY] });
+  check("A: a mentor may stay in an archived programme", keep.status === 200, `HTTP ${keep.status}`);
+  const mentorC = (await api(A, "POST", "/mentors", { fullName: "Cem Mentor", email: "cem@a.example", capacity: 1 })).json?.id;
+  const addArch = await api(A, "PUT", `/mentors/${mentorC}/programs`, { programIds: [pY] });
+  check("A: an archived programme cannot be newly assigned -> 400",
+        addArch.status === 400 && addArch.json?.code === "program_archived", `HTTP ${addArch.status}`);
+
+  // Direct database checks (this test owns the temporary database)
+  const Database = require("better-sqlite3");
+  const db = new Database(server.dbPath);
+  try {
+    // Deleting a mentor removes the programme membership (KVKK)
+    await api(A, "PUT", `/mentors/${mentorC}/programs`, { programIds: [pX] });
+    const before = db.prepare(`SELECT COUNT(*) n FROM program_mentors WHERE mentor_id = ?`).get(mentorC).n;
+    await api(A, "DELETE", `/mentors/${mentorC}?force=true`);
+    const after = db.prepare(`SELECT COUNT(*) n FROM program_mentors WHERE mentor_id = ?`).get(mentorC).n;
+    check("deleting a mentor removes its programme membership", before === 1 && after === 0, `${before} -> ${after}`);
+
+    // One mentorship per pair PER PROGRAMME
+    const row = db.prepare(`SELECT * FROM mentorships WHERE id = ?`).get(msA);
+    const clone = (id, programId) => db.prepare(`
+      INSERT INTO mentorships (id, company_id, mentor_id, mentee_id, program_id, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`).run(id, row.company_id, row.mentor_id, row.mentee_id, programId, row.created_at, row.created_at);
+    let samePairSameProgram = false;
+    try { clone("dup".padEnd(24, "0"), row.program_id); } catch { samePairSameProgram = true; }
+    check("the same pair cannot have two mentorships in the same programme", samePairSameProgram);
+    let otherProgramOk = true;
+    try { clone("oth".padEnd(24, "0"), pY); } catch { otherProgramOk = false; }
+    check("the same pair can have a mentorship in another programme", otherProgramOk);
+
+    // A programme in use cannot be deleted, only archived
+    const inUse = await api(A, "DELETE", `/programs/${pY}`);
+    check("a programme with a mentorship cannot be deleted -> 409",
+          inUse.status === 409 && inUse.json?.code === "program_in_use", `HTTP ${inUse.status}`);
+    db.prepare(`DELETE FROM mentorships WHERE id = ?`).run("oth".padEnd(24, "0"));
+  } finally {
+    db.close();
+  }
+
+  // Deleting an empty programme: people are kept
+  const delX = await api(A, "DELETE", `/programs/${pX}`);
+  const mentorAfter = (await api(A, "GET", `/mentors/${mentorA}`)).json;
+  const menteeAfter = (await api(A, "GET", `/mentees/${menteeA}`)).json;
+  check("A: deletes an empty programme", delX.status === 200, `HTTP ${delX.status}`);
+  check("... the mentor is kept, without that programme",
+        mentorAfter?.id === mentorA && !mentorAfter.programIds.includes(pX) && mentorAfter.programIds.includes(pY));
+  check("... the mentee is kept, now not assigned", menteeAfter?.id === menteeA && menteeAfter.programId === "",
+        JSON.stringify(menteeAfter?.programId));
 }
 
 main().catch(err => {

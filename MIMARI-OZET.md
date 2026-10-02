@@ -59,8 +59,8 @@ Sertifika Let's Encrypt tarafından verilir ve otomatik yenilenir.
 - **Fiziksel konum:** Render'ın Frankfurt (EU Central) bölgesindeki veri merkezi
 - **Biçim:** Tek bir SQLite veritabanı dosyası
 - **Yol:** `/var/data/mentoros.db` — servise bağlı kalıcı disk (1 GB)
-- **Kapsam:** Mentor ve mentee profilleri, eşleşmeler, toplantı notları,
-  anket sonuçları, e-posta kayıtları
+- **Kapsam:** Mentorluk programları, mentor ve mentee profilleri,
+  eşleşmeler, toplantı notları, anket sonuçları, e-posta kayıtları
 
 İK ekranındaki Toplantı Takibi bölümü yalnızca toplantı tarihlerini ve
 sürelerini gösterir; sunucu bu bölüme not içeriği (başlık, gündem,

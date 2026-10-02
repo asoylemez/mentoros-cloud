@@ -177,6 +177,11 @@
   .toast.err { background: var(--err); }
 
   .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+
+  /* Programmes */
+  .tag.prog { background: #e0e7ff; color: #3730a3; }
+  .tag.prog.archived { background: #f3f4f6; color: #6b7280; }
+  .unassigned { color: var(--muted); font-size: 12px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -263,6 +268,7 @@
         <option value="active" data-i18n="filterActive">Aktif</option>
         <option value="inactive" data-i18n="filterInactive">Pasif</option>
       </select>
+      <select id="programFilter" class="compact" aria-label="Program"></select>
       <button id="refreshBtn" data-i18n="refresh">Yenile</button>
     </div>
 
@@ -272,6 +278,7 @@
           <tr>
             <th data-i18n="thMentee">Mentee</th>
             <th data-i18n="thRole">Rol / Departman</th>
+            <th data-i18n="thProgram">Program</th>
             <th data-i18n="thDevAreas">Gelişim Alanları</th>
             <th data-i18n="thStatus">Durum</th>
             <th data-i18n="thRegistered">Kayıt</th>
@@ -294,6 +301,17 @@
     <div class="modal-head">
       <div><h2 id="mTitle">—</h2><div class="sub" id="mMeta"></div></div>
       <button class="modal-close" id="mClose">&times;</button>
+    </div>
+
+    <div class="section-head" data-i18n="secProgram">Program</div>
+    <div class="field" id="programField">
+      <label for="f_program" data-i18n="fProgram">Bu mentee'nin programı</label>
+      <select id="f_program"></select>
+      <div class="hint" data-i18n="programOneHint">Bir mentee tek programda olur.</div>
+    </div>
+    <div class="hint" id="noProgramsHint" style="display:none;margin-top:0">
+      <span data-i18n="noProgramsYet">Henüz program yok.</span>
+      <a href="/programs.html" data-i18n="goPrograms">Programlar sayfasından oluşturun</a>
     </div>
 
     <div class="section-head" data-i18n="secBasic">Temel Bilgiler</div>
@@ -376,6 +394,13 @@ const T = {
     searchPh: "Ada, role, gelişim alanına göre ara…",
     filterAll: "Tümü", filterActive: "Aktif", filterInactive: "Pasif", refresh: "Yenile",
     thMentee: "Mentee", thRole: "Rol / Departman", thDevAreas: "Gelişim Alanları", thStatus: "Durum", thRegistered: "Kayıt",
+    thProgram: "Program", secProgram: "Program", fProgram: "Bu mentee'nin programı",
+    programOneHint: "Bir mentee tek programda olur.", programAll: "Tüm programlar",
+    programNone: "Programa atanmamış", noProgramsYet: "Henüz program yok.",
+    goPrograms: "Programlar sayfasından oluşturun", archivedSuffix: "(arşivlendi)",
+    programNotSaved: "Profil kaydedildi; program değiştirilmedi.",
+    engagedMatched: "Bu mentee'nin aktif bir mentorluk ilişkisi var. İlişki kurulduğu programda kalır; mentee'nin programı yine de değiştirilsin mi?",
+    engagedPending: "Bu mentee'nin bekleyen bir eşleşme talebi var. Talep oluşturulduğu programda kalır; mentee'nin programı yine de değiştirilsin mi?",
     empty: "Henüz mentee kaydı yok. Yukarıdaki davet bağlantısını paylaşın.",
     noResult: "Aramanızla eşleşen mentee yok.",
     badgeActive: "Aktif", badgeInactive: "Pasif",
@@ -413,6 +438,13 @@ const T = {
     searchPh: "Search by name, role, development area…",
     filterAll: "All", filterActive: "Active", filterInactive: "Inactive", refresh: "Refresh",
     thMentee: "Mentee", thRole: "Role / Department", thDevAreas: "Development areas", thStatus: "Status", thRegistered: "Registered",
+    thProgram: "Programme", secProgram: "Programme", fProgram: "This mentee's programme",
+    programOneHint: "A mentee is in one programme.", programAll: "All programmes",
+    programNone: "Not assigned to a programme", noProgramsYet: "No programmes yet.",
+    goPrograms: "Create one on the Programmes page", archivedSuffix: "(archived)",
+    programNotSaved: "Profile saved; the programme was not changed.",
+    engagedMatched: "This mentee has an active mentorship. It stays in the programme it was made in. Change the mentee's programme anyway?",
+    engagedPending: "This mentee has a pending match request. It stays in the programme it was made in. Change the mentee's programme anyway?",
     empty: "No mentees yet. Share the invitation link above.",
     noResult: "No mentee matches your search.",
     badgeActive: "Active", badgeInactive: "Inactive",
@@ -443,6 +475,7 @@ function applyLang() {
   $("lang").value = LANG;
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  renderProgramFilter();   // option labels follow the language
   render();
 }
 $("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
@@ -509,6 +542,32 @@ $("sendInvite").onclick = async () => {
   } finally { btn.disabled = false; btn.textContent = t("sendInvite"); }
 };
 
+/* ---- Programmes ---- */
+let PROGRAMS = [];
+async function loadPrograms() {
+  try { PROGRAMS = await api("/programs"); } catch { PROGRAMS = []; }
+  renderProgramFilter();
+}
+const programById = id => PROGRAMS.find(p => p.id === id);
+const programLabel = p => p.name + (p.archived ? " " + t("archivedSuffix") : "");
+
+function renderProgramFilter() {
+  const sel = $("programFilter");
+  const keep = sel.value || "all";
+  sel.style.display = PROGRAMS.length ? "" : "none";
+  sel.innerHTML =
+    `<option value="all">${esc(t("programAll"))}</option>` +
+    `<option value="none">${esc(t("programNone"))}</option>` +
+    PROGRAMS.map(p => `<option value="${esc(p.id)}">${esc(programLabel(p))}</option>`).join("");
+  sel.value = [...sel.options].some(o => o.value === keep) ? keep : "all";
+}
+function programCell(m) {
+  const p = m.programId && programById(m.programId);
+  return p
+    ? `<span class="tag prog${p.archived ? " archived" : ""}">${esc(p.name)}</span>`
+    : `<span class="unassigned">${esc(t("programNone"))}</span>`;
+}
+
 /* ---- Mentee listesi ---- */
 let MENTEES = [];
 async function loadMentees() {
@@ -518,9 +577,12 @@ async function loadMentees() {
 function filtered() {
   const q = $("search").value.trim().toLowerCase();
   const sf = $("statusFilter").value;
+  const pf = $("programFilter").value || "all";
   return MENTEES.filter(m => {
     if (sf === "active" && m.status !== "active") return false;
     if (sf === "inactive" && m.status === "active") return false;
+    if (pf === "none" && m.programId) return false;
+    if (pf !== "all" && pf !== "none" && m.programId !== pf) return false;
     if (!q) return true;
     const hay = [m.fullName, m.email, m.role, m.department,
       ...(m.devFunctionalAreas || []), ...(m.competenciesToDevelop || [])].join(" ").toLowerCase();
@@ -554,6 +616,7 @@ function render() {
       <tr>
         <td><div class="name">${esc(m.fullName)}</div><div class="email">${esc(m.email)}</div></td>
         <td>${esc(m.role || "–")}${m.department ? `<div class="email">${esc(m.department)}</div>` : ""}</td>
+        <td>${programCell(m)}</td>
         <td>${areas.map(e => `<span class="tag">${esc(e)}</span>`).join("") || "–"}</td>
         <td><span class="badge ${badge}">${label}</span></td>
         <td style="color:var(--muted);font-size:13px">${date}</td>
@@ -563,7 +626,8 @@ function render() {
 }
 $("search").oninput = render;
 $("statusFilter").onchange = render;
-$("refreshBtn").onclick = async () => { await loadMentees(); toast("✓"); };
+$("programFilter").onchange = render;
+$("refreshBtn").onclick = async () => { await loadPrograms(); await loadMentees(); toast("✓"); };
 
 /* ---- Duzenleme ---- */
 let EDITING = null;
@@ -582,6 +646,18 @@ window.openMentee = function (id) {
   TEXT_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = m[f] || ""; });
   ARRAY_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = (m[f] || []).join(", "); });
   $("f_status").value = m.status || "active";
+
+  // Programme: every programme that is not archived, plus the mentee's
+  // current one even if it has been archived since.
+  const hasPrograms = PROGRAMS.length > 0;
+  $("programField").style.display = hasPrograms ? "" : "none";
+  $("noProgramsHint").style.display = hasPrograms ? "none" : "block";
+  const options = PROGRAMS.filter(p => !p.archived || p.id === m.programId);
+  $("f_program").innerHTML =
+    `<option value="">${esc(t("programNone"))}</option>` +
+    options.map(p => `<option value="${esc(p.id)}">${esc(programLabel(p))}</option>`).join("");
+  $("f_program").value = m.programId || "";
+
   $("modal").classList.add("open");
 };
 function closeModal() { $("modal").classList.remove("open"); EDITING = null; }
@@ -598,9 +674,28 @@ $("mSave").onclick = async () => {
     TEXT_FIELDS.forEach(f => { body[f] = $("f_" + f).value; });
     ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value); });
     await api(`/mentees/${EDITING.id}`, { method: "PATCH", body: JSON.stringify(body) });
+
+    // Programme is saved separately; the server warns first (409) when the
+    // mentee has an active mentorship or a pending request.
+    let note = t("saved");
+    const programId = $("f_program").value;
+    if (PROGRAMS.length && programId !== (EDITING.programId || "")) {
+      const put = force => api(`/mentees/${EDITING.id}/program${force ? "?force=true" : ""}`,
+        { method: "PUT", body: JSON.stringify({ programId }) });
+      try {
+        await put(false);
+      } catch (e) {
+        if (e.data && e.data.code === "mentee_engaged") {
+          const msg = e.data.state === "pending" ? t("engagedPending") : t("engagedMatched");
+          if (confirm(msg)) await put(true);
+          else note = t("programNotSaved");
+        } else throw e;
+      }
+    }
+
     closeModal();
     await loadMentees();
-    toast(t("saved"));
+    toast(note);
   } catch (e) { toast(e.message, true); }
   finally { btn.disabled = false; btn.textContent = t("save"); }
 };
@@ -624,6 +719,7 @@ $("logoutBtn").onclick = async () => {
   applyLang();
   await loadInvite(false);
   await checkSmtp();
+  await loadPrograms();
   await loadMentees();
 })();
 </script>
