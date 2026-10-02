@@ -11,7 +11,9 @@
     "backup": "node scripts/backup.js",
     "restore": "node scripts/restore.js",
     "hash-password": "node scripts/hash-password.js",
-    "seed": "node scripts/seed-demo.js"
+    "seed": "node scripts/seed-demo.js",
+    "tenant-test": "node scripts/tenant-test.js",
+    "acceptance-test": "node scripts/acceptance-test.js"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.27.0",

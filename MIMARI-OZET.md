@@ -82,9 +82,15 @@ sağlanır:
 - Oturumu olmayan istekler veriye hiç ulaşamaz (HTTP 401).
 - Kuruluş hesapları, yönetim uçlarına (hesap listeleme, oluşturma, silme)
   erişemez (HTTP 403).
+- Tek bir kaydı kimliğiyle (ID) açan, değiştiren veya silen her istekte
+  kaydın oturumdaki kuruluşa ait olduğu ayrıca kontrol edilir. Kayıt
+  kimliği bilinse bile başka bir kuruluşun kaydı "bulunamadı" (HTTP 404)
+  olarak döner; cevap, o kimliğin var olduğunu bile belli etmez.
 
-Bu davranışlar devreye alma öncesinde iki ayrı kuruluş hesabıyla
-sınanmıştır.
+Bu davranışlar her sürümde otomatik bir testle sınanır
+(`npm run tenant-test`): iki geçici kuruluş hesabı açılır ve birinin
+diğerinin kayıtlarını okuyamadığı, değiştiremediği ve silemediği tek tek
+doğrulanır.
 
 ---
 

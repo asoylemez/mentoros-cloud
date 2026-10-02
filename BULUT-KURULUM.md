@@ -152,7 +152,35 @@ gerekmez. Kart, son indirmenin üzerinden 7 günden fazla geçtiyse uyarır.
 
 ---
 
-## 8. Gizlilik notu
+## 8. Testler
+
+İki test vardır; ikisi de gerçek veriye dokunmaz.
+
+**Kuruluşlar arası izolasyon** (her güncellemeden önce, kendi
+bilgisayarınızda):
+
+```
+npm run tenant-test
+```
+
+Kendi geçici sunucusunu ve geçici veritabanını açar, iki kuruluş
+oluşturur, birinin diğerinin kayıtlarına erişemediğini doğrular ve
+her şeyi siler. Canlı sisteme bağlanmaz.
+
+**Canlı sistem kontrolü** (yayından sonra):
+
+```
+npm run acceptance-test -- --base=https://<adresiniz>
+```
+
+Yalnızca okur; kayıt oluşturmaz, e-posta göndermez. Bir kuruluş
+hesabıyla giriş kontrollerini de çalıştırmak için
+`--user=<kullanici> --password="<sifre>"` ekleyin. Yanlış şifre,
+başarısız giriş denemesi olarak sayılır.
+
+---
+
+## 9. Gizlilik notu
 
 Mentor ve mentee isimleri/e-postaları yapay zekaya **hiçbir zaman
 gönderilmez**; profiller M1/M2/M3 gibi kodlarla anonimleştirilir ve

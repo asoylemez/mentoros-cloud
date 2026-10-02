@@ -4,7 +4,7 @@ const config = require("../config");
 const { mentors, mentees, mentorships, matchRequests } = require("../db/repos");
 const { rankMentors } = require("../ai/matching");
 const { composeMenteeNeed, shortNeedSummary } = require("../lib/menteeNeed");
-const { requireApiKey, requireCompany, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -104,11 +104,8 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
   let mentee;
 
   if (req.body.menteeId) {
-    const record = mentees.get(req.body.menteeId);
-
-    if (!record) {
-      return res.status(404).json({ error: "Mentee not found" });
-    }
+    const record = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
+    if (!record) return;
 
     const need = composeMenteeNeed(record, language);
 
@@ -201,10 +198,8 @@ router.post("/match-request", requireApiKey, wrap(async (req, res) => {
     return res.status(400).json({ error: "mentorId and mentorName are required" });
   }
 
-  const mentor = mentors.get(mentorId);
-  if (!mentor) {
-    return res.status(404).json({ error: "Mentor not found" });
-  }
+  const mentor = ownRecord(req, res, mentors.get(mentorId), "Mentor not found");
+  if (!mentor) return;
 
   // ------------------------------------------------------------------
   // TEK-MENTOR KURALI  (asil guvence burasi)
@@ -221,7 +216,12 @@ router.post("/match-request", requireApiKey, wrap(async (req, res) => {
   // (elle yazilan) mentee'nin kalici bir kimligi olmadigi icin tekilligi
   // dogrulanamaz - orada sorumluluk IK'dadir.
   // ------------------------------------------------------------------
-  const menteeRecord = req.body.menteeId ? mentees.get(req.body.menteeId) : null;
+  let menteeRecord = null;
+  if (req.body.menteeId) {
+    // A mentee id that is given must be the company's own (404 otherwise).
+    menteeRecord = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
+    if (!menteeRecord) return;
+  }
 
   if (menteeRecord) {
     const engagement = mentees.engagement(companyId, menteeRecord.id);
@@ -328,21 +328,23 @@ router.get("/match-requests", requireApiKey, wrap(async (req, res) => {
 router.get("/match-request/:id", requireApiKey, wrap(async (req, res) => {
   const { token, type } = req.query;
 
+  // Staff route: the request must belong to the signed-in company,
+  // with or without a token.
+  if (!ownRecord(req, res, matchRequests.get(req.params.id), "Request not found")) return;
+
   // Token verilmisse dogrula (onay sayfasi bu yolu kullanir).
   if (token) {
     const request = matchRequests.verifyToken(req.params.id, type, token);
     if (!request) {
       return res.status(403).json({ error: "Invalid or expired link" });
     }
-    const { mentorToken, menteeToken, ...safe } = request;
+    // No raw token leaves the server - the manager token included.
+    const { mentorToken, menteeToken, managerToken, ...safe } = request;
     return res.json(safe);
   }
 
-  // Token yoksa: IK panelinden geliyor demektir (x-api-key zaten dogrulandi).
   const request = matchRequests.get(req.params.id);
-  if (!request) return res.status(404).json({ error: "Request not found" });
-
-  const { mentorToken, menteeToken, ...safe } = request;
+  const { mentorToken, menteeToken, managerToken, ...safe } = request;
   res.json(safe);
 }));
 
@@ -353,11 +355,8 @@ router.get("/match-request/:id", requireApiKey, wrap(async (req, res) => {
  * sadece onay surecinin kaydidir. IK'ya bunu acikca soyleriz.
  */
 router.delete("/match-request/:id", requireApiKey, wrap(async (req, res) => {
-  const request = matchRequests.get(req.params.id);
-
-  if (!request) {
-    return res.status(404).json({ error: "Request not found" });
-  }
+  const request = ownRecord(req, res, matchRequests.get(req.params.id), "Request not found");
+  if (!request) return;
 
   matchRequests.remove(req.params.id);
 

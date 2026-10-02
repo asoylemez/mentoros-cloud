@@ -957,13 +957,14 @@ async function testConnection(lang = "tr") {
 }
 
 /** Bir talep/iliski icin gonderim gecmisi. */
-function history(refId) {
+/** Send history of one record, limited to the given company's rows. */
+function history(refId, companyId) {
   return db.prepare(`
     SELECT kind, recipient, ok, error, sent_at AS sentAt
       FROM email_log
-     WHERE ref_id = ?
+     WHERE ref_id = ? AND company_id = ?
      ORDER BY sent_at DESC
-  `).all(refId).map(r => ({ ...r, ok: !!r.ok }));
+  `).all(refId, companyId).map(r => ({ ...r, ok: !!r.ok }));
 }
 
 module.exports = {

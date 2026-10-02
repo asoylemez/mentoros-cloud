@@ -1,6 +1,6 @@
 const express = require("express");
 const { mentors, mentees, companies } = require("../db/repos");
-const { requireApiKey, requireCompany, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -45,8 +45,8 @@ router.post("/mentors", requireApiKey, wrap(async (req, res) => {
 }));
 
 router.get("/mentors/:id", requireApiKey, wrap(async (req, res) => {
-  const mentor = mentors.get(req.params.id);
-  if (!mentor) return res.status(404).json({ error: "Mentor not found" });
+  const mentor = ownRecord(req, res, mentors.get(req.params.id), "Mentor not found");
+  if (!mentor) return;
   res.json(mentor);
 }));
 
@@ -55,6 +55,8 @@ router.get("/mentors/:id", requireApiKey, wrap(async (req, res) => {
  * Mentorun kendisi formu tekrar doldurmak zorunda kalmaz.
  */
 router.patch("/mentors/:id", requireApiKey, wrap(async (req, res) => {
+  if (!ownRecord(req, res, mentors.get(req.params.id), "Mentor not found")) return;
+
   const updated = mentors.update(req.params.id, req.body);
 
   if (!updated) {
@@ -73,10 +75,8 @@ router.patch("/mentors/:id", requireApiKey, wrap(async (req, res) => {
  * ?force=true ile tekrar cagirir.
  */
 router.delete("/mentors/:id", requireApiKey, wrap(async (req, res) => {
-  const mentor = mentors.get(req.params.id);
-  if (!mentor) {
-    return res.status(404).json({ error: "Mentor not found" });
-  }
+  const mentor = ownRecord(req, res, mentors.get(req.params.id), "Mentor not found");
+  if (!mentor) return;
 
   const activeCount = mentors.activeMentorshipCount(req.params.id);
   const force = req.query.force === "true";
@@ -125,13 +125,15 @@ router.post("/mentees", requireApiKey, wrap(async (req, res) => {
 }));
 
 router.get("/mentees/:id", requireApiKey, wrap(async (req, res) => {
-  const mentee = mentees.get(req.params.id);
-  if (!mentee) return res.status(404).json({ error: "Mentee not found" });
+  const mentee = ownRecord(req, res, mentees.get(req.params.id), "Mentee not found");
+  if (!mentee) return;
   res.json(mentee);
 }));
 
 /** Mentee profilini guncelle (IK duzenler). */
 router.patch("/mentees/:id", requireApiKey, wrap(async (req, res) => {
+  if (!ownRecord(req, res, mentees.get(req.params.id), "Mentee not found")) return;
+
   const updated = mentees.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: "Mentee not found" });
   res.json({ success: true, message: "Mentee profile updated", mentee: updated });
@@ -139,8 +141,8 @@ router.patch("/mentees/:id", requireApiKey, wrap(async (req, res) => {
 
 /** Mentee'yi sil. */
 router.delete("/mentees/:id", requireApiKey, wrap(async (req, res) => {
-  const mentee = mentees.get(req.params.id);
-  if (!mentee) return res.status(404).json({ error: "Mentee not found" });
+  const mentee = ownRecord(req, res, mentees.get(req.params.id), "Mentee not found");
+  if (!mentee) return;
   mentees.remove(req.params.id);
   res.json({ success: true, message: "Mentee deleted" });
 }));

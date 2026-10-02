@@ -4,7 +4,7 @@ const config = require("../config");
 const { mentors, mentorships, meetings, surveys } = require("../db/repos");
 const mailer = require("../mail/mailer");
 const { getSurvey, flatQuestions } = require("../lib/surveyQuestions");
-const { requireApiKey, requireCompany, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -68,10 +68,8 @@ router.post("/mentorships/:id/survey", requireApiKey, wrap(async (req, res) => {
   const role = req.body.role === "mentor" ? "mentor" : "mentee";
   const lang = req.body.language === "en" ? "en" : "tr";
 
-  const ms = mentorships.get(req.params.id);
-  if (!ms) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  const ms = ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found");
+  if (!ms) return;
 
   // Alici bilgisi iliskiden gelir. Mentor e-postasi iliskide bos ise
   // mentor kaydindan tamamlanir.
@@ -153,10 +151,8 @@ router.post("/mentorships/:id/survey", requireApiKey, wrap(async (req, res) => {
 router.get("/mentorships/:id/surveys", requireApiKey, wrap(async (req, res) => {
   const lang = req.query.language === "en" ? "en" : "tr";
 
-  const ms = mentorships.get(req.params.id);
-  if (!ms) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  const ms = ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found");
+  if (!ms) return;
 
   const list = surveys.listByMentorship(ms.id);
 

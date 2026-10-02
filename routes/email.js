@@ -3,7 +3,7 @@ const express = require("express");
 const config = require("../config");
 const { companies, mentors, matchRequests, mentorships } = require("../db/repos");
 const mailer = require("../mail/mailer");
-const { requireApiKey, requireCompany, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -148,10 +148,8 @@ router.post("/email/invite", requireApiKey, wrap(async (req, res) => {
 router.post("/email/approval/:id", requireApiKey, wrap(async (req, res) => {
   const { target = "both", lang = "tr" } = req.body;
 
-  const request = matchRequests.get(req.params.id);
-  if (!request) {
-    return res.status(404).json({ error: m("requestNotFound", lang) });
-  }
+  const request = ownRecord(req, res, matchRequests.get(req.params.id), m("requestNotFound", lang));
+  if (!request) return;
 
   const base = config.siteBaseUrl;
   const c = encodeURIComponent(request.companyId);
@@ -268,10 +266,8 @@ router.post("/email/approval/:id", requireApiKey, wrap(async (req, res) => {
 router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
   const { target = "both", lang = "tr" } = req.body;
 
-  const ms = mentorships.get(req.params.id);
-  if (!ms) {
-    return res.status(404).json({ error: m("mentorshipNotFound", lang) });
-  }
+  const ms = ownRecord(req, res, mentorships.get(req.params.id), m("mentorshipNotFound", lang));
+  if (!ms) return;
 
   const url = `${config.siteBaseUrl}/mentorship_workspace.html` +
               `?id=${ms.id}&token=${ms.accessToken}`;
@@ -327,7 +323,11 @@ router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
 // =====================================================================
 
 router.get("/email/history/:refId", requireApiKey, wrap(async (req, res) => {
-  res.json(mailer.history(req.params.refId));
+  // Only the signed-in company's own log rows (email_log.company_id).
+  const companyId = requireCompany(req, res);
+  if (!companyId) return;
+
+  res.json(mailer.history(req.params.refId, companyId));
 }));
 
 // SMTP kurulu mu? (Frontend butonlari buna gore gosterir.)

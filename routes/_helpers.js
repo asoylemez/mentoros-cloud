@@ -83,6 +83,40 @@ function requireCompany(req, res) {
 }
 
 /**
+ * ====================================================================
+ * RECORD OWNERSHIP  (isolation for routes that take a record id)
+ * ====================================================================
+ *
+ * Lists are scoped by company in the SQL. Routes that load ONE record
+ * by id (/mentors/:id, /mentorships/:id, ids in a request body ...) read
+ * it with a plain "WHERE id = ?" - so the company has to be checked here,
+ * after loading. Without it, anyone signed in to one organisation who
+ * learns an id (ids travel in approval and workspace links) could read,
+ * change or delete another organisation's record.
+ *
+ * Returns the record when it belongs to the signed-in company. Otherwise
+ * it writes the response itself and returns null:
+ *   - no session                      -> 401
+ *   - missing OR another company's     -> 404, identical in both cases,
+ *                                        so the answer does not even
+ *                                        reveal that the id exists
+ *
+ *     const ms = ownRecord(req, res, mentorships.get(id), "Mentorship not found");
+ *     if (!ms) return;
+ */
+function ownRecord(req, res, record, notFoundMessage = "Not found") {
+  const companyId = requireCompany(req, res);
+  if (!companyId) return null;
+
+  if (!record || record.companyId !== companyId) {
+    res.status(404).json({ error: notFoundMessage, code: "not_found" });
+    return null;
+  }
+
+  return record;
+}
+
+/**
  * Async route'lardaki hatalari yakalar.
  * Bu olmadan await icindeki bir hata Express 5'te sessizce dusebilir.
  */
@@ -91,4 +125,4 @@ function wrap(handler) {
     Promise.resolve(handler(req, res, next)).catch(next);
 }
 
-module.exports = { requireApiKey, getCompanyId, requireCompany, wrap };
+module.exports = { requireApiKey, getCompanyId, requireCompany, ownRecord, wrap };

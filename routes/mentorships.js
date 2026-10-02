@@ -1,10 +1,10 @@
 const express = require("express");
 
 const config = require("../config");
-const { mentors, mentorships, meetings } = require("../db/repos");
+const { mentors, mentees, mentorships, meetings } = require("../db/repos");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
-const { requireApiKey, requireCompany, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -37,6 +37,10 @@ router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
     return res.status(400).json({ error: "mentorId and menteeId are required" });
   }
 
+  // Both people must belong to the signed-in company.
+  if (!ownRecord(req, res, mentors.get(mentorId), "Mentor not found")) return;
+  if (!ownRecord(req, res, mentees.get(menteeId), "Mentee not found")) return;
+
   const { created, mentorship } = mentorships.create(companyId, req.body);
 
   const withLink = withWorkspaceLink(mentorship);
@@ -61,10 +65,8 @@ router.get("/mentorships", requireApiKey, wrap(async (req, res) => {
 
 router.get("/mentorships/:id", requireApiKey, wrap(async (req, res) => {
   // Toplantilar da dahil doner - calisma sayfasi tek istekle yuklenir.
-  const mentorship = mentorships.getWithMeetings(req.params.id);
-  if (!mentorship) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  const mentorship = ownRecord(req, res, mentorships.getWithMeetings(req.params.id), "Mentorship not found");
+  if (!mentorship) return;
   res.json(withWorkspaceLink(mentorship));
 }));
 
@@ -76,11 +78,8 @@ router.get("/mentorships/:id", requireApiKey, wrap(async (req, res) => {
  * IK bilerek onaylarsa ?force=true ile tekrar cagirir.
  */
 router.delete("/mentorships/:id", requireApiKey, wrap(async (req, res) => {
-  const ms = mentorships.get(req.params.id);
-
-  if (!ms) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  const ms = ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found");
+  if (!ms) return;
 
   const meetings = mentorships.meetingCount(req.params.id);
   const force = req.query.force === "true";
@@ -115,10 +114,8 @@ router.patch("/mentorships/:id/status", requireApiKey, wrap(async (req, res) => 
     return res.status(400).json({ error: "Invalid status", allowed });
   }
 
-  const existing = mentorships.get(req.params.id);
-  if (!existing) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  const existing = ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found");
+  if (!existing) return;
 
   const updated = mentorships.updateStatus(req.params.id, status);
 
@@ -134,9 +131,7 @@ router.patch("/mentorships/:id/status", requireApiKey, wrap(async (req, res) => 
 // Tarih bilgi amaclidir: sayfa SILINMEZ, tarih gecse bile erisim acik kalir.
 // Bos deger gonderilirse tarih temizlenir.
 router.patch("/mentorships/:id/closing-date", requireApiKey, wrap(async (req, res) => {
-  if (!mentorships.get(req.params.id)) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  if (!ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found")) return;
 
   const raw = (req.body.closingDate || "").trim();
 
@@ -156,9 +151,7 @@ router.patch("/mentorships/:id/closing-date", requireApiKey, wrap(async (req, re
 
 // Hedefleri elle guncelleme (mentor veya mentee)
 router.patch("/mentorships/:id/development-plan", requireApiKey, wrap(async (req, res) => {
-  if (!mentorships.get(req.params.id)) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  if (!ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found")) return;
 
   const updated = mentorships.updateDevelopmentPlan(req.params.id, {
     goals: req.body.goals || [],
@@ -181,20 +174,17 @@ router.patch("/mentorships/:id/development-plan", requireApiKey, wrap(async (req
 // =====================================================================
 
 router.get("/mentorships/:id/meetings", requireApiKey, wrap(async (req, res) => {
-  if (!mentorships.get(req.params.id)) {
-    return res.status(404).json({ error: "Mentorship not found" });
-  }
+  if (!ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found")) return;
   res.json(meetings.listByMentorship(req.params.id));
 }));
 
 router.post("/mentorships/:id/meetings", requireApiKey, wrap(async (req, res) => {
   const { meetingDate, title } = req.body;
 
+  if (!ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found")) return;
+
   if (!meetingDate || !title) {
     return res.status(400).json({ error: "meetingDate and title are required" });
-  }
-  if (!mentorships.get(req.params.id)) {
-    return res.status(404).json({ error: "Mentorship not found" });
   }
 
   const meeting = meetings.create(req.params.id, req.body);
@@ -212,6 +202,15 @@ router.patch(
   requireApiKey,
   wrap(async (req, res) => {
     const { index, status } = req.body;
+
+    // The mentorship must be the company's own, and the meeting must
+    // belong to THAT mentorship (not merely exist somewhere).
+    if (!ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found")) return;
+
+    const meeting = meetings.get(req.params.meetingId);
+    if (!meeting || meeting.mentorshipId !== req.params.id) {
+      return res.status(404).json({ error: "Meeting not found", code: "not_found" });
+    }
 
     const updated = meetings.updateActionStatus(
       req.params.meetingId,
@@ -247,10 +246,8 @@ router.post("/development-plan", requireApiKey, wrap(async (req, res) => {
   let knownNames = [menteeName, mentorName].filter(Boolean);
 
   if (mentorshipId) {
-    const ms = mentorships.get(mentorshipId);
-    if (!ms) {
-      return res.status(404).json({ error: "Mentorship not found" });
-    }
+    const ms = ownRecord(req, res, mentorships.get(mentorshipId), "Mentorship not found");
+    if (!ms) return;
     const mentor = mentors.get(ms.mentorId);
 
     input = {
@@ -307,11 +304,12 @@ router.post("/guided-session", requireApiKey, wrap(async (req, res) => {
   let knownNames = [mentorName, menteeName].filter(Boolean);
 
   if (mentorshipId) {
-    const ms = mentorships.get(mentorshipId);
-    if (ms) {
-      developmentNeed = ms.developmentNeed || developmentNeed;
-      knownNames = [ms.mentorName, ms.menteeName].filter(Boolean);
-    }
+    // A mentorship id that is not the company's own is refused (404).
+    const ms = ownRecord(req, res, mentorships.get(mentorshipId), "Mentorship not found");
+    if (!ms) return;
+
+    developmentNeed = ms.developmentNeed || developmentNeed;
+    knownNames = [ms.mentorName, ms.menteeName].filter(Boolean);
   }
 
   const guidance = await generateGuidance({
