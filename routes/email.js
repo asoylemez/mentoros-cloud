@@ -157,7 +157,14 @@ router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
   }
 
   if (target === "mentee" || target === "both") {
-    targets.push({ type: "mentee", email: ms.menteeEmail || "", name: ms.menteeName, other: ms.mentorName });
+    if (ms.groupId) {
+      // Group mentorship: every member gets their own copy.
+      for (const member of ms.members) {
+        targets.push({ type: "mentee", email: member.email || "", name: member.fullName, other: ms.mentorName });
+      }
+    } else {
+      targets.push({ type: "mentee", email: ms.menteeEmail || "", name: ms.menteeName, other: ms.mentorName });
+    }
   }
 
   const sent = [];
@@ -165,7 +172,7 @@ router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
 
   for (const t of targets) {
     if (!t.email) {
-      failed.push({ type: t.type, reason: m("noEmailOnFile", lang) });
+      failed.push({ type: t.type, name: t.name, reason: m("noEmailOnFile", lang) });
       continue;
     }
 

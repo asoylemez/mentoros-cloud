@@ -553,6 +553,10 @@ const translations = {
     surveyLabel: "Closure survey",
     sendSurveyMentor: "Send Survey to Mentor",
     sendSurveyMentee: "Send Survey to Mentee",
+    sendSurveyMembers: "Send Survey to Members",
+    deletedMentee: "(deleted mentee)",
+    surveyAlreadyDoneBy: "Already answered by",
+    group: "Group", people: "people", groupMembers: "Members", groupMember: "Member",
     showAnswers: "Show Answers",
     hideAnswers: "Hide Answers",
     surveyNeedsSmtp: "Configure SMTP to send surveys.",
@@ -647,6 +651,10 @@ const translations = {
     surveyLabel: "Kapanış anketi",
     sendSurveyMentor: "Mentore Anket Gönder",
     sendSurveyMentee: "Mentee'ye Anket Gönder",
+    sendSurveyMembers: "Üyelere Anket Gönder",
+    deletedMentee: "(silinmiş mentee)",
+    surveyAlreadyDoneBy: "Zaten cevaplayanlar:",
+    group: "Grup", people: "kişi", groupMembers: "Üyeler", groupMember: "Üye",
     showAnswers: "Cevapları Göster",
     hideAnswers: "Cevapları Gizle",
     surveyNeedsSmtp: "Anket göndermek için SMTP ayarlayın.",
@@ -773,10 +781,18 @@ function renderMentorships() {
             ${programBadge(m.programId)}
             <strong>${escapeHtml(m.mentorName || t("mentor"))}</strong>
             →
-            ${escapeHtml(m.menteeName || t("mentee"))}
+            ${m.groupId
+              ? `<span class="badge" style="background:#fef3c7;color:#92400e;margin-right:4px">${escapeHtml(t("group"))}</span>${escapeHtml(m.groupName || m.menteeName)} (${(m.members || []).length} ${escapeHtml(t("people"))})`
+              : (m.menteeDeleted ? `<span class="muted">${escapeHtml(t("deletedMentee"))}</span>` : escapeHtml(m.menteeName || t("mentee")))}
           </div>
           <span class="badge ${escapeHtml(mentorshipStatus)}">${escapeHtml(statusText(mentorshipStatus))}</span>
         </div>
+
+        ${m.groupId ? `
+        <div class="row">
+          <div class="muted">${t("groupMembers")}</div>
+          <div style="text-align:right">${(m.members || []).map(x => escapeHtml(x.fullName)).join(", ") || "-"}</div>
+        </div>` : ""}
 
         <div class="row">
           <div class="muted">${t("matchStarted")}</div>
@@ -822,7 +838,7 @@ function renderMentorships() {
           <div class="actions" style="margin:0">
             ${SMTP_READY ? `
               <button onclick="sendSurvey('${escapeJs(m.id)}','mentor',this)">${t("sendSurveyMentor")}</button>
-              <button onclick="sendSurvey('${escapeJs(m.id)}','mentee',this)">${t("sendSurveyMentee")}</button>
+              <button onclick="sendSurvey('${escapeJs(m.id)}','mentee',this)">${m.groupId ? t("sendSurveyMembers") : t("sendSurveyMentee")}</button>
             ` : `<span class="muted" style="font-size:12px">${t("surveyNeedsSmtp")}</span>`}
             <button onclick="showSurveyAnswers('${escapeJs(m.id)}')">${t("showAnswers")}</button>
           </div>
@@ -856,6 +872,20 @@ async function sendSurvey(mentorshipId, role, btn) {
     });
 
     const data = await res.json().catch(() => ({}));
+
+    if (data.group) {
+      // Group: one survey per member - list who got it and who did not.
+      // A member whose e-mail failed still has a survey: their link is shown.
+      const lines = [];
+      if (data.sent.length) lines.push(`${t("surveySent")} ${data.sent.map(x => x.name).join(", ")}`);
+      if (data.skipped.length) lines.push(`${t("surveyAlreadyDoneBy")} ${data.skipped.map(x => x.name).join(", ")}`);
+      if (data.failed.length) lines.push(`${t("surveySendFailed")}:\n` +
+        data.failed.map(x => `${x.name}: ${x.reason}${x.surveyUrl ? "\n  " + x.surveyUrl : ""}`).join("\n"));
+      alert(lines.join("\n\n"));
+      const panel = document.getElementById(`surveyBox-${mentorshipId}`);
+      if (panel && panel.innerHTML.trim()) showSurveyAnswers(mentorshipId, true);
+      return;
+    }
 
     if (!res.ok) {
       // Bilinen durumlar icin AÇIK mesaj ver; ham hata metni IK'ya
@@ -922,7 +952,9 @@ async function showSurveyAnswers(mentorshipId, forceOpen) {
 
         <div class="survey-cols">
           ${surveyColumn(data.mentor, t("mentor"), data.mentorName)}
-          ${surveyColumn(data.mentee, t("mentee"), data.menteeName)}
+          ${data.isGroup
+            ? (data.members || []).map(m => surveyColumn(m, t("groupMember"), m.name)).join("")
+            : surveyColumn(data.mentee, t("mentee"), data.menteeName)}
         </div>
       </div>
     `;
@@ -1281,7 +1313,7 @@ function renderTracking() {
       <tr class="track-row" tabindex="0" role="button" aria-expanded="${open}"
           onclick="toggleTrack('${escapeJs(r.id)}')"
           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTrack('${escapeJs(r.id)}')}">
-        <td class="pair">${open ? "▾" : "▸"} ${escapeHtml(r.mentorName)} → ${escapeHtml(r.menteeName)}
+        <td class="pair">${open ? "▾" : "▸"} ${escapeHtml(r.mentorName)} → ${escapeHtml(r.menteeDeleted ? t("deletedMentee") : r.menteeName)}${r.isGroup ? ` <span class="muted" style="font-weight:400">(${escapeHtml(t("group"))}, ${r.memberCount} ${escapeHtml(t("people"))})</span>` : ""}
           ${r.status !== "active" ? `<span class="badge ${escapeHtml(r.status)}" style="margin-left:6px">${escapeHtml(statusText(r.status))}</span>` : ""}</td>
         <td class="num">${r.meetingCount}</td>
         <td class="num">${r.timedCount ? formatMinutes(r.totalMinutes) : "—"}</td>

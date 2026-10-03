@@ -181,6 +181,58 @@ function run() {
   migratePrograms();
   migrateMenteeGroups();
   removeApprovalFlow();
+  migrateGroupMentorships();
+}
+
+/**
+ * GROUP MENTORSHIPS  (stage 3b: a mentor with a mentee group)
+ *
+ *   mentorships.group_id / group_name   set for a group mentorship; its
+ *                                       mentee_id is "group:<groupId>"
+ *   mentorship_members                  who was in the group when the
+ *                                       match was made (a snapshot: later
+ *                                       changes to the group do not touch
+ *                                       it). Deleting a mentee removes
+ *                                       their row (KVKK).
+ *   surveys.member_id                   which member a closing survey
+ *                                       belongs to (one per member)
+ */
+function migrateGroupMentorships() {
+  for (const [table, column] of [["mentorships", "group_id"], ["mentorships", "group_name"], ["surveys", "member_id"]]) {
+    if (!columnExists(table, column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
+      console.log(`  migration: ${table}.${column} added`);
+    }
+  }
+
+  // A deleted mentee's individual mentorship stays (mentor history,
+  // meetings, reports) but no longer identifies them - see mentees.remove.
+  if (!columnExists("mentorships", "mentee_deleted")) {
+    db.exec(`ALTER TABLE mentorships ADD COLUMN mentee_deleted INTEGER NOT NULL DEFAULT 0`);
+    console.log("  migration: mentorships.mentee_deleted added");
+  }
+
+  const has = db.prepare(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='mentorship_members'`
+  ).get();
+  if (!has) {
+    db.exec(`
+      CREATE TABLE mentorship_members (
+        mentorship_id  TEXT NOT NULL,
+        mentee_id      TEXT NOT NULL,
+        company_id     TEXT NOT NULL,
+        full_name      TEXT NOT NULL DEFAULT '',
+        email          TEXT NOT NULL DEFAULT '',
+        role           TEXT NOT NULL DEFAULT '',
+        added_at       TEXT NOT NULL,
+        PRIMARY KEY (mentorship_id, mentee_id),
+        FOREIGN KEY (mentorship_id) REFERENCES mentorships(id) ON DELETE CASCADE,
+        FOREIGN KEY (mentee_id)     REFERENCES mentees(id)     ON DELETE CASCADE
+      );
+      CREATE INDEX idx_mentorship_members_mentee ON mentorship_members(mentee_id);
+    `);
+    console.log("  migration: mentorship_members table added");
+  }
 }
 
 /**

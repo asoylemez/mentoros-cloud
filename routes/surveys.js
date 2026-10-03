@@ -71,6 +71,10 @@ router.post("/mentorships/:id/survey", requireApiKey, wrap(async (req, res) => {
   const ms = ownRecord(req, res, mentorships.get(req.params.id), "Mentorship not found");
   if (!ms) return;
 
+  // Group mentorship: the mentee survey goes to EVERY member, each with
+  // their own link and their own answers.
+  if (role === "mentee" && ms.groupId) return sendGroupSurveys(res, companyId, ms, lang);
+
   // Alici bilgisi iliskiden gelir. Mentor e-postasi iliskide bos ise
   // mentor kaydindan tamamlanir.
   const recipient = role === "mentor"
@@ -148,6 +152,51 @@ router.post("/mentorships/:id/survey", requireApiKey, wrap(async (req, res) => {
 // IK: CEVAPLARI GOSTER
 // =====================================================================
 
+/**
+ * Closing survey to each member of a group mentorship. Members who have
+ * already answered are skipped; a member with a pending survey gets the
+ * same link again. Summary: { sent, skipped, failed }.
+ */
+async function sendGroupSurveys(res, companyId, ms, lang) {
+  const all = surveys.listByMentorship(ms.id);
+  const sent = [], skipped = [], failed = [];
+
+  for (const member of ms.members) {
+    if (all.some(x => x.role === "mentee" && x.memberId === member.id && x.status === "completed")) {
+      skipped.push({ name: member.fullName, reason: "already_completed" });
+      continue;
+    }
+    if (!member.email) {
+      failed.push({ name: member.fullName, reason: "No email address on file." });
+      continue;
+    }
+    const { survey } = surveys.create(companyId, {
+      mentorshipId: ms.id, role: "mentee", memberId: member.id,
+      recipientName: member.fullName, recipientEmail: member.email, language: lang
+    });
+    try {
+      await mailer.sendSurvey({
+        to: member.email, otherName: ms.mentorName, survey, mentorship: ms,
+        url: surveyUrl(survey.token), lang
+      });
+      sent.push({ name: member.fullName, email: member.email });
+    } catch (error) {
+      // The survey record stays (as for a single mentee), so HR can share
+      // each member's own link by hand - also when there is no SMTP.
+      failed.push({ name: member.fullName, email: member.email, reason: error.message,
+                    code: error.code || "send_failed", surveyUrl: surveyUrl(survey.token) });
+    }
+  }
+
+  res.status(sent.length || skipped.length ? 200 : 502).json({
+    success: sent.length > 0,
+    role: "mentee",
+    group: true,
+    sent, skipped, failed,
+    sentTo: sent.map(x => x.email).join(", ")
+  });
+}
+
 router.get("/mentorships/:id/surveys", requireApiKey, wrap(async (req, res) => {
   const lang = req.query.language === "en" ? "en" : "tr";
 
@@ -158,8 +207,8 @@ router.get("/mentorships/:id/surveys", requireApiKey, wrap(async (req, res) => {
 
   // Her rol icin TEK kayit gosterilir: cevaplanmis varsa o, yoksa
   // bekleyen. IK'nin ilgilendigi sey "bu kisi doldurdu mu".
-  function pick(role) {
-    const all = list.filter(s => s.role === role);
+  function pick(role, memberId = "") {
+    const all = list.filter(s => s.role === role && (s.memberId || "") === memberId);
     const done = all.find(s => s.status === "completed");
     const chosen = done || all[0];
 
@@ -189,7 +238,12 @@ router.get("/mentorships/:id/surveys", requireApiKey, wrap(async (req, res) => {
     menteeName: ms.menteeName || "",
     stats: mentorshipStats(ms.id),
     mentor: pick("mentor"),
-    mentee: pick("mentee"),
+    mentee: ms.groupId ? null : pick("mentee"),
+    // Group: one entry per member (each answers their own survey).
+    isGroup: !!ms.groupId,
+    members: ms.groupId
+      ? ms.members.map(m => ({ name: m.fullName, ...pick("mentee", m.id) }))
+      : [],
     language: lang
   });
 }));

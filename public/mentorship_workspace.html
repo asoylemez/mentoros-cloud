@@ -712,7 +712,7 @@
               </div>
 
               <div class="person-box">
-                <small data-i18n="mentee">Mentee</small>
+                <small id="menteeLabel" data-i18n="mentee">Mentee</small>
                 <strong id="menteeName">-</strong>
                 <span id="menteeEmail">-</span>
               </div>
@@ -912,6 +912,9 @@
         mentorMentee: "Mentor & Mentee",
         mentor: "Mentor",
         mentee: "Mentee",
+        group: "Group",
+        people: "people",
+        deletedMentee: "(deleted mentee)",
         hr: "HR",
         nextMeeting: "Next Meeting",
         notScheduledYet: "Not scheduled yet",
@@ -1004,6 +1007,9 @@
         mentorMentee: "Mentor & Mentee",
         mentor: "Mentor",
         mentee: "Mentee",
+        group: "Grup",
+        people: "kişi",
+        deletedMentee: "(silinmiş mentee)",
         hr: "İK",
         nextMeeting: "Sonraki Toplantı",
         notScheduledYet: "Henüz planlanmadı",
@@ -1475,8 +1481,18 @@
       document.getElementById("mentorName").textContent = data.mentorName || t("mentor");
       document.getElementById("mentorEmail").textContent = data.mentorEmail || "-";
 
-      document.getElementById("menteeName").textContent = data.menteeName || t("mentee");
+      document.getElementById("menteeName").textContent =
+        data.menteeDeleted ? t("deletedMentee") : (data.menteeName || t("mentee"));
       document.getElementById("menteeEmail").textContent = data.menteeEmail || "-";
+
+      // Group mentorship: the group's name and its members (names only).
+      if (data.groupId) {
+        const label = document.getElementById("menteeLabel");
+        label.removeAttribute("data-i18n");
+        label.textContent = `${t("group")} · ${(data.members || []).length} ${t("people")}`;
+        document.getElementById("menteeEmail").textContent =
+          (data.members || []).map(m => m.fullName).join(", ") || "-";
+      }
 
       document.getElementById("statusBadge").textContent = formatStatus(data.status || "active");
 

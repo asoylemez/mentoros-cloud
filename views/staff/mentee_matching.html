@@ -535,10 +535,24 @@
                 onclick="setSource('registered')" data-i18n="sourceRegistered">
           Registered mentee
         </button>
+        <button type="button" class="tab" data-source="group"
+                onclick="setSource('group')" data-i18n="sourceGroup">
+          Mentee group
+        </button>
         <button type="button" class="tab" data-source="manual"
                 onclick="setSource('manual')" data-i18n="sourceManual">
           Enter manually
         </button>
+      </div>
+
+      <!-- ---- Mentee group: one mentor for the whole group ---- -->
+      <div id="groupPane" hidden>
+        <label for="groupSelect" data-i18n="selectGroupLabel">Select group</label>
+        <select id="groupSelect" onchange="renderGroupSummary()"></select>
+        <div class="hint" data-i18n="selectGroupHint">
+          The whole group gets one mentor and shares one workspace. The group takes one place of the mentor's capacity.
+        </div>
+        <div id="groupSummary"></div>
       </div>
 
       <!-- ---- Kayitli mentee secimi ---- -->
@@ -684,6 +698,17 @@
         candidatesFailed: "Could not load mentees and mentors.",
         menteeEngagedMatched: "Already matched with",
         menteeInGroup: "In group:",
+        sourceGroup: "Mentee group",
+        selectGroupLabel: "Select group",
+        selectGroupHint: "The whole group gets one mentor and shares one workspace. The group takes one place of the mentor's capacity.",
+        selectGroupPlaceholder: "— Select a group —",
+        selectGroupFirst: "Select a group first.",
+        noGroups: "No groups in this programme. Create one in the Mentee Registry.",
+        groupMatchedWith: "already matched with",
+        groupTooSmall: "needs at least 2 members",
+        people: "people",
+        err_group_too_small: "A group needs at least 2 members to be matched.",
+        err_group_already_matched: "This group already has an active mentorship.",
         err_mentee_in_group: "This mentee is in a group and is matched together with the group, not on their own.",
         menteeEngagedNote: "A mentee can only work with one mentor at a time. Complete or cancel the existing mentorship first.",
         developmentNeedSummary: "Development need",
@@ -827,6 +852,17 @@
         candidatesFailed: "Mentee ve mentor listesi yüklenemedi.",
         menteeEngagedMatched: "Zaten eşleşti:",
         menteeInGroup: "Grupta:",
+        sourceGroup: "Mentee grubu",
+        selectGroupLabel: "Grup seçin",
+        selectGroupHint: "Bütün gruba tek bir mentor atanır ve grup tek bir çalışma sayfasını paylaşır. Grup, mentorun kapasitesinden bir yer kaplar.",
+        selectGroupPlaceholder: "— Grup seçin —",
+        selectGroupFirst: "Önce bir grup seçin.",
+        noGroups: "Bu programda grup yok. Mentee Kayıtları'ndan oluşturun.",
+        groupMatchedWith: "zaten eşleşti:",
+        groupTooSmall: "en az 2 üye gerekir",
+        people: "kişi",
+        err_group_too_small: "Bir grubun eşleştirilebilmesi için en az 2 üyesi olmalı.",
+        err_group_already_matched: "Bu grubun zaten aktif bir mentorluk ilişkisi var.",
         err_mentee_in_group: "Bu mentee bir grupta; tek başına değil, grubuyla birlikte eşleştirilir.",
         menteeEngagedNote: "Bir mentee aynı anda yalnızca bir mentorle çalışabilir. Önce mevcut mentorluğu tamamlayın veya iptal edin.",
         developmentNeedSummary: "Gelişim ihtiyacı",
@@ -1010,6 +1046,7 @@
 
     let MENTEES = [];
     let MENTORS = [];
+    let GROUPS = [];
 
     /* PROGRAMMES: when the organisation has any, matching runs inside the
        selected programme (PROGRAM_ID). Without programmes nothing changes. */
@@ -1109,8 +1146,10 @@
         if (HAS_PROGRAMS && !PROGRAM_ID) {
           MENTEES = [];
           MENTORS = [];
+          GROUPS = [];
           renderMenteeSelect();
           renderMentorSelect();
+          renderGroupSelect();
           return;
         }
 
@@ -1125,15 +1164,19 @@
         const data = await res.json();
         MENTEES = data.mentees || [];
         MENTORS = data.mentors || [];
+        GROUPS = data.groups || [];
 
         renderMenteeSelect();
         renderMentorSelect();
+        renderGroupSelect();
 
       } catch (e) {
         MENTEES = [];
         MENTORS = [];
+        GROUPS = [];
         renderMenteeSelect();
         renderMentorSelect();
+        renderGroupSelect();
         console.error("[eslestirme] adaylar yuklenemedi:", e);
       }
     }
@@ -1378,7 +1421,42 @@
       });
 
       document.getElementById("registeredPane").hidden = source !== "registered";
+      document.getElementById("groupPane").hidden = source !== "group";
       document.getElementById("manualMenteePane").hidden = source !== "manual";
+    }
+
+    /* ---- Mentee groups ---- */
+    function renderGroupSelect() {
+      const sel = document.getElementById("groupSelect");
+      const keep = sel.value;
+      if (!GROUPS.length) {
+        sel.innerHTML = `<option value="">${escapeHtml(t("noGroups"))}</option>`;
+        renderGroupSummary();
+        return;
+      }
+      sel.innerHTML = `<option value="">${escapeHtml(t("selectGroupPlaceholder"))}</option>` +
+        GROUPS.map(g => {
+          const why = g.activeMentorship ? ` — ${t("groupMatchedWith")} ${g.activeMentorship.mentorName || "-"}`
+                    : (!g.matchable ? ` — ${t("groupTooSmall")}` : "");
+          return `<option value="${escapeHtml(g.id)}"${g.matchable ? "" : " disabled"}>` +
+                 `${escapeHtml(g.name)} (${g.memberCount} ${escapeHtml(t("people"))})${escapeHtml(why)}</option>`;
+        }).join("");
+      sel.value = GROUPS.some(g => g.id === keep && g.matchable) ? keep : "";
+      renderGroupSummary();
+    }
+
+    function selectedGroup() {
+      return GROUPS.find(g => g.id === document.getElementById("groupSelect").value) || null;
+    }
+
+    function renderGroupSummary() {
+      const g = selectedGroup();
+      document.getElementById("groupSummary").innerHTML = g ? `
+        <div class="mentor-card" style="margin-top:10px">
+          <div class="mentor-name">${escapeHtml(g.name)}</div>
+          <div class="mentor-role">${g.members.map(m =>
+            `${escapeHtml(m.fullName)}${m.role ? ` (${escapeHtml(m.role)})` : ""}`).join(" · ")}</div>
+        </div>` : "";
     }
 
     function setMethod(method) {
@@ -1401,6 +1479,15 @@
        ------------------------------------------------------------------ */
 
     function menteePayload() {
+      if (SOURCE === "group") {
+        const group = selectedGroup();
+        if (!group) {
+          alert(t("selectGroupFirst"));
+          return null;
+        }
+        return { groupId: group.id, group };
+      }
+
       if (SOURCE === "registered") {
         const mentee = selectedMentee();
         if (!mentee) {
@@ -1460,6 +1547,7 @@
             companyId: COMPANY_ID,
             ...payload,
             mentee: undefined,          // arayuze ait, sunucuya gerekmez
+            group: undefined,
             language: currentLanguage
           })
         });
@@ -1695,7 +1783,10 @@ function renderResults(mentors) {
         body.closingDate = end;
       }
 
-      if (payload.menteeId) {
+      if (payload.groupId) {
+        // Group: the SERVER takes the members from the group.
+        body.groupId = payload.groupId;
+      } else if (payload.menteeId) {
         // Registered mentee: the SERVER fills in name, e-mail and need.
         body.menteeId = payload.menteeId;
       } else {

@@ -145,6 +145,7 @@ async function rankMentors(mentee, mentors, language = "tr") {
   const knownNames = [
     mentee.fullName,
     mentee.menteeName,
+    ...(mentee.knownNames || []),          // a group: every member's name
     ...mentors.map(m => m.fullName)
   ].filter(Boolean);
 

@@ -388,6 +388,7 @@ async function run(server) {
   const foreignProgramId = await programmeChecks(server, { A, B, mentorA, menteeA, menteeA2, mentorB, menteeB, msA });
   await programmeMatchingChecks(server, { SA, B, mentorB, foreignProgramId });
   await groupChecks(server, { SA, B });
+  await groupMatchChecks(server, { SA, B, mentorB });
 }
 
 // ---------------------------------------------------------------------
@@ -828,6 +829,159 @@ async function groupChecks(server, ids) {
   const del = await api(D, "DELETE", `/mentee-groups/${G1.id}`);
   const free = await api(D, "POST", "/mentorships", { mentorId: mx, menteeId: a1 });
   check("deleting the group frees its members", del.status === 200 && free.status === 200, `HTTP ${del.status} / ${free.status}`);
+}
+
+// ---------------------------------------------------------------------
+// GROUP MATCHING (stage 3b)
+// ---------------------------------------------------------------------
+
+async function groupMatchChecks(server, ids) {
+  const { SA, B, mentorB } = ids;
+  console.log("\n9) GROUP MATCHING\n");
+
+  const pwE = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-e", name: "tenant-e", password: pwE });
+  const E = await login("tenant-e", pwE);
+  const post = async (url, body) => (await api(E, "POST", url, body)).json;
+
+  const PX = (await post("/programs", { name: "PX", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const PY = (await post("/programs", { name: "PY", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const mentor = async (name, programId, capacity = 3) => {
+    const id = (await post("/mentors", { fullName: name, email: `${name.toLowerCase()}@e.example`, role: "Director", capacity })).id;
+    await api(E, "PUT", `/mentors/${id}/programs`, { programIds: [programId] });
+    return id;
+  };
+  const member = async name => {
+    const id = (await post("/mentees", { fullName: name, email: `${name.toLowerCase()}@e.example`, role: "Analyst",
+                                        developmentNeeds: `I am ${name} and I want to lead a team` })).id;
+    await api(E, "PUT", `/mentees/${id}/program`, { programId: PX });
+    return id;
+  };
+  const mx = await mentor("Mehmet", PX), mx2 = await mentor("Melek", PX), my = await mentor("Yusuf", PY);
+  const u1 = await member("Umut"), u2 = await member("Ulas"), u3 = await member("Uygar");
+  const u4 = await member("Ufuk"), u5 = await member("Utku");
+  const G = (await post("/mentee-groups", { name: "Yeni Liderler", programId: PX, memberIds: [u1, u2, u3] })).group.id;
+  const G2 = (await post("/mentee-groups", { name: "Kucuk Grup", programId: PX, memberIds: [u4, u5] })).group.id;
+
+  const cand = (await api(E, "GET", `/matching-candidates?programId=${PX}`)).json;
+  const gc = (cand?.groups || []).find(g => g.id === G);
+  check("candidates list the programme's groups", gc?.matchable === true && gc?.memberCount === 3, JSON.stringify(gc && { m: gc.matchable, n: gc.memberCount }));
+
+  const ai = await api(E, "POST", "/match", { groupId: G, language: "en" });
+  check("AI match for a group passes the rules (stops at AI setup)", ai.status === 503, `HTTP ${ai.status}`);
+
+  const match = body => api(E, "POST", "/mentorships", { language: "en", ...body });
+  const wrong = await match({ mentorId: my, groupId: G });
+  check("group match: mentor from another programme -> 400", wrong.status === 400 && wrong.json?.code === "mentor_not_in_program",
+        `HTTP ${wrong.status}`);
+
+  const ok = await match({ mentorId: mx, groupId: G });
+  const gms = ok.json?.mentorship;
+  check("group match opens ONE mentorship", ok.status === 200 && gms?.isGroup === true && gms?.groupId === G, `HTTP ${ok.status}`);
+  check("... with the 3 members as a snapshot", (gms?.members || []).length === 3);
+  check("... in the group's programme, ending with it", gms?.programId === PX && gms?.closingDate === "2026-12-31",
+        `${gms?.programId === PX} / ${gms?.closingDate}`);
+  check("... and a group need without member names",
+        /Participant 1/.test(gms?.developmentNeed || "") && !/Umut|Ulas|Uygar/.test(gms?.developmentNeed || ""));
+  const mxRec = (await api(E, "GET", `/mentors/${mx}`)).json;
+  check("a group takes ONE place of the mentor's capacity", mxRec?.activeMenteeCount === 1, `${mxRec?.activeMenteeCount}`);
+
+  const twice = await match({ mentorId: mx2, groupId: G });
+  check("a group with an active mentorship cannot get a second mentor -> 409",
+        twice.status === 409 && twice.json?.code === "group_already_matched", `HTTP ${twice.status}`);
+  const alone = await match({ mentorId: mx2, menteeId: u1 });
+  check("a member is not matched alone -> 409", alone.status === 409 && alone.json?.code === "mentee_in_group", `HTTP ${alone.status}`);
+
+  // Organisation B cannot use E's group or see the group mentorship
+  const bUse = await api(B, "POST", "/mentorships", { mentorId: mentorB, groupId: G, closingDate: END_DATE });
+  check("B cannot match E's group -> 404", bUse.status === 404, `HTTP ${bUse.status}`);
+  check("B cannot read E's group mentorship -> 404", (await api(B, "GET", `/mentorships/${gms.id}`)).status === 404);
+
+  // Workspace: members by name only
+  const ws = new URL(ok.json.workspaceUrl);
+  const wsData = (await api(null, "GET", `/public/workspace/${ws.searchParams.get("id")}?token=${ws.searchParams.get("token")}`)).json;
+  const wsRaw = JSON.stringify(wsData || {});
+  check("workspace lists the members by name, without e-mail addresses",
+        (wsData?.members || []).length === 3 && !wsRaw.includes("umut@e.example") && !wsRaw.includes("ulas@e.example"));
+
+  // Meeting tracking marks the group
+  const tr = (await api(E, "GET", `/meeting-tracking?programId=${PX}`)).json;
+  const row = (tr?.rows || []).find(r => r.id === gms.id);
+  check("meeting tracking marks the group row", row?.isGroup === true && row?.memberCount === 3);
+
+  // Closing survey: one per member (no SMTP here: the surveys are made, sending fails)
+  await api(E, "POST", `/mentorships/${gms.id}/survey`, { role: "mentee", language: "en" });
+  const sv = (await api(E, "GET", `/mentorships/${gms.id}/surveys`)).json;
+  check("closing survey: one entry per member", sv?.isGroup === true && (sv?.members || []).length === 3 &&
+        sv.members.every(m => m.state === "pending"), JSON.stringify((sv?.members || []).map(m => m.state)));
+
+  // Too small: a group that lost a member
+  await api(E, "DELETE", `/mentees/${u5}`);
+  const small = await match({ mentorId: mx2, groupId: G2 });
+  check("a group with 1 member left cannot be matched -> 400", small.status === 400 && small.json?.code === "group_too_small",
+        `HTTP ${small.status}`);
+
+  // Deleting the group keeps the mentorship; members stay engaged
+  await api(E, "DELETE", `/mentee-groups/${G}`);
+  const after = (await api(E, "GET", `/mentorships/${gms.id}`)).json;
+  check("deleting the group keeps the mentorship and its members", after?.status === "active" && (after?.members || []).length === 3);
+  const freeNow = await match({ mentorId: mx2, menteeId: u1 });
+  check("... and its members still cannot get another mentor -> 409",
+        freeNow.status === 409 && freeNow.json?.code === "mentee_already_engaged", `HTTP ${freeNow.status}`);
+
+  // KVKK: deleting a member, deleting the mentorship
+  const Database = require("better-sqlite3");
+  const db = new Database(server.dbPath);
+  try {
+    await api(E, "DELETE", `/mentees/${u2}`);
+    const m2 = db.prepare(`SELECT COUNT(*) n FROM mentorship_members WHERE mentee_id = ?`).get(u2).n;
+    const s2 = db.prepare(`SELECT COUNT(*) n FROM surveys WHERE member_id = ?`).get(u2).n;
+    check("deleting a member removes them from the group mentorship and their survey", m2 === 0 && s2 === 0, `${m2} / ${s2}`);
+
+    await api(E, "DELETE", `/mentorships/${gms.id}?force=true`);
+    const sAll = db.prepare(`SELECT COUNT(*) n FROM surveys WHERE mentorship_id = ?`).get(gms.id).n;
+    const mAll = db.prepare(`SELECT COUNT(*) n FROM mentorship_members WHERE mentorship_id = ?`).get(gms.id).n;
+    check("deleting the mentorship removes its surveys and member rows", sAll === 0 && mAll === 0, `${sAll} / ${mAll}`);
+  } finally {
+    db.close();
+  }
+  const mxAfter = (await api(E, "GET", `/mentors/${mx}`)).json;
+  check("... and gives the mentor's place back", mxAfter?.activeMenteeCount === 0, `${mxAfter?.activeMenteeCount}`);
+
+  // --- Deleting an individually matched mentee (KVKK, option b) --------
+  console.log("\n10) DELETING A MATCHED MENTEE\n");
+  const u6 = await member("Ugur");
+  const ind = (await match({ mentorId: mx2, menteeId: u6 })).json?.mentorship;
+  await api(E, "POST", `/mentorships/${ind.id}/meetings`, { meetingDate: "2026-09-10", title: "First", durationMinutes: "00:45" });
+  await api(E, "POST", `/mentorships/${ind.id}/survey`, { role: "mentee", language: "en" });   // no SMTP: survey made, e-mail fails
+  await api(E, "POST", `/email/workspace/${ind.id}`, { target: "mentee", lang: "en" });        // logged as failed
+
+  const db2 = new Database(server.dbPath);
+  try {
+    const before = {
+      surveys: db2.prepare(`SELECT COUNT(*) n FROM surveys WHERE mentorship_id = ? AND role = 'mentee'`).get(ind.id).n,
+      mails: db2.prepare(`SELECT COUNT(*) n FROM email_log WHERE recipient = ?`).get("ugur@e.example").n
+    };
+    await api(E, "DELETE", `/mentees/${u6}`);
+    const msRow = (await api(E, "GET", `/mentorships/${ind.id}`)).json;
+    check("the mentee is gone", (await api(E, "GET", `/mentees/${u6}`)).status === 404);
+    check("their mentorship stays, with its meetings", msRow?.id === ind.id && (msRow.meetings || []).length === 1,
+          `${msRow?.id === ind.id} / ${(msRow?.meetings || []).length} meeting(s)`);
+    check("... but no longer names them",
+          msRow?.menteeDeleted === true && msRow.menteeName === "" && msRow.menteeEmail === "" && msRow.developmentNeed === "",
+          JSON.stringify({ n: msRow?.menteeName, e: msRow?.menteeEmail, d: msRow?.menteeDeleted }));
+    const after = {
+      surveys: db2.prepare(`SELECT COUNT(*) n FROM surveys WHERE mentorship_id = ? AND role = 'mentee'`).get(ind.id).n,
+      mails: db2.prepare(`SELECT COUNT(*) n FROM email_log WHERE recipient = ?`).get("ugur@e.example").n
+    };
+    check("their closing survey and e-mail log are deleted",
+          before.surveys === 1 && before.mails >= 1 && after.surveys === 0 && after.mails === 0,
+          `surveys ${before.surveys}->${after.surveys}, mails ${before.mails}->${after.mails}`);
+    const raw = JSON.stringify(db2.prepare(`SELECT * FROM mentorships WHERE id = ?`).get(ind.id));
+    check("nothing in the mentorship row contains their name or e-mail", !/Ugur|ugur@e\.example/.test(raw));
+  } finally {
+    db2.close();
+  }
 }
 
 main().catch(err => {

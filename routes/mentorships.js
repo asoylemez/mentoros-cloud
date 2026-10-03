@@ -2,7 +2,8 @@ const express = require("express");
 
 const config = require("../config");
 const { mentors, mentees, mentorships, meetings, meetingDuration, isRealDate } = require("../db/repos");
-const { composeMenteeNeed } = require("../lib/menteeNeed");
+const { composeMenteeNeed, composeGroupNeed } = require("../lib/menteeNeed");
+const { loadMatchableGroup } = require("../lib/groupRules");
 const { db } = require("../db");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
@@ -54,15 +55,17 @@ router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
   if (!companyId) return;
   const body = req.body || {};
-  const { mentorId, menteeId } = body;
+  const { mentorId, menteeId, groupId } = body;
   const lang = body.language === "en" ? "en" : "tr";
 
-  if (!mentorId || !menteeId) {
-    return res.status(400).json({ error: "mentorId and menteeId are required" });
+  if (!mentorId || (!menteeId && !groupId)) {
+    return res.status(400).json({ error: "mentorId and menteeId (or groupId) are required" });
   }
 
   const mentor = ownRecord(req, res, mentors.get(mentorId), "Mentor not found");
   if (!mentor) return;
+
+  if (groupId) return createGroupMentorship(req, res, companyId, mentor, body, lang);
 
   // A registered mentee must be the organisation's own; an id that
   // matches no record is a typed-in mentee.
@@ -95,19 +98,8 @@ router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
   }
 
   // Period of the match
-  let closingDate;
-  if (rule.program) {
-    closingDate = rule.program.endDate;
-  } else {
-    closingDate = String(body.closingDate || "").trim();
-    const today = new Date().toISOString().slice(0, 10);
-    if (!isRealDate(closingDate) || closingDate < today) {
-      return res.status(400).json({
-        error: "Give the end date of the match (today or later).",
-        code: "closing_date_required"
-      });
-    }
-  }
+  const closingDate = periodEnd(res, rule, body);
+  if (!closingDate) return;
 
   const payload = {
     programId: rule.programId,
@@ -156,6 +148,76 @@ router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
     workspaceUrl: withLink.workspaceUrl
   });
 }));
+
+/**
+ * GROUP MATCH: one mentor with a mentee group. One mentorship, one shared
+ * workspace, ONE place of the mentor's capacity. The members are copied
+ * into mentorship_members (a snapshot). mentee_id is "group:<groupId>".
+ */
+function createGroupMentorship(req, res, companyId, mentor, body, lang) {
+  const group = loadMatchableGroup(req, res, companyId, body.groupId);
+  if (!group) return;
+
+  // Programme rule: the group's programme, the mentor must be in it.
+  const rule = programForMatch(res, companyId,
+    { id: group.id, companyId: group.companyId, programId: group.programId }, mentor);
+  if (!rule) return;
+
+  const closingDate = periodEnd(res, rule, body);
+  if (!closingDate) return;
+
+  const { created, mentorship } = mentorships.create(companyId, {
+    programId: rule.programId,
+    closingDate,
+    mentorId: mentor.id,
+    mentorName: mentor.fullName || "",
+    mentorEmail: mentor.email || "",
+    menteeId: `group:${group.id}`,
+    menteeName: group.name,
+    menteeEmail: "",
+    menteeRole: "",
+    menteeDepartment: "",
+    developmentNeed: composeGroupNeed(group.memberRecords, lang),
+    groupId: group.id,
+    groupName: group.name,
+    members: group.memberRecords.map(m => ({ id: m.id, fullName: m.fullName, email: m.email, role: m.role })),
+    goals: [], developmentAreas: [], successCriteria: []
+  });
+  if (!created) {
+    return res.status(409).json({
+      error: "This mentor and this group already had a mentorship in this programme.",
+      code: "pair_exists",
+      mentorshipId: mentorship.id
+    });
+  }
+
+  const withLink = withWorkspaceLink(mentorship);
+  res.json({
+    success: true,
+    message: "Group mentorship created",
+    mentorshipId: mentorship.id,
+    mentorship: withLink,
+    workspaceUrl: withLink.workspaceUrl
+  });
+}
+
+/**
+ * End date of a new match: the programme's end date, or (without a
+ * programme) the date HR gave - today or later. Null after writing 400.
+ */
+function periodEnd(res, rule, body) {
+  if (rule.program) return rule.program.endDate;
+  const closingDate = String(body.closingDate || "").trim();
+  const today = new Date().toISOString().slice(0, 10);
+  if (!isRealDate(closingDate) || closingDate < today) {
+    res.status(400).json({
+      error: "Give the end date of the match (today or later).",
+      code: "closing_date_required"
+    });
+    return null;
+  }
+  return closingDate;
+}
 
 router.get("/mentorships", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
@@ -482,6 +544,9 @@ router.get("/meeting-tracking", requireApiKey, wrap(async (req, res) => {
       programId: ms.programId || "",
       mentorName: ms.mentorName || "",
       menteeName: ms.menteeName || "",
+      isGroup: !!ms.groupId,
+      menteeDeleted: !!ms.menteeDeleted,
+      memberCount: (ms.members || []).length,
       status: ms.status,
       meetings: items,
       meetingCount: items.length,

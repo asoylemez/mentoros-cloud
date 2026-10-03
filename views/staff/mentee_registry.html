@@ -479,6 +479,8 @@ const T = {
     gPassive: "pasif",
     edit: "Düzenle", del: "Sil", groupTag: "Grup",
     gDeleteConfirm: "\"{name}\" grubu silinsin mi?\n\nÜyeler silinmez; yalnızca gruptan çıkar ve tek başına eşleştirilebilir hâle gelir.",
+    gMatchedWith: "Mentoru:",
+    gDeleteActive: "Bu grubun aktif bir mentorluk ilişkisi var. İlişki ve çalışma sayfası devam eder; üyeler bu ilişki bitene kadar başka bir mentorla eşleştirilemez.",
     gDeleted: "Grup silindi ✓", gSaved: "Grup kaydedildi ✓", loadGroupsFailed: "Gruplar yüklenemedi.",
     g_group_name_required: "Grup adı zorunlu.", g_group_name_taken: "Bu adda bir grup zaten var.",
     g_group_name_too_long: "Grup adı en fazla 80 karakter olabilir.", g_group_size: "Bir grupta 2 ile 10 arasında üye olur.",
@@ -505,7 +507,7 @@ const T = {
     fStatus: "Durum (eşleştirme)", optActive: "Aktif — eşleştirmeye dahil", optInactive: "Pasif — eşleştirmeye dahil değil",
     delete: "Mentee'yi Sil", cancel: "Vazgeç", save: "Kaydet", saving: "Kaydediliyor…",
     saved: "Kaydedildi ✓", deleted: "Silindi ✓", copied: "Kopyalandı ✓",
-    deleteConfirm: "Bu mentee kaydını silmek istediğinize emin misiniz?"
+    deleteConfirm: "Bu mentee kaydı silinsin mi?\n\nKişinin mentorluk ilişkileri ve toplantı notları korunur, ama ilişkilerde adı, e-postası, rolü ve gelişim ihtiyacı silinir; kapanış anketleri ve kendisine giden e-postaların kayıtları da silinir. Geri alınamaz."
   },
   en: {
     pageTitle: "Mentee Registry", pageSub: "Registered mentees, their development needs and goals",
@@ -544,6 +546,8 @@ const T = {
     gPassive: "inactive",
     edit: "Edit", del: "Delete", groupTag: "Group",
     gDeleteConfirm: "Delete the group \"{name}\"?\n\nThe members are not deleted; they only leave the group and can be matched on their own.",
+    gMatchedWith: "Mentor:",
+    gDeleteActive: "This group has an active mentorship. The mentorship and its workspace carry on; the members cannot be matched with another mentor until it ends.",
     gDeleted: "Group deleted ✓", gSaved: "Group saved ✓", loadGroupsFailed: "Groups could not be loaded.",
     g_group_name_required: "The group name is required.", g_group_name_taken: "A group with this name already exists.",
     g_group_name_too_long: "The group name can be at most 80 characters.", g_group_size: "A group has 2 to 10 members.",
@@ -570,7 +574,7 @@ const T = {
     fStatus: "Status (matching)", optActive: "Active — included in matching", optInactive: "Inactive — excluded from matching",
     delete: "Delete mentee", cancel: "Cancel", save: "Save", saving: "Saving…",
     saved: "Saved ✓", deleted: "Deleted ✓", copied: "Copied ✓",
-    deleteConfirm: "Are you sure you want to delete this mentee record?"
+    deleteConfirm: "Delete this mentee record?\n\nTheir mentorships and meeting notes are kept, but their name, e-mail, role and development need are removed from them; their closing surveys and the log of e-mails sent to them are deleted too. This cannot be undone."
   }
 };
 
@@ -841,7 +845,8 @@ function renderGroups() {
   tbody.innerHTML = GROUPS.map(g => {
     const p = g.programId && programById(g.programId);
     return `<tr>
-      <td><div class="name">${esc(g.name)}</div><div class="email">${g.members.length} / ${10}</div></td>
+      <td><div class="name">${esc(g.name)}</div><div class="email">${g.members.length} / ${10}</div>
+        ${g.activeMentorship ? `<div><span class="tag prog">${esc(t("gMatchedWith"))} ${esc(g.activeMentorship.mentorName)}</span></div>` : ""}</td>
       ${PROGRAMS.length ? `<td>${p ? `<span class="tag prog${p.archived ? " archived" : ""}">${esc(p.name)}</span>` : "–"}</td>` : ""}
       <td>${g.members.map(m => `<span class="tag">${esc(m.fullName)}</span>`).join("") || "–"}</td>
       <td class="actions">
@@ -958,7 +963,8 @@ $("gSave").onclick = async () => {
 
 window.deleteGroup = async function (id) {
   const g = GROUPS.find(x => x.id === id);
-  if (!g || !confirm(t("gDeleteConfirm").replace("{name}", g.name))) return;
+  const msg = t("gDeleteConfirm").replace("{name}", g.name) + (g.activeMentorship ? "\n\n" + t("gDeleteActive") : "");
+  if (!g || !confirm(msg)) return;
   try {
     await api(`/mentee-groups/${id}`, { method: "DELETE" });
     await loadGroups();

@@ -1,8 +1,9 @@
 const express = require("express");
 
-const { mentors, mentees, programs } = require("../db/repos");
+const { mentors, mentees, programs, menteeGroups } = require("../db/repos");
 const { rankMentors } = require("../ai/matching");
-const { composeMenteeNeed, shortNeedSummary } = require("../lib/menteeNeed");
+const { composeMenteeNeed, shortNeedSummary, composeGroupNeed } = require("../lib/menteeNeed");
+const { loadMatchableGroup } = require("../lib/groupRules");
 const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, wrap } = require("./_helpers");
 const { programForMatch } = require("../lib/programRules");
 
@@ -57,8 +58,6 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
     department: m.department,
     band: m.band,
     tenure: m.tenure,
-    managerName: m.managerName || "",
-    managerEmail: m.managerEmail || "",
 
     developmentNeeds: m.developmentNeeds || "",
     challenge: m.challenge || "",
@@ -105,13 +104,27 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
     mentorProfile: m.mentorProfile || ""
   }));
 
+  // Mentee groups of the programme (all groups when there are no
+  // programmes). A group with an active mentorship is listed but marked.
+  const groupList = menteeGroups.listByCompany(companyId)
+    .filter(g => (g.programId || "") === (program ? program.id : ""))
+    .map(g => ({
+      id: g.id,
+      name: g.name,
+      memberCount: g.members.length,
+      members: g.members.map(m => ({ id: m.id, fullName: m.fullName, role: m.role || "", status: m.status })),
+      matchable: g.members.length >= menteeGroups.MIN && !g.activeMentorship,
+      activeMentorship: g.activeMentorship
+    }));
+
   res.json({
     program: program
       ? { id: program.id, name: program.name, status: program.status,
           startDate: program.startDate, endDate: program.endDate }
       : null,
     mentees: menteeList,
-    mentors: mentorList
+    mentors: mentorList,
+    groups: groupList
   });
 }));
 
@@ -134,7 +147,22 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
   let mentee;
   let record = null;
 
-  if (req.body.menteeId) {
+  if (req.body.groupId) {
+    // A GROUP: one anonymised block per member; every member's name is
+    // given to the privacy layer as a known name.
+    const group = loadMatchableGroup(req, res, companyId, req.body.groupId);
+    if (!group) return;
+    record = { id: group.id, companyId: group.companyId, programId: group.programId };
+    mentee = {
+      fullName: "",
+      role: "",
+      department: "",
+      developmentNeeds: composeGroupNeed(group.memberRecords, language),
+      goals: "",
+      languages: [],
+      knownNames: group.memberRecords.map(m => m.fullName).filter(Boolean)
+    };
+  } else if (req.body.menteeId) {
     record = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
     if (!record) return;
     if (refuseGroupMember(res, record)) return;

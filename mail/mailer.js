@@ -229,14 +229,21 @@ const T = {
     // The ONLY mail of a new match (sent by HR from the HR Dashboard).
     workspaceSubject: "Mentorluk eşleşmeniz: çalışma sayfanız hazır",
     workspaceTitle: "Mentorluk eşleşmeniz oluşturuldu",
-    workspaceBody: ({ name, other, isMentor, period }) =>
+    workspaceBody: ({ name, other, isMentor, period, group, members }) =>
       `Merhaba ${name},<br><br>` +
-      (isMentor
-        ? `<b>${other}</b> ile mentorluk eşleşmeniz oluşturuldu; bu eşleşmede mentor sizsiniz.`
-        : `<b>${other}</b> ile mentorluk eşleşmeniz oluşturuldu; ${other} sizin mentorunuz olacak.`) +
+      (group
+        ? (isMentor
+            ? `<b>${group}</b> grubuyla mentorluk eşleşmeniz oluşturuldu; bu grubun mentoru sizsiniz.` +
+              `<br><b>Gruptaki katılımcılar:</b> ${members}`
+            : `<b>${group}</b> grubunun bir üyesi olarak mentorluk eşleşmeniz oluşturuldu; grubun mentoru <b>${other}</b>.` +
+              `<br><b>Gruptaki katılımcılar:</b> ${members}`)
+        : (isMentor
+            ? `<b>${other}</b> ile mentorluk eşleşmeniz oluşturuldu; bu eşleşmede mentor sizsiniz.`
+            : `<b>${other}</b> ile mentorluk eşleşmeniz oluşturuldu; ${other} sizin mentorunuz olacak.`)) +
       (period ? `<br><br><b>Eşleşmenin süresi:</b> ${period}` : "") +
       `<br><br>Aşağıdaki bağlantıdan ortak çalışma sayfanıza girebilirsiniz. ` +
-      `Bu sayfa ikinizin ortak alanıdır: gelişim planınızı burada oluşturur, ` +
+      (group ? `Bu sayfa mentor ile bütün grubun ortak alanıdır: gelişim planını burada oluşturur, `
+             : `Bu sayfa ikinizin ortak alanıdır: gelişim planınızı burada oluşturur, `) +
       `her görüşmeden sonra toplantı notunu ve süresini kaydeder, aksiyonları ` +
       `takip eder ve bir sonraki görüşmeyi planlarsınız.` +
       `<br><br>Sayfa giriş gerektirmez, yalnızca bu bağlantıyla açılır. ` +
@@ -288,14 +295,21 @@ const T = {
     // The ONLY mail of a new match (sent by HR from the HR Dashboard).
     workspaceSubject: "Your mentorship match: your workspace is ready",
     workspaceTitle: "Your mentorship match has been created",
-    workspaceBody: ({ name, other, isMentor, period }) =>
+    workspaceBody: ({ name, other, isMentor, period, group, members }) =>
       `Hello ${name},<br><br>` +
-      (isMentor
-        ? `You have been matched with <b>${other}</b>; you are the mentor in this match.`
-        : `You have been matched with <b>${other}</b>, who will be your mentor.`) +
+      (group
+        ? (isMentor
+            ? `You have been matched with the group <b>${group}</b>; you are the group's mentor.` +
+              `<br><b>Participants:</b> ${members}`
+            : `You have been matched as a member of the group <b>${group}</b>; the group's mentor is <b>${other}</b>.` +
+              `<br><b>Participants:</b> ${members}`)
+        : (isMentor
+            ? `You have been matched with <b>${other}</b>; you are the mentor in this match.`
+            : `You have been matched with <b>${other}</b>, who will be your mentor.`)) +
       (period ? `<br><br><b>Duration of the match:</b> ${period}` : "") +
       `<br><br>Use the link below to open your shared workspace. ` +
-      `It is the space you share: you build your development plan there, ` +
+      (group ? `It is the space the mentor and the whole group share: you build the development plan there, `
+             : `It is the space you share: you build your development plan there, `) +
       `record a short note and the duration after every meeting, follow up ` +
       `on actions and plan your next meeting.` +
       `<br><br>No sign-in is needed - the page opens only with this link. ` +
@@ -635,7 +649,7 @@ async function sendMeetingInvite({
     intro: t.meetingInviteIntro,
     rows: [
       [t.meetingInviteWhen, `<b>${meetingDate} &nbsp; ${timeLabel}</b> (Istanbul)`],
-      [t.meetingInviteWith, `${mentorship.mentorName || "-"} & ${mentorship.menteeName || "-"}`],
+      [t.meetingInviteWith, `${escapeHtml(mentorship.mentorName || "-")} &amp; ${escapeHtml(mentorship.menteeName || "-")}`],
       focus ? [t.meetingInviteFocus, focus] : null,
       // Ek katilimcilar herkese GORUNUR olsun: mentor ve mentee de
       // toplantiya baska kimin cagrildigini bilmeli.
@@ -804,7 +818,9 @@ async function sendWorkspace({ to, role, name, otherName, mentorship, url, lang 
         name: escapeHtml(name || ""),
         other: escapeHtml(otherName || "-"),
         isMentor: role === "mentor",
-        period: start && end ? t.workspacePeriod(start, end) : ""
+        period: start && end ? t.workspacePeriod(start, end) : "",
+        group: mentorship.groupId ? escapeHtml(mentorship.groupName || mentorship.menteeName) : "",
+        members: (mentorship.members || []).map(m => escapeHtml(m.fullName)).join(", ")
       }),
       button: t.workspaceButton,
       url,
@@ -830,7 +846,7 @@ async function sendSurvey({ to, otherName, survey, mentorship, url, lang = "tr" 
     subject: t.surveySubject,
     html: layout({
       title: t.surveyTitle,
-      body: t.surveyBody(otherName || "-"),
+      body: t.surveyBody(escapeHtml(otherName || "-")),
       button: t.surveyButton,
       url,
       lang

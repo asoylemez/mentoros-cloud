@@ -746,8 +746,51 @@ const mentees = {
     return mentees.get(id);
   },
 
+  /**
+   * Deletes a mentee (KVKK). Their individual mentorships STAY - the
+   * mentor's history, the meetings and the reports keep working - but
+   * nothing in them identifies the person any more:
+   *   - mentorships / old match requests: name, e-mail, role, department
+   *     and development need are emptied; mentorships.mentee_deleted = 1
+   *   - their closing surveys (answers included) are deleted
+   *   - the e-mail log rows sent to their address are deleted
+   * As a group member: their row in the group mentorship and their own
+   * survey go too (mentorship_members: ON DELETE CASCADE).
+   * Meeting notes are kept: they belong to the mentorship.
+   */
   remove(id) {
-    db.prepare(`DELETE FROM mentees WHERE id = ?`).run(id);
+    const mentee = mentees.get(id);
+    if (!mentee) return;
+    const ts = now();
+
+    db.transaction(() => {
+      db.prepare(`
+        DELETE FROM surveys
+         WHERE role = 'mentee' AND member_id = ''
+           AND mentorship_id IN (SELECT id FROM mentorships WHERE mentee_id = ? AND company_id = ?)
+      `).run(id, mentee.companyId);
+      db.prepare(`DELETE FROM surveys WHERE member_id = ?`).run(id);
+
+      db.prepare(`
+        UPDATE mentorships
+           SET mentee_name = '', mentee_email = '', mentee_role = '', mentee_department = '',
+               development_need = '', mentee_deleted = 1, updated_at = ?
+         WHERE mentee_id = ? AND company_id = ?
+      `).run(ts, id, mentee.companyId);
+      db.prepare(`
+        UPDATE match_requests
+           SET mentee_name = '', mentee_email = '', mentee_role = '', mentee_department = '',
+               development_need = '', updated_at = ?
+         WHERE mentee_id = ? AND company_id = ?
+      `).run(ts, id, mentee.companyId);
+
+      if (mentee.email) {
+        db.prepare(`DELETE FROM email_log WHERE company_id = ? AND recipient = ? COLLATE NOCASE`)
+          .run(mentee.companyId, mentee.email);
+      }
+
+      db.prepare(`DELETE FROM mentees WHERE id = ?`).run(id);
+    })();
   },
 
   /**
@@ -797,6 +840,28 @@ const mentees = {
         mentorId: mentorship.mentor_id,
         mentorName: mentorship.mentor_name || "",
         since: mentorship.created_at
+      };
+    }
+
+    // Member of an ACTIVE group mentorship (even if the group itself was
+    // deleted since): matched.
+    const inGroupMentorship = db.prepare(`
+      SELECT ms.id, ms.mentor_id, ms.mentor_name, ms.group_name, ms.created_at
+        FROM mentorship_members mm
+        JOIN mentorships ms ON ms.id = mm.mentorship_id
+       WHERE mm.mentee_id = ? AND ms.company_id = ? AND ms.status = 'active'
+       LIMIT 1
+    `).get(menteeId, cid);
+
+    if (inGroupMentorship) {
+      return {
+        engaged: true,
+        state: "matched",
+        mentorshipId: inGroupMentorship.id,
+        mentorId: inGroupMentorship.mentor_id,
+        mentorName: inGroupMentorship.mentor_name || "",
+        groupName: inGroupMentorship.group_name || "",
+        since: inGroupMentorship.created_at
       };
     }
 
@@ -1080,6 +1145,16 @@ function hydrateMentorship(row) {
   m.goals = parseArray(m.goals);
   m.developmentAreas = parseArray(m.developmentAreas);
   m.successCriteria = parseArray(m.successCriteria);
+  // Group mentorship: the members as they were when the match was made.
+  m.isGroup = !!m.groupId;
+  m.menteeDeleted = !!m.menteeDeleted;
+  m.members = m.isGroup
+    ? db.prepare(`
+        SELECT mentee_id AS id, full_name AS fullName, email, role
+          FROM mentorship_members WHERE mentorship_id = ?
+         ORDER BY full_name COLLATE NOCASE
+      `).all(m.id)
+    : [];
   return m;
 }
 
@@ -1122,14 +1197,14 @@ const mentorships = {
         mentee_role, mentee_department, development_need,
         goals, development_areas, success_criteria,
         status, next_meeting_date, access_token, program_id, closing_date,
-        created_at, updated_at
+        group_id, group_name, created_at, updated_at
       ) VALUES (
         @id, @companyId, @mentorId, @menteeId,
         @mentorName, @menteeName, @mentorEmail, @menteeEmail,
         @menteeRole, @menteeDepartment, @developmentNeed,
         @goals, @developmentAreas, @successCriteria,
         'active', '', @accessToken, @programId, @closingDate,
-        @createdAt, @updatedAt
+        @groupId, @groupName, @createdAt, @updatedAt
       )
     `).run({
       id,
@@ -1149,10 +1224,24 @@ const mentorships = {
       successCriteria: toJson(body.successCriteria),
       programId,
       closingDate,
+      groupId: body.groupId || "",
+      groupName: body.groupName || "",
       createdAt: ts,
       updatedAt: ts
     });
 
+    // Group: snapshot of the members (the group may change later).
+    if (body.groupId && Array.isArray(body.members)) {
+      const add = db.prepare(`
+        INSERT INTO mentorship_members (mentorship_id, mentee_id, company_id, full_name, email, role, added_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const m of body.members) {
+        add.run(id, m.id, slugify(companyId), m.fullName || "", m.email || "", m.role || "", ts);
+      }
+    }
+
+    // A group takes ONE place of the mentor's capacity, like one mentee.
     // Mentorun dolu kapasitesi arttir; doldu ise pasife al.
     mentors.incrementMenteeCount(body.mentorId, 1);
     const mentor = mentors.get(body.mentorId);
@@ -1232,7 +1321,10 @@ const mentorships = {
       }
     }
 
-    db.prepare(`DELETE FROM mentorships WHERE id = ?`).run(id);
+    // surveys has no foreign key to mentorships: remove them here, or the
+    // recipients' names, e-mails and answers would outlive the mentorship.
+    db.prepare(`DELETE FROM surveys WHERE mentorship_id = ?`).run(id);
+    db.prepare(`DELETE FROM mentorships WHERE id = ?`).run(id);   // members, meetings: CASCADE
 
     return { ...ms, deletedMeetings: meetingCount };
   },
@@ -1416,14 +1508,14 @@ const surveys = {
    * iki e-posta gider ve hangisini dolduracagini bilemez. Ayrica ilk
    * link sessizce olu kalirdi.
    */
-  create(companyId, { mentorshipId, role, recipientName, recipientEmail, language }) {
+  create(companyId, { mentorshipId, role, recipientName, recipientEmail, language, memberId = "" }) {
     const cid = slugify(companyId);
 
     const existing = db.prepare(`
       SELECT * FROM surveys
-       WHERE company_id = ? AND mentorship_id = ? AND role = ? AND status = 'pending'
+       WHERE company_id = ? AND mentorship_id = ? AND role = ? AND member_id = ? AND status = 'pending'
        LIMIT 1
-    `).get(cid, mentorshipId, role);
+    `).get(cid, mentorshipId, role, memberId || "");
 
     if (existing) return { survey: hydrateSurvey(existing), reused: true };
 
@@ -1439,16 +1531,17 @@ const surveys = {
       language: language === "en" ? "en" : "tr",
       answers: null,
       sentAt: now(),
-      completedAt: null
+      completedAt: null,
+      memberId: memberId || ""      // group member this survey is for ('' = not a group)
     };
 
     db.prepare(`
       INSERT INTO surveys
         (id, company_id, mentorship_id, role, token, status,
-         recipient_name, recipient_email, language, answers, sent_at, completed_at)
+         recipient_name, recipient_email, language, answers, sent_at, completed_at, member_id)
       VALUES
         (@id, @companyId, @mentorshipId, @role, @token, @status,
-         @recipientName, @recipientEmail, @language, @answers, @sentAt, @completedAt)
+         @recipientName, @recipientEmail, @language, @answers, @sentAt, @completedAt, @memberId)
     `).run(survey);
 
     return { survey, reused: false };
@@ -1710,6 +1803,12 @@ function hydrateGroup(row) {
      ORDER BY me.full_name COLLATE NOCASE
   `).all(g.id);
   g.memberIds = g.members.map(x => x.id);
+  // Active mentorship of the group, if any (one at a time).
+  const ms = db.prepare(`
+    SELECT id, mentor_id, mentor_name, created_at FROM mentorships
+     WHERE group_id = ? AND status = 'active' LIMIT 1
+  `).get(g.id);
+  g.activeMentorship = ms ? { id: ms.id, mentorId: ms.mentor_id, mentorName: ms.mentor_name || "", since: ms.created_at } : null;
   return g;
 }
 
@@ -1807,6 +1906,13 @@ const menteeGroups = {
       }
     })();
     return menteeGroups.get(id);
+  },
+
+  /** The group's ACTIVE mentorship, if it has one. */
+  activeMentorship(groupId) {
+    return hydrateMentorship(db.prepare(`
+      SELECT * FROM mentorships WHERE group_id = ? AND status = 'active' LIMIT 1
+    `).get(groupId));
   },
 
   /** Members are kept as mentees; only the group and its membership go. */

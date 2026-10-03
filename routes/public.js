@@ -114,6 +114,9 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
   // Erisim token'i kendisini geri dondurmez.
   const { accessToken, ...safe } = full;
   safe.programName = programNameOf(full.programId);
+  // Group: members by name only - the workspace link is shared by the
+  // whole group, so it does not carry the members' e-mail addresses.
+  safe.members = (full.members || []).map(m => ({ fullName: m.fullName, role: m.role }));
   res.json(safe);
 }));
 
