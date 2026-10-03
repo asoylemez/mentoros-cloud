@@ -182,6 +182,17 @@
   .tag.prog { background: #e0e7ff; color: #3730a3; }
   .tag.prog.archived { background: #f3f4f6; color: #6b7280; }
   .unassigned { color: var(--muted); font-size: 12px; font-style: italic; }
+
+  /* Groups */
+  .tag.grp { background: #fef3c7; color: #92400e; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .member-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto;
+                 border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  .member-list label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); padding: 3px 0; cursor: pointer; }
+  .member-list label.disabled { color: var(--muted); cursor: default; }
+  .member-list input { width: auto; }
+  .member-why { font-size: 12px; color: var(--warn); }
+  .form-error { color: var(--err); font-size: 13px; margin-top: 8px; min-height: 18px; white-space: pre-line; }
 </style>
 </head>
 <body>
@@ -293,6 +304,61 @@
       Henüz mentee kaydı yok. Yukarıdaki davet bağlantısını paylaşın.
     </div>
   </div>
+
+  <!-- Mentee groups -->
+  <div class="card" id="groupsCard">
+    <div class="card-head">
+      <div>
+        <h2 data-i18n="groupsTitle">Mentee Grupları</h2>
+        <div class="card-sub" style="margin-bottom:0" data-i18n="groupsSub">Bir mentorla birlikte çalışacak 2–10 kişilik gruplar. Bir mentee yalnızca bir grupta olur; gruptaki mentee tek başına eşleştirilmez.</div>
+      </div>
+      <button class="primary" id="newGroupBtn" data-i18n="newGroup">+ Yeni grup</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="thGroup">Grup</th>
+            <th data-i18n="thProgram" id="thGroupProgram">Program</th>
+            <th data-i18n="thMembers">Üyeler</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="groupRows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="groupsEmpty" style="display:none" data-i18n="groupsEmpty">Henüz grup yok.</div>
+  </div>
+</div>
+
+<!-- ============ GROUP FORM ============ -->
+<div class="modal" id="gModal">
+  <div class="modal-box" style="max-width:620px">
+    <div class="modal-head">
+      <div><h2 id="gTitle">—</h2></div>
+      <button class="modal-close" id="gClose">&times;</button>
+    </div>
+    <div class="field"><label for="g_name" data-i18n="gName">Grup adı *</label>
+      <input id="g_name" maxlength="80"></div>
+    <div class="field" id="gProgramField">
+      <label for="g_program" data-i18n="gProgram">Program *</label>
+      <select id="g_program"></select>
+      <div class="hint" id="gProgramHint"></div>
+    </div>
+    <div class="field">
+      <label><span data-i18n="gMembers">Üyeler</span> · <span id="gCount">0</span></label>
+      <div class="member-list" id="g_members"></div>
+      <div class="hint" id="gMembersHint"></div>
+    </div>
+    <div class="form-error" id="gError" role="alert"></div>
+    <div class="modal-foot">
+      <span></span>
+      <div style="display:flex;gap:8px">
+        <button id="gCancel" data-i18n="cancel">Vazgeç</button>
+        <button class="primary" id="gSave" data-i18n="save">Kaydet</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ============ DÜZENLEME PENCERESİ ============ -->
@@ -308,6 +374,7 @@
       <label for="f_program" data-i18n="fProgram">Bu mentee'nin programı</label>
       <select id="f_program"></select>
       <div class="hint" data-i18n="programOneHint">Bir mentee tek programda olur.</div>
+      <div class="hint" id="programGroupLock" style="display:none;color:var(--warn)"></div>
     </div>
     <div class="hint" id="noProgramsHint" style="display:none;margin-top:0">
       <span data-i18n="noProgramsYet">Henüz program yok.</span>
@@ -401,6 +468,27 @@ const T = {
     programNotSaved: "Profil kaydedildi; program değiştirilmedi.",
     engagedMatched: "Bu mentee'nin aktif bir mentorluk ilişkisi var. İlişki kurulduğu programda kalır; mentee'nin programı yine de değiştirilsin mi?",
     engagedPending: "Bu mentee'nin bekleyen bir eşleşme talebi var. Talep oluşturulduğu programda kalır; mentee'nin programı yine de değiştirilsin mi?",
+    groupsTitle: "Mentee Grupları",
+    groupsSub: "Bir mentorla birlikte çalışacak 2–10 kişilik gruplar. Bir mentee yalnızca bir grupta olur; gruptaki mentee tek başına eşleştirilmez.",
+    newGroup: "+ Yeni grup", thGroup: "Grup", thMembers: "Üyeler", groupsEmpty: "Henüz grup yok.",
+    gNew: "Yeni grup", gEdit: "Grubu düzenle", gName: "Grup adı *", gProgram: "Program *", gMembers: "Üyeler",
+    gProgramLocked: "Grubun programı sonradan değiştirilemez. Başka programda kurmak için grubu silip yeniden oluşturun.",
+    gProgramPick: "Önce programı seçin; yalnızca o programdaki mentee'ler listelenir.",
+    gNoOpenPrograms: "Grup kurulabilecek (arşivlenmemiş) program yok.",
+    gMembersHint: "2–10 kişi seçin. Pasif mentee'ler de seçilebilir.",
+    gNoCandidates: "Bu programda mentee yok.",
+    gWhyOtherGroup: "başka grupta:", gWhyMatched: "bireysel eşleşmiş:", gWhyPending: "onay bekleyen talebi var:",
+    gPassive: "pasif",
+    edit: "Düzenle", del: "Sil", groupTag: "Grup",
+    gDeleteConfirm: "\"{name}\" grubu silinsin mi?\n\nÜyeler silinmez; yalnızca gruptan çıkar ve tek başına eşleştirilebilir hâle gelir.",
+    gDeleted: "Grup silindi ✓", gSaved: "Grup kaydedildi ✓", loadGroupsFailed: "Gruplar yüklenemedi.",
+    g_group_name_required: "Grup adı zorunlu.", g_group_name_taken: "Bu adda bir grup zaten var.",
+    g_group_name_too_long: "Grup adı en fazla 80 karakter olabilir.", g_group_size: "Bir grupta 2 ile 10 arasında üye olur.",
+    g_group_program_required: "Grubun programını seçin.", g_program_archived: "Arşivlenmiş programda yeni grup kurulamaz.",
+    g_member_wrong_program: "Bütün üyeler grubun programında olmalı:", g_member_in_other_group: "Bir mentee yalnızca bir grupta olabilir:",
+    g_member_engaged: "Bireysel eşleşmesi veya bekleyen talebi olan mentee gruba eklenemez:",
+    g_group_program_locked: "Grubun programı değiştirilemez.",
+    inGroupLock: "Bu mentee \"{name}\" grubunda. Programını değiştirmek için önce gruptan çıkarın.",
     empty: "Henüz mentee kaydı yok. Yukarıdaki davet bağlantısını paylaşın.",
     noResult: "Aramanızla eşleşen mentee yok.",
     badgeActive: "Aktif", badgeInactive: "Pasif",
@@ -445,6 +533,27 @@ const T = {
     programNotSaved: "Profile saved; the programme was not changed.",
     engagedMatched: "This mentee has an active mentorship. It stays in the programme it was made in. Change the mentee's programme anyway?",
     engagedPending: "This mentee has a pending match request. It stays in the programme it was made in. Change the mentee's programme anyway?",
+    groupsTitle: "Mentee Groups",
+    groupsSub: "Groups of 2–10 people who work together with one mentor. A mentee is in at most one group; a group member is not matched on their own.",
+    newGroup: "+ New group", thGroup: "Group", thMembers: "Members", groupsEmpty: "No groups yet.",
+    gNew: "New group", gEdit: "Edit group", gName: "Group name *", gProgram: "Programme *", gMembers: "Members",
+    gProgramLocked: "A group's programme cannot be changed later. To use another programme, delete the group and create it again.",
+    gProgramPick: "Choose the programme first; only its mentees are listed.",
+    gNoOpenPrograms: "There is no (non-archived) programme to create a group in.",
+    gMembersHint: "Choose 2–10 people. Inactive mentees can be chosen too.",
+    gNoCandidates: "There are no mentees in this programme.",
+    gWhyOtherGroup: "in another group:", gWhyMatched: "matched individually with", gWhyPending: "pending request with",
+    gPassive: "inactive",
+    edit: "Edit", del: "Delete", groupTag: "Group",
+    gDeleteConfirm: "Delete the group \"{name}\"?\n\nThe members are not deleted; they only leave the group and can be matched on their own.",
+    gDeleted: "Group deleted ✓", gSaved: "Group saved ✓", loadGroupsFailed: "Groups could not be loaded.",
+    g_group_name_required: "The group name is required.", g_group_name_taken: "A group with this name already exists.",
+    g_group_name_too_long: "The group name can be at most 80 characters.", g_group_size: "A group has 2 to 10 members.",
+    g_group_program_required: "Choose the group's programme.", g_program_archived: "An archived programme cannot get new groups.",
+    g_member_wrong_program: "Every member must be in the group's programme:", g_member_in_other_group: "A mentee can be in only one group:",
+    g_member_engaged: "Mentees with an individual mentorship or a pending request cannot join a group:",
+    g_group_program_locked: "A group's programme cannot be changed.",
+    inGroupLock: "This mentee is in the group \"{name}\". Take them out of the group before changing the programme.",
     empty: "No mentees yet. Share the invitation link above.",
     noResult: "No mentee matches your search.",
     badgeActive: "Active", badgeInactive: "Inactive",
@@ -477,6 +586,7 @@ function applyLang() {
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
   renderProgramFilter();   // option labels follow the language
   render();
+  renderGroups();
 }
 $("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
 $("brand").onclick = () => { location.href = "/index.html?company=" + encodeURIComponent(COMPANY_ID); };
@@ -563,9 +673,11 @@ function renderProgramFilter() {
 }
 function programCell(m) {
   const p = m.programId && programById(m.programId);
-  return p
+  const prog = p
     ? `<span class="tag prog${p.archived ? " archived" : ""}">${esc(p.name)}</span>`
-    : `<span class="unassigned">${esc(t("programNone"))}</span>`;
+    : (PROGRAMS.length ? `<span class="unassigned">${esc(t("programNone"))}</span>` : "");
+  const grp = m.groupId ? `<div><span class="tag grp">${esc(t("groupTag"))}: ${esc(m.groupName)}</span></div>` : "";
+  return (prog + grp) || "–";
 }
 
 /* ---- Mentee listesi ---- */
@@ -627,7 +739,7 @@ function render() {
 $("search").oninput = render;
 $("statusFilter").onchange = render;
 $("programFilter").onchange = render;
-$("refreshBtn").onclick = async () => { await loadPrograms(); await loadMentees(); toast("✓"); };
+$("refreshBtn").onclick = async () => { await loadPrograms(); await loadMentees(); await loadGroups(); toast("✓"); };
 
 /* ---- Duzenleme ---- */
 let EDITING = null;
@@ -657,6 +769,9 @@ window.openMentee = function (id) {
     `<option value="">${esc(t("programNone"))}</option>` +
     options.map(p => `<option value="${esc(p.id)}">${esc(programLabel(p))}</option>`).join("");
   $("f_program").value = m.programId || "";
+  $("f_program").disabled = !!m.groupId;
+  $("programGroupLock").style.display = m.groupId ? "block" : "none";
+  $("programGroupLock").textContent = m.groupId ? t("inGroupLock").replace("{name}", m.groupName) : "";
 
   $("modal").classList.add("open");
 };
@@ -679,7 +794,7 @@ $("mSave").onclick = async () => {
     // mentee has an active mentorship or a pending request.
     let note = t("saved");
     const programId = $("f_program").value;
-    if (PROGRAMS.length && programId !== (EDITING.programId || "")) {
+    if (PROGRAMS.length && !EDITING.groupId && programId !== (EDITING.programId || "")) {
       const put = force => api(`/mentees/${EDITING.id}/program${force ? "?force=true" : ""}`,
         { method: "PUT", body: JSON.stringify({ programId }) });
       try {
@@ -710,6 +825,150 @@ $("mDelete").onclick = async () => {
   } catch (e) { toast(e.message, true); }
 };
 
+/* ---- Mentee groups ---- */
+let GROUPS = [];
+let G_EDIT = null;          // group being edited, null = new
+let G_CAND = [];            // candidates of the chosen programme
+
+async function loadGroups() {
+  try { GROUPS = await api("/mentee-groups"); } catch { GROUPS = []; toast(t("loadGroupsFailed"), true); }
+  renderGroups();
+}
+
+function renderGroups() {
+  const tbody = $("groupRows");
+  if (!tbody) return;
+  $("thGroupProgram").style.display = PROGRAMS.length ? "" : "none";
+  $("groupsEmpty").style.display = GROUPS.length ? "none" : "block";
+  tbody.innerHTML = GROUPS.map(g => {
+    const p = g.programId && programById(g.programId);
+    return `<tr>
+      <td><div class="name">${esc(g.name)}</div><div class="email">${g.members.length} / ${10}</div></td>
+      ${PROGRAMS.length ? `<td>${p ? `<span class="tag prog${p.archived ? " archived" : ""}">${esc(p.name)}</span>` : "–"}</td>` : ""}
+      <td>${g.members.map(m => `<span class="tag">${esc(m.fullName)}</span>`).join("") || "–"}</td>
+      <td class="actions">
+        <button class="sm" onclick="openGroup('${esc(g.id)}')">${t("edit")}</button>
+        <button class="sm danger" onclick="deleteGroup('${esc(g.id)}')">${t("del")}</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function loadGroupCandidates() {
+  const pid = $("g_program").value;
+  G_CAND = [];
+  if (PROGRAMS.length && !pid) { renderGroupMembers(); return; }
+  try {
+    const data = await api("/mentee-groups/candidates" + (PROGRAMS.length ? `?programId=${encodeURIComponent(pid)}` : ""));
+    G_CAND = data.mentees || [];
+  } catch (e) { $("gError").textContent = e.message; }
+  renderGroupMembers();
+}
+
+function renderGroupMembers() {
+  const box = $("g_members");
+  const chosen = new Set(G_EDIT ? G_EDIT.memberIds : []);
+  [...box.querySelectorAll("input:checked")].forEach(i => chosen.add(i.value));
+  if (!G_CAND.length) {
+    box.innerHTML = `<div class="hint" style="margin:4px 0">${esc(PROGRAMS.length && !$("g_program").value ? t("gProgramPick") : t("gNoCandidates"))}</div>`;
+    updateGroupCount();
+    return;
+  }
+  box.innerHTML = G_CAND.map(m => {
+    let why = "";
+    if (m.groupId && (!G_EDIT || m.groupId !== G_EDIT.id)) why = `${t("gWhyOtherGroup")} ${m.groupName}`;
+    else if (m.state === "matched") why = `${t("gWhyMatched")} ${m.mentorName}`;
+    else if (m.state === "pending") why = `${t("gWhyPending")} ${m.mentorName}`;
+    const extra = m.status !== "active" ? ` · ${t("gPassive")}` : "";
+    return `<label class="${why ? "disabled" : ""}">
+      <input type="checkbox" value="${esc(m.id)}"${chosen.has(m.id) && !why ? " checked" : ""}${why ? " disabled" : ""}>
+      <span>${esc(m.fullName)}${m.role ? ` <span class="email">(${esc(m.role)})</span>` : ""}${extra ? `<span class="email">${esc(extra)}</span>` : ""}
+      ${why ? `<span class="member-why"> — ${esc(why)}</span>` : ""}</span>
+    </label>`;
+  }).join("");
+  box.querySelectorAll("input").forEach(i => { i.onchange = updateGroupCount; });
+  updateGroupCount();
+}
+
+function updateGroupCount() {
+  const n = $("g_members").querySelectorAll("input:checked").length;
+  $("gCount").textContent = `${n} / 2–10`;
+  $("gCount").style.color = n >= 2 && n <= 10 ? "" : "var(--warn)";
+}
+
+window.openGroup = async function (id) {
+  G_EDIT = id ? GROUPS.find(g => g.id === id) : null;
+  $("gTitle").textContent = G_EDIT ? t("gEdit") : t("gNew");
+  $("g_name").value = G_EDIT ? G_EDIT.name : "";
+  $("gError").textContent = "";
+  $("gMembersHint").textContent = t("gMembersHint");
+
+  const sel = $("g_program");
+  $("gProgramField").style.display = PROGRAMS.length ? "" : "none";
+  if (PROGRAMS.length) {
+    const options = G_EDIT
+      ? PROGRAMS.filter(p => p.id === G_EDIT.programId)
+      : PROGRAMS.filter(p => !p.archived);
+    sel.innerHTML = (G_EDIT ? "" : `<option value="">—</option>`) +
+      options.map(p => `<option value="${esc(p.id)}">${esc(programLabel(p))}</option>`).join("");
+    sel.value = G_EDIT ? G_EDIT.programId : "";
+    sel.disabled = !!G_EDIT;
+    $("gProgramHint").textContent = G_EDIT ? t("gProgramLocked") : (options.length ? t("gProgramPick") : t("gNoOpenPrograms"));
+  }
+  $("g_members").innerHTML = "";
+  $("gModal").classList.add("open");
+  await loadGroupCandidates();
+  $("g_name").focus();
+};
+function closeGroup() { $("gModal").classList.remove("open"); G_EDIT = null; }
+$("newGroupBtn").onclick = () => openGroup(null);
+$("gClose").onclick = closeGroup;
+$("gCancel").onclick = closeGroup;
+$("gModal").onclick = e => { if (e.target === $("gModal")) closeGroup(); };
+$("g_program").onchange = () => { G_EDIT = null; loadGroupCandidates(); };
+
+function groupErrorText(e) {
+  const d = e.data || {};
+  const msg = (d.code && T[LANG]["g_" + d.code]) || e.message;
+  return d.mentees && d.mentees.length ? `${msg}\n${d.mentees.join(", ")}` : msg;
+}
+
+$("gSave").onclick = async () => {
+  const name = $("g_name").value.trim();
+  const memberIds = [...$("g_members").querySelectorAll("input:checked")].map(i => i.value);
+  // Same checks as the server, before the round trip.
+  if (!name) { $("gError").textContent = t("g_group_name_required"); return; }
+  if (PROGRAMS.length && !G_EDIT && !$("g_program").value) { $("gError").textContent = t("g_group_program_required"); return; }
+  if (memberIds.length < 2 || memberIds.length > 10) { $("gError").textContent = t("g_group_size"); return; }
+
+  const btn = $("gSave"); btn.disabled = true; btn.textContent = t("saving");
+  try {
+    if (G_EDIT) {
+      await api(`/mentee-groups/${G_EDIT.id}`, { method: "PATCH", body: JSON.stringify({ name, memberIds }) });
+    } else {
+      await api("/mentee-groups", { method: "POST",
+        body: JSON.stringify({ name, memberIds, programId: PROGRAMS.length ? $("g_program").value : "" }) });
+    }
+    closeGroup();
+    await loadGroups();
+    await loadMentees();
+    toast(t("gSaved"));
+  } catch (e) {
+    $("gError").textContent = groupErrorText(e);
+  } finally { btn.disabled = false; btn.textContent = t("save"); }
+};
+
+window.deleteGroup = async function (id) {
+  const g = GROUPS.find(x => x.id === id);
+  if (!g || !confirm(t("gDeleteConfirm").replace("{name}", g.name))) return;
+  try {
+    await api(`/mentee-groups/${id}`, { method: "DELETE" });
+    await loadGroups();
+    await loadMentees();
+    toast(t("gDeleted"));
+  } catch (e) { toast(e.message, true); }
+};
+
 $("logoutBtn").onclick = async () => {
   await fetch("/company-logout", { method: "POST" });
   location.href = "/login.html";
@@ -721,6 +980,7 @@ $("logoutBtn").onclick = async () => {
   await checkSmtp();
   await loadPrograms();
   await loadMentees();
+  await loadGroups();
 })();
 </script>
 </body>

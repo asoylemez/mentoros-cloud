@@ -156,6 +156,16 @@ router.put("/mentees/:id/program", requireApiKey, wrap(async (req, res) => {
     if (!ok) return;
   }
 
+  // A group member keeps the group's programme: take them out of the
+  // group first (no ?force - a group's members must all share it).
+  if (programId !== (mentee.programId || "") && mentee.groupId) {
+    return res.status(409).json({
+      error: `This mentee is in the group "${mentee.groupName}". Take them out of the group before changing the programme.`,
+      code: "mentee_in_group",
+      groupName: mentee.groupName
+    });
+  }
+
   if (programId !== (mentee.programId || "") && req.query.force !== "true") {
     const engagement = mentees.engagement(mentee.companyId, mentee.id);
     if (engagement.engaged) {

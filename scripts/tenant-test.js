@@ -404,6 +404,7 @@ async function run(server) {
 
   const foreignProgramId = await programmeChecks(server, { A, B, mentorA, menteeA, menteeA2, mentorB, menteeB, msA });
   await programmeMatchingChecks(server, { SA, B, mentorB, foreignProgramId });
+  await groupChecks(server, { SA, B });
 }
 
 // ---------------------------------------------------------------------
@@ -681,6 +682,131 @@ async function programmeMatchingChecks(server, ids) {
   check("no programmes: the request has no programme", bReq?.programId === "", JSON.stringify(bReq?.programId));
   const bCand = await api(B, "GET", "/matching-candidates");
   check("no programmes: candidates without a programme id", bCand.status === 200 && bCand.json?.program === null, `HTTP ${bCand.status}`);
+}
+
+// ---------------------------------------------------------------------
+// MENTEE GROUPS (stage 3a)
+// ---------------------------------------------------------------------
+
+async function groupChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n8) MENTEE GROUPS\n");
+
+  check("unauthenticated /mentee-groups rejected", (await api(null, "GET", "/mentee-groups")).status === 401);
+
+  const pwD = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-d", name: "tenant-d", password: pwD });
+  const D = await login("tenant-d", pwD);
+  const post = async (cookie, url, body) => (await api(cookie, "POST", url, body)).json;
+
+  const PX = (await post(D, "/programs", { name: "PX", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const PY = (await post(D, "/programs", { name: "PY", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const PZ = (await post(D, "/programs", { name: "PZ", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  await api(D, "PATCH", `/programs/${PZ}`, { archived: true });
+
+  const mentee = async (cookie, name, programId) => {
+    const id = (await post(cookie, "/mentees", { fullName: name, email: `${name.toLowerCase()}@d.example`, role: "Analyst",
+                                               developmentNeeds: `${name} wants to grow` })).id;
+    if (programId) await api(cookie, "PUT", `/mentees/${id}/program`, { programId });
+    return id;
+  };
+  const many = [];
+  for (let i = 1; i <= 11; i++) many.push(await mentee(D, `Uye${i}`, PX));
+  const [a1, a2, a3] = many;
+  const b1 = await mentee(D, "Baris", PY);
+  const c1 = await mentee(D, "Ceren", PX);
+  const d1 = await mentee(D, "Demet", PX);
+  const mx = (await post(D, "/mentors", { fullName: "Mentor X", email: "mx@d.example", role: "Director", capacity: 5 })).id;
+  await api(D, "PUT", `/mentors/${mx}/programs`, { programIds: [PX] });
+  await api(D, "POST", "/mentorships", { mentorId: mx, menteeId: c1, mentorName: "Mentor X", menteeName: "Ceren", developmentNeed: "x" });
+  await api(D, "POST", "/match-request", { mentorId: mx, mentorName: "Mentor X", menteeId: d1 });
+
+  const mk = body => api(D, "POST", "/mentee-groups", body);
+  const expect = async (label, body, status, code) => {
+    const r = await mk(body);
+    check(label, r.status === status && r.json?.code === code, `HTTP ${r.status} ${r.json?.code || ""}`);
+  };
+  await expect("group without a programme -> 400", { name: "G0", memberIds: [a1, a2] }, 400, "group_program_required");
+  await expect("group with 1 member -> 400", { name: "G0", programId: PX, memberIds: [a1] }, 400, "group_size");
+  await expect("group with 11 members -> 400", { name: "G0", programId: PX, memberIds: many }, 400, "group_size");
+  await expect("member from another programme -> 400", { name: "G0", programId: PX, memberIds: [a1, b1] }, 400, "member_wrong_program");
+  await expect("member with an individual mentorship -> 409", { name: "G0", programId: PX, memberIds: [a1, c1] }, 409, "member_engaged");
+  await expect("member with a pending request -> 409", { name: "G0", programId: PX, memberIds: [a1, d1] }, 409, "member_engaged");
+  await expect("group in an archived programme -> 400", { name: "G0", programId: PZ, memberIds: [a1, a2] }, 400, "program_archived");
+  await expect("group without a name -> 400", { name: " ", programId: PX, memberIds: [a1, a2] }, 400, "group_name_required");
+
+  const g1r = await mk({ name: "Yeni Yoneticiler", programId: PX, memberIds: [a1, a2] });
+  const G1 = g1r.json?.group;
+  check("creates a group of 2 in its programme", g1r.status === 200 && G1?.programId === PX && G1?.memberIds?.length === 2,
+        `HTTP ${g1r.status}`);
+  const a1rec = (await api(D, "GET", `/mentees/${a1}`)).json;
+  check("a member shows its group", a1rec?.groupId === G1?.id && a1rec?.groupName === "Yeni Yoneticiler");
+  await expect("a mentee can be in only one group -> 409", { name: "G2", programId: PX, memberIds: [a1, a3] }, 409, "member_in_other_group");
+  await expect("group name is unique (any case) -> 400", { name: "yeni yoneticiler", programId: PX, memberIds: [a3, many[3]] }, 400, "group_name_taken");
+
+  const lock = await api(D, "PATCH", `/mentee-groups/${G1.id}`, { programId: PY });
+  check("a group's programme cannot change -> 400", lock.status === 400 && lock.json?.code === "group_program_locked", `HTTP ${lock.status}`);
+  const grow = await api(D, "PATCH", `/mentee-groups/${G1.id}`, { memberIds: [a1, a2, a3] });
+  check("adds a member", grow.status === 200 && grow.json?.group?.memberIds?.length === 3, `HTTP ${grow.status}`);
+  const shrink = await api(D, "PATCH", `/mentee-groups/${G1.id}`, { name: "Yeni Yoneticiler 2026", memberIds: [a1, a3] });
+  const a2rec = (await api(D, "GET", `/mentees/${a2}`)).json;
+  check("removes a member and renames", shrink.status === 200 && shrink.json?.group?.name === "Yeni Yoneticiler 2026" && a2rec?.groupId === "",
+        `HTTP ${shrink.status}`);
+
+  // A group member is never matched alone (every route)
+  const alone = [
+    ["POST", "/match-request", { mentorId: mx, mentorName: "Mentor X", menteeId: a1 }],
+    ["POST", "/mentorships", { mentorId: mx, menteeId: a1, mentorName: "Mentor X", menteeName: "Uye1" }],
+    ["POST", "/match", { menteeId: a1, language: "en" }]
+  ];
+  for (const [m, u, body] of alone) {
+    const r = await api(D, m, u, body);
+    check(`group member alone: ${m} ${u} -> 409`, r.status === 409 && r.json?.code === "mentee_in_group", `HTTP ${r.status} ${r.json?.code || ""}`);
+  }
+  const cand = (await api(D, "GET", `/matching-candidates?programId=${PX}`)).json;
+  const a1c = (cand?.mentees || []).find(m => m.id === a1);
+  check("matching list marks a group member as in a group", a1c?.engagement?.state === "in_group" && a1c?.engagement?.engaged === true,
+        JSON.stringify(a1c?.engagement));
+  const move = await api(D, "PUT", `/mentees/${a1}/program?force=true`, { programId: PY });
+  check("a group member cannot change programme (even with force) -> 409",
+        move.status === 409 && move.json?.code === "mentee_in_group", `HTTP ${move.status}`);
+
+  const gc = (await api(D, "GET", `/mentee-groups/candidates?programId=${PX}`)).json;
+  const st = id => (gc?.mentees || []).find(m => m.id === id);
+  check("group candidates: only the programme's mentees, with their state",
+        st(a1)?.groupId === G1.id && st(c1)?.state === "matched" && st(d1)?.state === "pending" && !st(b1),
+        `${gc?.mentees?.length} listed`);
+
+  // Organisation B cannot touch D's groups
+  const listB = (await api(B, "GET", "/mentee-groups")).json || [];
+  check("B: does not see D's groups", !listB.some(g => g.id === G1.id));
+  for (const [m, u, body] of [
+    ["PATCH",  `/mentee-groups/${G1.id}`, { name: "CHANGED BY B" }],
+    ["DELETE", `/mentee-groups/${G1.id}`],
+    ["POST",   "/mentee-groups", { name: "B steals", memberIds: [a1, a3] }]
+  ]) {
+    const r = await api(B, m, u, body);
+    check(`B: ${m} ${u.replace(/[0-9a-f]{24}/g, ":id")} on D's records -> 404`, r.status === 404, `HTTP ${r.status}`);
+  }
+  const bm1 = await mentee(B, "Bm1", ""), bm2 = await mentee(B, "Bm2", "");
+  const steal = await api(D, "POST", "/mentee-groups", { name: "D takes B", programId: PX, memberIds: [a2, bm1] });
+  check("D cannot put B's mentee in a group -> 404", steal.status === 404, `HTTP ${steal.status}`);
+
+  // Organisation without programmes
+  const bg = await api(B, "POST", "/mentee-groups", { name: "B group", programId: PX, memberIds: [bm1, bm2] });
+  check("no programmes: group without a programme (a sent programme is ignored)",
+        bg.status === 200 && bg.json?.group?.programId === "", `HTTP ${bg.status}`);
+
+  // KVKK: deleting a member removes the membership
+  await api(D, "DELETE", `/mentees/${a3}`);
+  const afterDel = (await api(D, "GET", "/mentee-groups")).json.find(g => g.id === G1.id);
+  check("deleting a mentee removes them from the group", afterDel?.memberIds?.length === 1 && afterDel.memberIds[0] === a1,
+        `${afterDel?.memberIds?.length} member(s)`);
+
+  // Deleting the group frees the members
+  const del = await api(D, "DELETE", `/mentee-groups/${G1.id}`);
+  const free = await api(D, "POST", "/match-request", { mentorId: mx, mentorName: "Mentor X", menteeId: a1 });
+  check("deleting the group frees its members", del.status === 200 && free.status === 200, `HTTP ${del.status} / ${free.status}`);
 }
 
 main().catch(err => {

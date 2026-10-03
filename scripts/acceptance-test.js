@@ -58,7 +58,7 @@ async function main() {
   const staffApis = [
     "/mentors", "/mentees", "/mentorships", "/match-requests",
     "/matching-candidates", "/email/status", "/invite-link",
-    "/email/history/x", "/meeting-tracking", "/programs"
+    "/email/history/x", "/meeting-tracking", "/programs", "/mentee-groups"
   ];
   for (const ep of staffApis) {
     const r = await get(ep);
@@ -104,7 +104,7 @@ async function main() {
       if (HTTPS) check("session cookie is Secure (https)", /;\s*secure/i.test(raw));
 
       const C = { Cookie: cookie };
-      for (const ep of ["/mentors", "/mentees", "/mentorships", "/match-requests", "/programs"]) {
+      for (const ep of ["/mentors", "/mentees", "/mentorships", "/match-requests", "/programs", "/mentee-groups"]) {
         const r = await get(ep, C);
         check(`own list ${ep}`, r.status === 200, `HTTP ${r.status}`);
       }

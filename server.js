@@ -137,6 +137,7 @@ app.use(require("./routes/companies"));
 app.use(require("./routes/backups"));   // yedek indirme (yalnizca super admin)
 app.use(require("./routes/people"));
 app.use(require("./routes/programs"));   // mentoring programmes
+app.use(require("./routes/groups"));     // mentee groups
 app.use(require("./routes/matching"));
 app.use(require("./routes/mentorships"));
 app.use(require("./routes/email"));

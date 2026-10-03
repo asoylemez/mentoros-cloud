@@ -179,6 +179,50 @@ function run() {
   }
 
   migratePrograms();
+  migrateMenteeGroups();
+}
+
+/**
+ * MENTEE GROUPS  (one mentor with a group of mentees - stage 3a: the groups)
+ *
+ *   mentee_groups         a named group, inside one programme ('' when the
+ *                         organisation has no programmes). The programme
+ *                         cannot be changed after the group is created.
+ *   mentee_group_members  who is in it. A mentee is in at most ONE group
+ *                         (UNIQUE mentee_id). Deleting a mentee or a group
+ *                         removes the rows (ON DELETE CASCADE).
+ */
+function migrateMenteeGroups() {
+  const has = db.prepare(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='mentee_groups'`
+  ).get();
+  if (has) return;
+
+  db.exec(`
+    CREATE TABLE mentee_groups (
+      id          TEXT PRIMARY KEY,
+      company_id  TEXT NOT NULL,
+      program_id  TEXT NOT NULL DEFAULT '',
+      name        TEXT NOT NULL,
+      created_at  TEXT NOT NULL,
+      updated_at  TEXT NOT NULL,
+      FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE
+    );
+    CREATE INDEX idx_mentee_groups_company ON mentee_groups(company_id);
+    CREATE UNIQUE INDEX idx_mentee_groups_name ON mentee_groups(company_id, name COLLATE NOCASE);
+
+    CREATE TABLE mentee_group_members (
+      group_id    TEXT NOT NULL,
+      mentee_id   TEXT NOT NULL,
+      company_id  TEXT NOT NULL,
+      added_at    TEXT NOT NULL,
+      PRIMARY KEY (group_id, mentee_id),
+      UNIQUE (mentee_id),
+      FOREIGN KEY (group_id)  REFERENCES mentee_groups(id) ON DELETE CASCADE,
+      FOREIGN KEY (mentee_id) REFERENCES mentees(id)       ON DELETE CASCADE
+    );
+  `);
+  console.log("  migration: mentee group tables added");
 }
 
 /**

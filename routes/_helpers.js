@@ -117,6 +117,23 @@ function ownRecord(req, res, record, notFoundMessage = "Not found") {
 }
 
 /**
+ * A mentee in a group is matched together with the group, never alone.
+ * Writes 409 and returns true when `mentee` is in a group.
+ */
+function refuseGroupMember(res, mentee) {
+  if (!mentee || !mentee.groupId) return false;
+  res.status(409).json({
+    error: `This mentee is in the group "${mentee.groupName}" and is matched together with the group, not on their own.`,
+    action: "Take the mentee out of the group in the Mentee Registry first.",
+    code: "mentee_in_group",
+    state: "in_group",
+    groupId: mentee.groupId,
+    groupName: mentee.groupName
+  });
+  return true;
+}
+
+/**
  * Async route'lardaki hatalari yakalar.
  * Bu olmadan await icindeki bir hata Express 5'te sessizce dusebilir.
  */
@@ -125,4 +142,4 @@ function wrap(handler) {
     Promise.resolve(handler(req, res, next)).catch(next);
 }
 
-module.exports = { requireApiKey, getCompanyId, requireCompany, ownRecord, wrap };
+module.exports = { requireApiKey, getCompanyId, requireCompany, ownRecord, refuseGroupMember, wrap };

@@ -4,7 +4,7 @@ const config = require("../config");
 const { mentors, mentees, mentorships, meetings, meetingDuration } = require("../db/repos");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
-const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, wrap } = require("./_helpers");
 const { programForMatch } = require("../lib/programRules");
 
 const router = express.Router();
@@ -43,6 +43,7 @@ router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
   if (!mentor) return;
   const mentee = ownRecord(req, res, mentees.get(menteeId), "Mentee not found");
   if (!mentee) return;
+  if (refuseGroupMember(res, mentee)) return;
 
   // Programme rule; the programme is taken from the mentee, never from the body.
   const rule = programForMatch(res, companyId, mentee, mentor);

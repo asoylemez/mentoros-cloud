@@ -29,6 +29,10 @@ const path = require("path");
 // .env yuklensin (DB_PATH icin)
 try { require("dotenv").config(); } catch { /* dotenv yoksa sorun degil */ }
 
+// Same schema as the server (tables and columns added by migrations),
+// so the script also works on a database the server has not opened yet.
+require("../db/migrate").run();
+
 const { companies, mentors, mentees } = require("../db/repos");
 
 // --- Argumanlar -------------------------------------------------------

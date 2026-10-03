@@ -4,7 +4,7 @@ const config = require("../config");
 const { mentors, mentees, mentorships, matchRequests, programs } = require("../db/repos");
 const { rankMentors } = require("../ai/matching");
 const { composeMenteeNeed, shortNeedSummary } = require("../lib/menteeNeed");
-const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, wrap } = require("./_helpers");
 const { programForMatch } = require("../lib/programRules");
 
 const router = express.Router();
@@ -138,6 +138,7 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
   if (req.body.menteeId) {
     record = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
     if (!record) return;
+    if (refuseGroupMember(res, record)) return;
 
     const need = composeMenteeNeed(record, language);
 
@@ -277,6 +278,8 @@ router.post("/match-request", requireApiKey, wrap(async (req, res) => {
   if (!rule) return;
 
   if (menteeRecord) {
+    if (refuseGroupMember(res, menteeRecord)) return;
+
     const engagement = mentees.engagement(companyId, menteeRecord.id);
 
     if (engagement.engaged) {

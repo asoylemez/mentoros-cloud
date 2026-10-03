@@ -818,6 +818,18 @@ const mentees = {
       };
     }
 
+    // A mentee in a group is matched together with the group, never on
+    // their own (the rule works both ways: see menteeGroups.checkMembers).
+    const group = db.prepare(`
+      SELECT g.id, g.name FROM mentee_group_members gm
+        JOIN mentee_groups g ON g.id = gm.group_id
+       WHERE gm.mentee_id = ? AND g.company_id = ?
+    `).get(menteeId, cid);
+
+    if (group) {
+      return { engaged: true, state: "in_group", groupId: group.id, groupName: group.name };
+    }
+
     return { engaged: false, state: "available" };
   },
 
@@ -900,6 +912,14 @@ function hydrateMentee(row) {
   m.formats = parseArray(m.formats);
   m.preferredMentorProfile = parseArray(m.preferredMentorProfile);
   m.kvkkConsent = !!m.kvkkConsent;
+  // The group this mentee is in ('' = none; at most one group).
+  const g = db.prepare(`
+    SELECT g.id, g.name FROM mentee_group_members gm
+      JOIN mentee_groups g ON g.id = gm.group_id
+     WHERE gm.mentee_id = ?
+  `).get(m.id);
+  m.groupId = g ? g.id : "";
+  m.groupName = g ? g.name : "";
   return m;
 }
 
@@ -1682,6 +1702,137 @@ const programs = {
   }
 };
 
+// =====================================================================
+// MENTEE GROUPS  (stage 3a: the groups themselves)
+//
+// A group is matched with ONE mentor later (stage 3b). Rules:
+//   - 2 to 10 members; a mentee is in at most one group
+//   - a mentee with an individual mentorship or a pending request cannot
+//     join a group, and a group member cannot be matched on their own
+//   - with programmes: the group belongs to one programme, every member
+//     is in that programme; the group's programme never changes
+// =====================================================================
+
+const GROUP_MIN = 2;
+const GROUP_MAX = 10;
+
+function hydrateGroup(row) {
+  const g = camelize(row);
+  if (!g) return null;
+  g.members = db.prepare(`
+    SELECT me.id, me.full_name AS fullName, me.email, me.role, me.department,
+           me.status, me.program_id AS programId
+      FROM mentee_group_members gm
+      JOIN mentees me ON me.id = gm.mentee_id
+     WHERE gm.group_id = ?
+     ORDER BY me.full_name COLLATE NOCASE
+  `).all(g.id);
+  g.memberIds = g.members.map(x => x.id);
+  return g;
+}
+
+const menteeGroups = {
+  MIN: GROUP_MIN,
+  MAX: GROUP_MAX,
+
+  get(id) {
+    return hydrateGroup(db.prepare(`SELECT * FROM mentee_groups WHERE id = ?`).get(id));
+  },
+
+  listByCompany(companyId) {
+    return db.prepare(`SELECT * FROM mentee_groups WHERE company_id = ? ORDER BY name COLLATE NOCASE`)
+      .all(slugify(companyId)).map(hydrateGroup);
+  },
+
+  /** Name check. Returns { error, code } or { name }. */
+  checkName(companyId, raw, exceptId = "") {
+    const name = String(raw || "").trim();
+    if (!name) return { error: "The group name is required.", code: "group_name_required" };
+    if (name.length > 80) return { error: "The group name can be at most 80 characters.", code: "group_name_too_long" };
+    const clash = db.prepare(`
+      SELECT id FROM mentee_groups WHERE company_id = ? AND name = ? COLLATE NOCASE AND id != ?
+    `).get(slugify(companyId), name, exceptId);
+    if (clash) return { error: "A group with this name already exists.", code: "group_name_taken" };
+    return { name };
+  },
+
+  /**
+   * Checks a list of mentees for a group. `mentees` are hydrated records
+   * the route has ALREADY confirmed belong to the organisation.
+   * Returns { error, code, ... } or { ok: true }.
+   */
+  checkMembers(companyId, group, list, programId) {
+    if (list.length < GROUP_MIN || list.length > GROUP_MAX) {
+      return { error: `A group has ${GROUP_MIN} to ${GROUP_MAX} members.`, code: "group_size",
+               min: GROUP_MIN, max: GROUP_MAX };
+    }
+    const wrongProgramme = list.filter(m => (m.programId || "") !== (programId || ""));
+    if (wrongProgramme.length) {
+      return { error: "Every member must be in the group's programme.", code: "member_wrong_program",
+               mentees: wrongProgramme.map(m => m.fullName) };
+    }
+    const inOther = list.filter(m => m.groupId && (!group || m.groupId !== group.id));
+    if (inOther.length) {
+      return { error: "A mentee can be in only one group.", code: "member_in_other_group",
+               mentees: inOther.map(m => `${m.fullName} (${m.groupName})`) };
+    }
+    const busy = list.filter(m => {
+      const e = mentees.engagement(companyId, m.id);
+      return e.state === "matched" || e.state === "pending";
+    });
+    if (busy.length) {
+      return { error: "Mentees with an individual mentorship or a pending match request cannot join a group.",
+               code: "member_engaged", mentees: busy.map(m => m.fullName) };
+    }
+    return { ok: true };
+  },
+
+  create(companyId, { name, programId, memberIds }) {
+    const id = newId();
+    const ts = now();
+    const cid = slugify(companyId);
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO mentee_groups (id, company_id, program_id, name, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(id, cid, programId || "", name, ts, ts);
+      const add = db.prepare(`
+        INSERT INTO mentee_group_members (group_id, mentee_id, company_id, added_at) VALUES (?, ?, ?, ?)
+      `);
+      for (const mid of memberIds) add.run(id, mid, cid, ts);
+    })();
+    return menteeGroups.get(id);
+  },
+
+  /** Renames and / or replaces the members (the programme stays). */
+  update(id, { name, memberIds }) {
+    const group = menteeGroups.get(id);
+    const ts = now();
+    db.transaction(() => {
+      if (name !== undefined) {
+        db.prepare(`UPDATE mentee_groups SET name = ?, updated_at = ? WHERE id = ?`).run(name, ts, id);
+      }
+      if (memberIds !== undefined) {
+        const keep = new Set(memberIds);
+        for (const mid of group.memberIds) {
+          if (!keep.has(mid)) db.prepare(`DELETE FROM mentee_group_members WHERE group_id = ? AND mentee_id = ?`).run(id, mid);
+        }
+        const add = db.prepare(`
+          INSERT OR IGNORE INTO mentee_group_members (group_id, mentee_id, company_id, added_at) VALUES (?, ?, ?, ?)
+        `);
+        for (const mid of keep) add.run(id, mid, group.companyId, ts);
+        db.prepare(`UPDATE mentee_groups SET updated_at = ? WHERE id = ?`).run(ts, id);
+      }
+    })();
+    return menteeGroups.get(id);
+  },
+
+  /** Members are kept as mentees; only the group and its membership go. */
+  remove(id) {
+    db.prepare(`DELETE FROM mentee_groups WHERE id = ?`).run(id);   // members: ON DELETE CASCADE
+  }
+};
+
 module.exports = {
   companies,
   mentors,
@@ -1692,5 +1843,6 @@ module.exports = {
   meetingDuration,
   surveys,
   programs,
-  programStatus
+  programStatus,
+  menteeGroups
 };

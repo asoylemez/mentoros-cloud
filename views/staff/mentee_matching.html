@@ -712,6 +712,8 @@
         candidatesFailed: "Could not load mentees and mentors.",
         menteeEngagedMatched: "Already matched with",
         menteeEngagedPending: "Approval pending with",
+        menteeInGroup: "In group:",
+        err_mentee_in_group: "This mentee is in a group and is matched together with the group, not on their own.",
         menteeEngagedNote: "A mentee can only work with one mentor at a time. Complete or cancel the existing mentorship first.",
         menteeEngagedNotePending: "A mentee can only have one open request at a time. Resolve or delete the pending request first from the HR Dashboard.",
         developmentNeedSummary: "Development need",
@@ -871,6 +873,8 @@
         candidatesFailed: "Mentee ve mentor listesi yüklenemedi.",
         menteeEngagedMatched: "Zaten eşleşti:",
         menteeEngagedPending: "Onay bekliyor:",
+        menteeInGroup: "Grupta:",
+        err_mentee_in_group: "Bu mentee bir grupta; tek başına değil, grubuyla birlikte eşleştirilir.",
         menteeEngagedNote: "Bir mentee aynı anda yalnızca bir mentorle çalışabilir. Önce mevcut mentorluğu tamamlayın veya iptal edin.",
         menteeEngagedNotePending: "Bir mentee'nin aynı anda yalnızca bir açık talebi olabilir. Önce İK Panosundan bekleyen talebi sonuçlandırın veya silin.",
         developmentNeedSummary: "Gelişim ihtiyacı",
@@ -1193,6 +1197,8 @@
         const suffix = !busy ? "" :
           engagement.state === "matched"
             ? ` — ${t("menteeEngagedMatched")} ${engagement.mentorName || "-"}`
+          : engagement.state === "in_group"
+            ? ` — ${t("menteeInGroup")} ${engagement.groupName || "-"}`
             : ` — ${t("menteeEngagedPending")} ${engagement.mentorName || "-"}`;
 
         const label = [
