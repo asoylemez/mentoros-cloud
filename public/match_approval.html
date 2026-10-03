@@ -304,6 +304,7 @@ const translations = {
     loading: "Loading...",
     mentor: "Mentor",
     mentee: "Mentee",
+    programme: "Programme",
     mentorStatus: "Mentor Status",
 
     rejectTitle: "Why are you declining?",
@@ -350,6 +351,7 @@ const translations = {
     loading: "Yükleniyor...",
     mentor: "Mentor",
     mentee: "Mentee",
+    programme: "Program",
     mentorStatus: "Mentor Onay Durumu",
 
     rejectTitle: "Neden reddediyorsunuz?",
@@ -442,6 +444,13 @@ async function load() {
 
 function renderApproval(data) {
   document.getElementById("content").innerHTML = `
+    ${data.programName ? `
+      <div class="row">
+        <span class="label">${escapeHtml(t("programme"))}</span>
+        <span class="value">${escapeHtml(data.programName)}</span>
+      </div>
+    ` : ""}
+
     <div class="row">
       <span class="label">${escapeHtml(t("mentor"))}</span>
       <span class="value">${escapeHtml(data.mentorName || "-")}</span>

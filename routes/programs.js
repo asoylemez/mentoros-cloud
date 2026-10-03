@@ -105,13 +105,30 @@ function checkProgramIds(req, res, ids, alreadyIn = []) {
   return unique;
 }
 
-/** A mentor's programmes, replaced as a whole: { programIds: [...] } */
+/** A mentor's programmes, replaced as a whole: { programIds: [...] } (?force=true after a warning) */
 router.put("/mentors/:id/programs", requireApiKey, wrap(async (req, res) => {
   const mentor = ownRecord(req, res, mentors.get(req.params.id), "Mentor not found");
   if (!mentor) return;
 
   const ids = checkProgramIds(req, res, (req.body || {}).programIds, mentor.programIds);
   if (!ids) return;
+
+  // Taking a mentor out of a programme where they have ACTIVE mentorships
+  // asks first (409, then ?force=true). The mentorships are not touched:
+  // they stay in their programme and keep running.
+  if (req.query.force !== "true") {
+    const removed = (mentor.programIds || []).filter(id => !ids.includes(id));
+    const busy = removed
+      .map(id => ({ program: programs.get(id), count: programs.activeMentorshipsOfMentor(mentor.id, id) }))
+      .filter(x => x.program && x.count > 0);
+    if (busy.length) {
+      return res.status(409).json({
+        error: "This mentor has active mentorships in a programme being removed. They keep running in that programme.",
+        code: "mentor_has_mentorships_in_program",
+        programs: busy.map(x => ({ id: x.program.id, name: x.program.name, activeMentorships: x.count }))
+      });
+    }
+  }
 
   const updated = programs.setMentorPrograms(mentor.companyId, mentor.id, ids);
   res.json({ success: true, mentor: updated });

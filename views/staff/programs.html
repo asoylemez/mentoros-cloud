@@ -241,7 +241,7 @@
       Henüz program yok. "Yeni program" ile ilk programınızı oluşturun.
     </div>
     <div class="hint" data-i18n="howTo">
-      Mentorlar birden fazla programda olabilir; bir mentee tek programda olur. Atamayı Mentor Kayıtları ve Mentee Kayıtları ekranlarından yapın.
+      Mentorlar birden fazla programda olabilir; bir mentee tek programda olur. Atamayı Mentor Kayıtları ve Mentee Kayıtları ekranlarından yapın. Eşleştirme program içinde yapılır; sona ermiş veya arşivlenmiş programda yeni eşleşme yapılamaz.
     </div>
   </div>
 </div>
@@ -292,14 +292,14 @@ const T = {
     thProgram: "Program", thDates: "Tarihler", thStatus: "Durum",
     thMentors: "Mentor", thMentees: "Mentee", thActive: "Aktif ilişki",
     empty: "Henüz program yok. \"Yeni program\" ile ilk programınızı oluşturun.",
-    howTo: "Mentorlar birden fazla programda olabilir; bir mentee tek programda olur. Atamayı Mentor Kayıtları ve Mentee Kayıtları ekranlarından yapın.",
+    howTo: "Mentorlar birden fazla programda olabilir; bir mentee tek programda olur. Atamayı Mentor Kayıtları ve Mentee Kayıtları ekranlarından yapın. Eşleştirme program içinde yapılır; sona ermiş veya arşivlenmiş programda yeni eşleşme yapılamaz.",
     st_planned: "Planlanan", st_active: "Devam ediyor", st_ended: "Sona erdi", st_archived: "Arşivlendi",
     edit: "Düzenle", archive: "Arşivle", unarchive: "Arşivden çıkar", del: "Sil",
     newTitle: "Yeni program", editTitle: "Programı düzenle",
     fName: "Program adı *", fStart: "Başlangıç tarihi *", fEnd: "Bitiş tarihi *", fDescription: "Açıklama",
     cancel: "Vazgeç", save: "Kaydet", saving: "Kaydediliyor…", saved: "Kaydedildi ✓", deleted: "Silindi ✓",
     archived: "Arşivlendi ✓", unarchived: "Arşivden çıkarıldı ✓",
-    archiveConfirm: "\"{name}\" arşivlensin mi?\n\nArşivlenen program kimseye yeni atanamaz. Mevcut atamalar ve kayıtlar korunur; istediğinizde arşivden çıkarabilirsiniz.",
+    archiveConfirm: "\"{name}\" arşivlensin mi?\n\nArşivlenen programda yeni eşleşme yapılamaz ve program kimseye yeni atanamaz. Mevcut atamalar, bekleyen talepler ve mentorluk ilişkileri korunur; istediğinizde arşivden çıkarabilirsiniz.",
     deleteConfirm: "\"{name}\" silinsin mi?\n\nKişiler silinmez: mentorların bu programla bağı kalkar, bu programdaki mentee'ler \"programa atanmamış\" olur.",
     inUse: "Bu programda eşleşme talebi veya mentorluk ilişkisi var; silinemez, yalnızca arşivlenebilir.\n\nŞimdi arşivlensin mi?",
     err_name_required: "Program adı zorunlu.", err_name_taken: "Bu adda bir program zaten var.",
@@ -314,14 +314,14 @@ const T = {
     thProgram: "Programme", thDates: "Dates", thStatus: "Status",
     thMentors: "Mentors", thMentees: "Mentees", thActive: "Active mentorships",
     empty: "No programmes yet. Create your first one with \"New programme\".",
-    howTo: "A mentor can be in several programmes; a mentee is in one. Assign people from the Mentor Registry and the Mentee Registry.",
+    howTo: "A mentor can be in several programmes; a mentee is in one. Assign people from the Mentor Registry and the Mentee Registry. Matching happens inside a programme; no new matches can be made in an ended or archived programme.",
     st_planned: "Planned", st_active: "Running", st_ended: "Ended", st_archived: "Archived",
     edit: "Edit", archive: "Archive", unarchive: "Unarchive", del: "Delete",
     newTitle: "New programme", editTitle: "Edit programme",
     fName: "Programme name *", fStart: "Start date *", fEnd: "End date *", fDescription: "Description",
     cancel: "Cancel", save: "Save", saving: "Saving…", saved: "Saved ✓", deleted: "Deleted ✓",
     archived: "Archived ✓", unarchived: "Unarchived ✓",
-    archiveConfirm: "Archive \"{name}\"?\n\nAn archived programme cannot be newly assigned to anyone. Existing assignments and records are kept; you can unarchive it at any time.",
+    archiveConfirm: "Archive \"{name}\"?\n\nNo new matches can be made in an archived programme and it cannot be newly assigned to anyone. Existing assignments, pending requests and mentorships are kept; you can unarchive it at any time.",
     deleteConfirm: "Delete \"{name}\"?\n\nNo person is deleted: mentors lose this programme, mentees in it become \"not assigned\".",
     inUse: "This programme has match requests or mentorships, so it cannot be deleted - only archived.\n\nArchive it now?",
     err_name_required: "The programme name is required.", err_name_taken: "A programme with this name already exists.",

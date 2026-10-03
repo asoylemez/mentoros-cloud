@@ -684,6 +684,7 @@
                 <option value="tr">Türkçe</option>
               </select>
             </div>
+            <div id="programBadge" class="badge" style="display:none; background:#e0e7ff; color:#3730a3;"></div>
             <div id="statusBadge" class="badge">Active</div>
             <div id="closingBadge" class="badge" style="display:none; background:#8a5a1c; color:#fff;"></div>
           </div>
@@ -926,6 +927,7 @@
         addMeetingNote: "Add Meeting Note",
         meetingDateRequired: "Meeting Date *",
         meetingDuration: "Meeting duration (hh:mm) *",
+        programme: "Programme",
         meetingDurationHelp: "Hours and minutes, e.g. 01:20 = 1 hour 20 minutes.",
         durationInvalid: "Enter the meeting duration as hours:minutes, e.g. 01:20 (between 00:01 and 12:00).",
         hoursShort: "h",
@@ -1017,6 +1019,7 @@
         addMeetingNote: "Toplantı Notu Ekle",
         meetingDateRequired: "Toplantı Tarihi *",
         meetingDuration: "Toplantı süresi (ss:dd) *",
+        programme: "Program",
         meetingDurationHelp: "Saat ve dakika, örn. 01:20 = 1 saat 20 dakika.",
         durationInvalid: "Toplantı süresini saat:dakika olarak girin, örn. 01:20 (00:01 ile 12:00 arası).",
         hoursShort: "sa",
@@ -1476,6 +1479,11 @@
       document.getElementById("menteeEmail").textContent = data.menteeEmail || "-";
 
       document.getElementById("statusBadge").textContent = formatStatus(data.status || "active");
+
+      // The mentoring programme this workspace belongs to (if any).
+      const programBadge = document.getElementById("programBadge");
+      programBadge.textContent = data.programName ? `${t("programme")}: ${data.programName}` : "";
+      programBadge.style.display = data.programName ? "" : "none";
 
       // Kapanis tarihi (varsa) baslikta gorunur. Tarih gecse bile sayfa
       // erisilebilir kalir; rozet sadece bilgilendirir.

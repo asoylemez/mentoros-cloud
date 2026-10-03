@@ -5,6 +5,7 @@ const { mentors, mentees, mentorships, meetings, meetingDuration } = require("..
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
 const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
+const { programForMatch } = require("../lib/programRules");
 
 const router = express.Router();
 
@@ -38,10 +39,16 @@ router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
   }
 
   // Both people must belong to the signed-in company.
-  if (!ownRecord(req, res, mentors.get(mentorId), "Mentor not found")) return;
-  if (!ownRecord(req, res, mentees.get(menteeId), "Mentee not found")) return;
+  const mentor = ownRecord(req, res, mentors.get(mentorId), "Mentor not found");
+  if (!mentor) return;
+  const mentee = ownRecord(req, res, mentees.get(menteeId), "Mentee not found");
+  if (!mentee) return;
 
-  const { created, mentorship } = mentorships.create(companyId, req.body);
+  // Programme rule; the programme is taken from the mentee, never from the body.
+  const rule = programForMatch(res, companyId, mentee, mentor);
+  if (!rule) return;
+
+  const { created, mentorship } = mentorships.create(companyId, { ...req.body, programId: rule.programId });
 
   const withLink = withWorkspaceLink(mentorship);
 
@@ -351,7 +358,11 @@ router.get("/meeting-tracking", requireApiKey, wrap(async (req, res) => {
   const today = Date.parse(todayStr + "T00:00:00Z");
   const upcoming = d => !!d && String(d).slice(0, 10) >= todayStr;
 
-  const rows = mentorships.listByCompany(companyId).map(ms => {
+  // ?programId=<id> | none (no programme) | all (default)
+  const pf = String(req.query.programId || "all");
+  const inFilter = ms => pf === "all" || (pf === "none" ? !ms.programId : ms.programId === pf);
+
+  const rows = mentorships.listByCompany(companyId).filter(inFilter).map(ms => {
     const items = meetings.listByMentorship(ms.id).map(m => ({
       date: m.meetingDate,
       durationMinutes: m.durationMinutes == null ? null : Number(m.durationMinutes)
@@ -363,6 +374,7 @@ router.get("/meeting-tracking", requireApiKey, wrap(async (req, res) => {
 
     return {
       id: ms.id,
+      programId: ms.programId || "",
       mentorName: ms.mentorName || "",
       menteeName: ms.menteeName || "",
       status: ms.status,

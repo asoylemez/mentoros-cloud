@@ -832,8 +832,25 @@ async function sendInvite({ to, companyName, companyId, url, lang = "tr", form }
   });
 }
 
+/**
+ * "Programme: X" line at the top of a mail, when the match belongs to a
+ * mentoring programme. HR typed the name, so it is escaped.
+ */
+function programLine(programId, lang) {
+  if (!programId) return "";
+  let row;
+  try { row = db.prepare(`SELECT name FROM programs WHERE id = ?`).get(programId); } catch { row = null; }
+  if (!row) return "";
+  const name = String(row.name).replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return lang === "en"
+    ? `<div style="margin-bottom:14px">This match is part of the <b>${name}</b> programme.</div>`
+    : `<div style="margin-bottom:14px">Bu eşleşme <b>${name}</b> programı kapsamındadır.</div>`;
+}
+
 async function sendApproval({ to, type, request, url, lang = "tr" }) {
   const t = T[lang] || T.tr;
+  const pl = programLine(request.programId, lang);
 
   // Yonetici onayi: mentee'nin yoneticisi. Onay surecinin ILK adimi.
   if (type === "manager") {
@@ -842,7 +859,7 @@ async function sendApproval({ to, type, request, url, lang = "tr" }) {
       subject: t.managerSubject,
       html: layout({
         title: t.managerTitle,
-        body: t.managerBody(request),      // mentor adi, puan, gerekce dahil
+        body: pl + t.managerBody(request),      // mentor adi, puan, gerekce dahil
         button: t.managerButton,
         url,
         lang
@@ -860,9 +877,9 @@ async function sendApproval({ to, type, request, url, lang = "tr" }) {
     subject: t.approvalSubject,
     html: layout({
       title: isMentor ? t.approvalTitleMentor : t.approvalTitleMentee,
-      body: isMentor
+      body: pl + (isMentor
         ? t.approvalBodyMentor(request)
-        : t.approvalBodyMentee(request),
+        : t.approvalBodyMentee(request)),
       button: t.approvalButton,
       url,
       lang
@@ -881,7 +898,7 @@ async function sendWorkspace({ to, otherName, mentorship, url, lang = "tr" }) {
     subject: t.workspaceSubject,
     html: layout({
       title: t.workspaceTitle,
-      body: t.workspaceBody(otherName || "-"),
+      body: programLine(mentorship.programId, lang) + t.workspaceBody(otherName || "-"),
       button: t.workspaceButton,
       url,
       lang

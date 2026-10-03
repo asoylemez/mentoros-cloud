@@ -1,10 +1,11 @@
 const express = require("express");
 
 const config = require("../config");
-const { mentors, mentees, mentorships, matchRequests } = require("../db/repos");
+const { mentors, mentees, mentorships, matchRequests, programs } = require("../db/repos");
 const { rankMentors } = require("../ai/matching");
 const { composeMenteeNeed, shortNeedSummary } = require("../lib/menteeNeed");
 const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
+const { programForMatch } = require("../lib/programRules");
 
 const router = express.Router();
 
@@ -24,12 +25,32 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
   if (!companyId) return;
   const language = req.query.language === "en" ? "en" : "tr";
 
+  // PROGRAMMES: an organisation that works with programmes matches inside
+  // ONE programme at a time - ?programId=... is required, and only that
+  // programme's mentees and mentors are listed.
+  let program = null;
+  if (programs.companyHasPrograms(companyId)) {
+    if (!req.query.programId) {
+      return res.status(400).json({ error: "Choose a programme first.", code: "program_required" });
+    }
+    program = ownRecord(req, res, programs.get(String(req.query.programId)), "Programme not found");
+    if (!program) return;
+    if (!programs.isOpen(program)) {
+      return res.status(400).json({
+        error: `The programme "${program.name}" is closed: no new matches can be made in it.`,
+        code: "program_closed", programStatus: program.status
+      });
+    }
+  }
+
   // Mentee listesi. Isim/e-posta BURADA kalir (IK ekrani); AI'a gitmez.
   //
   // Alanlar TEK TEK gonderilir (tek bir metin blogu yerine): boylece
   // arayuz mentee'yi de mentor kartlariyla ayni bolumlu duzende
   // gosterebilir. AI'a giden metin yine SUNUCUDA derlenir.
-  const menteeList = mentees.listSelectable(companyId).map(m => ({
+  const menteeList = mentees.listSelectable(companyId)
+    .filter(m => !program || m.programId === program.id)
+    .map(m => ({
     id: m.id,
     fullName: m.fullName,
     email: m.email,
@@ -63,7 +84,10 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
   // Manuel eslestirme icin aktif mentorler. Kapasitesi dolu olanlar da
   // listelenir ama ISARETLENIR - karari IK verir, yazilim mentoru
   // sessizce gizlemez.
-  const mentorList = mentors.listActiveByCompany(companyId).map(m => ({
+  const mentorPool = program
+    ? mentors.listActiveInProgram(companyId, program.id)
+    : mentors.listActiveByCompany(companyId);
+  const mentorList = mentorPool.map(m => ({
     id: m.id,
     fullName: m.fullName,
     email: m.email,
@@ -82,7 +106,14 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
     mentorProfile: m.mentorProfile || ""
   }));
 
-  res.json({ mentees: menteeList, mentors: mentorList });
+  res.json({
+    program: program
+      ? { id: program.id, name: program.name, status: program.status,
+          startDate: program.startDate, endDate: program.endDate }
+      : null,
+    mentees: menteeList,
+    mentors: mentorList
+  });
 }));
 
 // =====================================================================
@@ -102,9 +133,10 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
   // ve derleme mantigi tek noktada kalsin diye.
   // ------------------------------------------------------------------
   let mentee;
+  let record = null;
 
   if (req.body.menteeId) {
-    const record = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
+    record = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
     if (!record) return;
 
     const need = composeMenteeNeed(record, language);
@@ -145,16 +177,25 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
     }
   }
 
-  const activeMentors = mentors.listActiveByCompany(companyId);
+  // Programme rule: with programmes, only the mentee's programme's
+  // mentors are candidates (and only for a registered, placed mentee).
+  const rule = programForMatch(res, companyId, record);
+  if (!rule) return;
+
+  const activeMentors = rule.programId
+    ? mentors.listActiveInProgram(companyId, rule.programId)
+    : mentors.listActiveByCompany(companyId);
 
   if (!activeMentors.length) {
     // "Mentor yok" ile "aktif mentor yok" farkli seylerdir.
     // IK'ya hangisi oldugunu SOYLE, tahmin ettirme.
-    const allMentors = mentors.listByCompany(companyId);
+    const allMentors = rule.programId
+      ? mentors.listInProgram(companyId, rule.programId)
+      : mentors.listByCompany(companyId);
 
     let reason;
     if (!allMentors.length) {
-      reason = "no_mentors";          // hic kayit yok
+      reason = rule.programId ? "no_program_mentors" : "no_mentors";   // hic kayit yok
     } else if (allMentors.every(m => m.status !== "active")) {
       reason = "all_inactive";        // hepsi pasif
     } else {
@@ -169,6 +210,7 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
       totalMentors: allMentors.length,
       message: {
         no_mentors: `"${companyId}" firmasinda hic mentor kaydi yok.`,
+        no_program_mentors: `There is no mentor in the programme "${rule.program && rule.program.name}".`,
         all_inactive: `${allMentors.length} mentor var ama hepsi pasif durumda.`,
         all_full: `${allMentors.length} mentor var ama hepsinin kapasitesi dolu.`
       }[reason]
@@ -180,6 +222,7 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
   res.json({
     companyId,
     mentee,
+    programId: rule.programId,
     mentorCount: activeMentors.length,
     recommendations
   });
@@ -216,12 +259,22 @@ router.post("/match-request", requireApiKey, wrap(async (req, res) => {
   // (elle yazilan) mentee'nin kalici bir kimligi olmadigi icin tekilligi
   // dogrulanamaz - orada sorumluluk IK'dadir.
   // ------------------------------------------------------------------
+  // A REGISTERED mentee id must be the company's own (404 otherwise).
+  // An id that matches no record is an unregistered (typed-in) mentee,
+  // whose temporary id the page makes up ("mentee_<time>") - as before.
   let menteeRecord = null;
   if (req.body.menteeId) {
-    // A mentee id that is given must be the company's own (404 otherwise).
-    menteeRecord = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
-    if (!menteeRecord) return;
+    const found = mentees.get(req.body.menteeId);
+    if (found) {
+      menteeRecord = ownRecord(req, res, found, "Mentee not found");
+      if (!menteeRecord) return;
+    }
   }
+
+  // Programme rule (with programmes: registered mentee, open programme,
+  // mentor in that programme). The request remembers the programme.
+  const rule = programForMatch(res, companyId, menteeRecord, mentor);
+  if (!rule) return;
 
   if (menteeRecord) {
     const engagement = mentees.engagement(companyId, menteeRecord.id);
@@ -254,7 +307,7 @@ router.post("/match-request", requireApiKey, wrap(async (req, res) => {
   // Yonetici bilgisi istisnadir: IK ekranda duzenleyebildigi icin
   // gonderilen deger doluysa o kullanilir, bos ise kayittakine dusulur.
   // ------------------------------------------------------------------
-  const payload = { ...req.body };
+  const payload = { ...req.body, programId: rule.programId };
 
   if (menteeRecord) {
     payload.menteeId = menteeRecord.id;
@@ -437,6 +490,7 @@ router.patch("/match-request/:id", requireApiKey, wrap(async (req, res) => {
     }
 
     const { mentorship } = mentorships.create(updated.companyId, {
+      programId: updated.programId || "",
       mentorId: updated.mentorId,
       menteeId: updated.menteeId,
       mentorName: updated.mentorName,

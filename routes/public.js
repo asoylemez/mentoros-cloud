@@ -3,8 +3,14 @@ const express = require("express");
 const config = require("../config");
 const {
   companies, mentors, mentees, mentorships, meetings, matchRequests,
-  meetingDuration
+  meetingDuration, programs
 } = require("../db/repos");
+
+/** Name of the programme a request / mentorship belongs to ('' = none). */
+function programNameOf(programId) {
+  const p = programId ? programs.get(programId) : null;
+  return p ? p.name : "";
+}
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
 const mailer = require("../mail/mailer");
@@ -150,6 +156,7 @@ router.get("/public/approval/:id", wrap(async (req, res) => {
   // Sayfa, yonetici kapisinin durumunu bilmeli ki mentor/mentee'ye
   // "once yoneticinin onayi bekleniyor" diyebilsin.
   safe.managerGateOpen = matchRequests.managerGateOpen(request);
+  safe.programName = programNameOf(request.programId);
 
   res.json(safe);
 }));
@@ -282,6 +289,7 @@ router.patch("/public/approval/:id", wrap(async (req, res) => {
     !updated.mentorshipId
   ) {
     const { mentorship } = mentorships.create(updated.companyId, {
+      programId: updated.programId || "",
       mentorId: updated.mentorId,
       menteeId: updated.menteeId,
       mentorName: updated.mentorName,
@@ -343,6 +351,7 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
 
   // Erisim token'i kendisini geri dondurmez.
   const { accessToken, ...safe } = full;
+  safe.programName = programNameOf(full.programId);
   res.json(safe);
 }));
 

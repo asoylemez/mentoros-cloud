@@ -518,6 +518,7 @@ const T = {
     programAll: "Tüm programlar", programNone: "Programa atanmamış",
     noProgramsYet: "Henüz program yok.", goPrograms: "Programlar sayfasından oluşturun",
     archivedSuffix: "(arşivlendi)",
+    mentorBusyConfirm: "Bu mentorun şu programlarda aktif mentorluk ilişkisi var: {list}.\n\nMentor bu programlardan çıkarılırsa yeni eşleşmelerde aday olmaz; mevcut ilişkiler kurulduğu programda devam eder. Devam edilsin mi?",
     thExpertise: "Uzmanlık",
     thCapacity: "Kapasite",
     thStatus: "Durum",
@@ -610,6 +611,7 @@ const T = {
     programAll: "All programmes", programNone: "Not assigned to a programme",
     noProgramsYet: "No programmes yet.", goPrograms: "Create one on the Programmes page",
     archivedSuffix: "(archived)",
+    mentorBusyConfirm: "This mentor has active mentorships in: {list}.\n\nOnce removed from these programmes the mentor is no longer a candidate for new matches there; the existing mentorships keep running in their programme. Continue?",
     thExpertise: "Expertise",
     thCapacity: "Capacity",
     thStatus: "Status",
@@ -1041,10 +1043,20 @@ $("mSave").onclick = async () => {
       const chosen = [...$("f_programs").querySelectorAll("input:checked")].map(i => i.value);
       const before = [...(EDITING.programIds || [])].sort().join(",");
       if (chosen.slice().sort().join(",") !== before) {
-        await api(`/mentors/${EDITING.id}/programs`, {
+        const put = force => api(`/mentors/${EDITING.id}/programs${force ? "?force=true" : ""}`, {
           method: "PUT",
           body: JSON.stringify({ programIds: chosen })
         });
+        try {
+          await put(false);
+        } catch (e) {
+          // Taking the mentor out of a programme where they still have
+          // active mentorships: say so and ask. The mentorships keep running.
+          if (e.data && e.data.code === "mentor_has_mentorships_in_program") {
+            const names = (e.data.programs || []).map(p => `${p.name} (${p.activeMentorships})`).join(", ");
+            if (confirm(t("mentorBusyConfirm").replace("{list}", names))) await put(true);
+          } else throw e;
+        }
       }
     }
 

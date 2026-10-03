@@ -478,6 +478,10 @@
           <option value="en">English</option>
           <option value="tr">Türkçe</option>
         </select>
+        <span id="programFilterBox" style="display:none; margin-left:auto; align-items:center; gap:8px;">
+          <label for="programFilter" data-i18n="programFilterLabel">Programme</label>
+          <select id="programFilter" onchange="onProgramFilter(this.value)"></select>
+        </span>
       </div>
 
     <div id="errorBox"></div>
@@ -528,6 +532,7 @@ const translations = {
     rejectedRequests: "Rejected Requests",
     noApprovalRequests: "No approval requests yet.",
     noMentorships: "No mentorships created yet.",
+    programFilterLabel: "Programme", programAll: "All programmes", programNone: "No programme",
     trackingTitle: "Meeting Tracking",
     trackingSub: "Only the dates and durations of meetings are shown here, not what was discussed.",
     trackingFailed: "Meeting tracking could not be loaded.",
@@ -640,6 +645,7 @@ const translations = {
     rejectedRequests: "Reddedilen Talepler",
     noApprovalRequests: "Henüz onay talebi yok.",
     noMentorships: "Henüz oluşturulmuş mentorluk yok.",
+    programFilterLabel: "Program", programAll: "Tüm programlar", programNone: "Programsız",
     trackingTitle: "Toplantı Takibi",
     trackingSub: "Burada yalnızca toplantıların tarihleri ve süreleri görünür, konuşulanlar görünmez.",
     trackingFailed: "Toplantı takibi yüklenemedi.",
@@ -749,6 +755,7 @@ function setLanguage(lang) {
   document.documentElement.lang = currentLanguage;
   document.getElementById("languageSelect").value = currentLanguage;
   applyTranslations();
+  renderProgramFilter();
   renderStats();
   renderApprovals();
   renderMentorships();
@@ -784,6 +791,7 @@ async function loadDashboard() {
     mentorships = await mentorshipRes.json();
     approvalRequests = await approvalsRes.json();
 
+    await loadPrograms();
     renderStats();
     renderApprovals();
     renderMentorships();
@@ -797,6 +805,8 @@ async function loadDashboard() {
 }
 
 function renderStats() {
+  const mentorships = shownMentorships();          // programme filter
+  const approvalRequests = shownRequests();
   const activeMentorships = mentorships.filter(m => m.status === "active").length;
   const pendingApprovals = approvalRequests.filter(r => r.status === "pending").length;
   const approvedRequests = approvalRequests.filter(r => r.status === "approved").length;
@@ -832,6 +842,7 @@ function renderStats() {
 
 function renderApprovals() {
   const container = document.getElementById("approvalList");
+  const approvalRequests = shownRequests();        // programme filter
 
   if (!approvalRequests.length) {
     container.innerHTML = `<div class="empty">${t("noApprovalRequests")}</div>`;
@@ -857,6 +868,7 @@ function renderApprovals() {
       <div class="card">
         <div class="row">
           <div class="pair-title">
+            ${programBadge(req.programId)}
             <strong>${escapeHtml(req.mentorName || t("mentor"))}</strong>
             →
             ${escapeHtml(req.menteeName || t("mentee"))}
@@ -948,6 +960,7 @@ function renderApprovals() {
 
 function renderMentorships() {
   const container = document.getElementById("mentorshipList");
+  const mentorships = shownMentorships();          // programme filter
 
   if (!mentorships.length) {
     container.innerHTML = `<div class="empty">${t("noMentorships")}</div>`;
@@ -963,6 +976,7 @@ function renderMentorships() {
       <div class="card">
         <div class="row">
           <div class="pair-title">
+            ${programBadge(m.programId)}
             <strong>${escapeHtml(m.mentorName || t("mentor"))}</strong>
             →
             ${escapeHtml(m.menteeName || t("mentee"))}
@@ -1430,7 +1444,7 @@ const openTrack = new Set();
 
 async function loadTracking() {
   try {
-    const res = await fetch(`${API_BASE_URL}/meeting-tracking`);
+    const res = await fetch(`${API_BASE_URL}/meeting-tracking?programId=${encodeURIComponent(PROGRAM_FILTER)}`);
     if (!res.ok) throw new Error();
     TRACKING = await res.json();
   } catch {
@@ -1526,6 +1540,60 @@ function renderTracking() {
 function toggleTrack(id) {
   if (openTrack.has(id)) openTrack.delete(id); else openTrack.add(id);
   renderTracking();
+}
+
+/* ==================================================================
+   PROGRAMME FILTER
+   One filter for the whole page: summary cards, match requests,
+   meeting tracking and mentorship cards. Shown only when the
+   organisation has programmes. "none" = made without a programme.
+   ================================================================== */
+
+var PROGRAMS = [];
+var PROGRAM_FILTER = sessionStorage.getItem("dashboardProgram") || "all";
+
+async function loadPrograms() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/programs`);
+    PROGRAMS = res.ok ? await res.json() : [];
+  } catch { PROGRAMS = []; }
+  if (PROGRAM_FILTER !== "all" && PROGRAM_FILTER !== "none" && !PROGRAMS.some(p => p.id === PROGRAM_FILTER)) {
+    PROGRAM_FILTER = "all";
+  }
+  renderProgramFilter();
+}
+
+function renderProgramFilter() {
+  const box = document.getElementById("programFilterBox");
+  const sel = document.getElementById("programFilter");
+  if (!box || !sel) return;
+  box.style.display = PROGRAMS.length ? "inline-flex" : "none";
+  sel.innerHTML =
+    `<option value="all">${escapeHtml(t("programAll"))}</option>` +
+    PROGRAMS.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("") +
+    `<option value="none">${escapeHtml(t("programNone"))}</option>`;
+  sel.value = PROGRAM_FILTER;
+}
+
+const inProgramFilter = x => PROGRAM_FILTER === "all" ||
+  (PROGRAM_FILTER === "none" ? !x.programId : x.programId === PROGRAM_FILTER);
+function shownMentorships() { return mentorships.filter(inProgramFilter); }
+function shownRequests() { return approvalRequests.filter(inProgramFilter); }
+
+function programBadge(programId) {
+  const p = programId && PROGRAMS.find(x => x.id === programId);
+  return p
+    ? `<span class="pill" style="background:#e0e7ff;color:#3730a3;margin-right:8px">${escapeHtml(p.name)}</span>`
+    : "";
+}
+
+async function onProgramFilter(value) {
+  PROGRAM_FILTER = value;
+  sessionStorage.setItem("dashboardProgram", value);
+  renderStats();
+  renderApprovals();
+  renderMentorships();
+  await loadTracking();
 }
 
 setLanguage(currentLanguage);

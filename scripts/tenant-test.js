@@ -402,7 +402,8 @@ async function run(server) {
   const del = await api(A, "DELETE", `/match-request/${reqA}`);
   check("A: deletes its own match request", del.status === 200, `HTTP ${del.status}`);
 
-  await programmeChecks(server, { A, B, mentorA, menteeA, menteeA2, mentorB, menteeB, msA });
+  const foreignProgramId = await programmeChecks(server, { A, B, mentorA, menteeA, menteeA2, mentorB, menteeB, msA });
+  await programmeMatchingChecks(server, { SA, B, mentorB, foreignProgramId });
 }
 
 // ---------------------------------------------------------------------
@@ -522,6 +523,164 @@ async function programmeChecks(server, ids) {
         mentorAfter?.id === mentorA && !mentorAfter.programIds.includes(pX) && mentorAfter.programIds.includes(pY));
   check("... the mentee is kept, now not assigned", menteeAfter?.id === menteeA && menteeAfter.programId === "",
         JSON.stringify(menteeAfter?.programId));
+
+  return pY;   // an (archived) programme of A, used as "another organisation's programme"
+}
+
+// ---------------------------------------------------------------------
+// MATCHING INSIDE A PROGRAMME
+// ---------------------------------------------------------------------
+
+async function programmeMatchingChecks(server, ids) {
+  const { SA, B, mentorB, foreignProgramId } = ids;
+  console.log("\n7) MATCHING INSIDE A PROGRAMME\n");
+
+  // A fresh organisation C that works with programmes.
+  const pwC = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-c", name: "tenant-c", password: pwC });
+  const C = await login("tenant-c", pwC);
+  const post = async (url, body) => (await api(C, "POST", url, body)).json;
+
+  const P1 = (await post("/programs", { name: "P1 Leadership", startDate: "2026-01-01", endDate: "2026-12-31" })).program;
+  const P2 = (await post("/programs", { name: "P2 Graduates", startDate: "2026-01-01", endDate: "2027-06-30" })).program;
+  const P3 = (await post("/programs", { name: "P3 Old", startDate: "2025-01-01", endDate: "2025-06-30" })).program;
+  check("C: programme statuses (running, running, ended)",
+        P1?.status === "active" && P2?.status === "active" && P3?.status === "ended",
+        `${P1?.status}/${P2?.status}/${P3?.status}`);
+
+  const mentor = async (name, programIds) => {
+    const id = (await post("/mentors", { fullName: name, email: `${name.toLowerCase()}@c.example`, role: "Director", capacity: 3 })).id;
+    await api(C, "PUT", `/mentors/${id}/programs`, { programIds });
+    return id;
+  };
+  const mentee = async (name, programId) => {
+    const id = (await post("/mentees", { fullName: name, email: `${name.toLowerCase()}@c.example`, role: "Analyst",
+                                        developmentNeeds: `${name} wants to grow` })).id;
+    if (programId) await api(C, "PUT", `/mentees/${id}/program`, { programId });
+    return id;
+  };
+  const m1 = await mentor("Mert", [P1.id]);
+  const m2 = await mentor("Nazli", [P2.id]);
+  const m3 = await mentor("Ozan", [P1.id, P2.id]);
+  const e1 = await mentee("Ece", P1.id);
+  const e2 = await mentee("Emre", "");
+  const e3 = await mentee("Elif", P3.id);
+  const e4 = await mentee("Eda", P1.id);
+  const e5 = await mentee("Erol", P2.id);
+
+  // Candidate lists
+  const noProg = await api(C, "GET", "/matching-candidates");
+  check("candidates without a programme -> 400 program_required",
+        noProg.status === 400 && noProg.json?.code === "program_required", `HTTP ${noProg.status}`);
+  const c1 = (await api(C, "GET", `/matching-candidates?programId=${P1.id}`)).json || {};
+  const ids1 = x => (x || []).map(r => r.id).sort().join(",");
+  check("candidates of P1: only P1's mentees", ids1(c1.mentees) === [e1, e4].sort().join(","),
+        (c1.mentees || []).map(m => m.fullName).join(", "));
+  check("candidates of P1: only P1's mentors", ids1(c1.mentors) === [m1, m3].sort().join(","),
+        (c1.mentors || []).map(m => m.fullName).join(", "));
+  const c3 = await api(C, "GET", `/matching-candidates?programId=${P3.id}`);
+  check("candidates of an ended programme -> 400 program_closed",
+        c3.status === 400 && c3.json?.code === "program_closed", `HTTP ${c3.status}`);
+  const cf = await api(C, "GET", `/matching-candidates?programId=${foreignProgramId}`);
+  check("candidates of another organisation's programme -> 404", cf.status === 404, `HTTP ${cf.status}`);
+
+  // AI suggestions: the rule is checked before the AI (not configured here -> 503)
+  const ai = async menteeId => api(C, "POST", "/match", { menteeId, language: "en" });
+  const aiE2 = await ai(e2);
+  check("AI match: mentee without a programme -> 400 program_not_assigned",
+        aiE2.status === 400 && aiE2.json?.code === "program_not_assigned", `HTTP ${aiE2.status}`);
+  const aiE3 = await ai(e3);
+  check("AI match: mentee in an ended programme -> 400 program_closed",
+        aiE3.status === 400 && aiE3.json?.code === "program_closed", `HTTP ${aiE3.status}`);
+  const aiE1 = await ai(e1);
+  check("AI match: placed mentee passes the rule (stops at AI setup)", aiE1.status === 503, `HTTP ${aiE1.status}`);
+  const aiFree = await api(C, "POST", "/match", { developmentNeeds: "typed in", language: "en" });
+  check("AI match: typed-in mentee in a programme organisation -> 400",
+        aiFree.status === 400 && aiFree.json?.code === "program_mentee_required", `HTTP ${aiFree.status}`);
+
+  // Match requests
+  const reqBody = (mentorId, menteeId) => ({ mentorId, mentorName: "x", menteeId, language: "en" });
+  const wrong = await api(C, "POST", "/match-request", reqBody(m2, e1));
+  check("request: mentor not in the mentee's programme -> 400 mentor_not_in_program",
+        wrong.status === 400 && wrong.json?.code === "mentor_not_in_program", `HTTP ${wrong.status}`);
+  const typed = await api(C, "POST", "/match-request", { mentorId: m1, mentorName: "x", menteeId: `mentee_${Date.now()}`,
+                                                          menteeName: "Typed In", developmentNeed: "x" });
+  check("request: typed-in mentee in a programme organisation -> 400",
+        typed.status === 400 && typed.json?.code === "program_mentee_required", `HTTP ${typed.status}`);
+  const r1 = await api(C, "POST", "/match-request", reqBody(m1, e1));
+  check("request: mentor and mentee in the same programme -> 200", r1.status === 200, `HTTP ${r1.status}`);
+  const req1 = (await api(C, "GET", `/match-request/${r1.json?.requestId}`)).json;
+  check("request remembers its programme", req1?.programId === P1.id, req1?.programId);
+
+  // Direct mentorship by HR
+  const dWrong = await api(C, "POST", "/mentorships", { mentorId: m2, menteeId: e4, mentorName: "Nazli", menteeName: "Eda" });
+  check("direct mentorship: mentor not in programme -> 400", dWrong.status === 400 && dWrong.json?.code === "mentor_not_in_program",
+        `HTTP ${dWrong.status}`);
+  const dOk = await api(C, "POST", "/mentorships", { mentorId: m3, menteeId: e4, mentorName: "Ozan", menteeName: "Eda",
+                                                     developmentNeed: "x", programId: P2.id /* ignored */ });
+  const ms4 = dOk.json?.mentorship;
+  check("direct mentorship: programme taken from the mentee, not the body",
+        dOk.status === 200 && ms4?.programId === P1.id, `HTTP ${dOk.status} ${ms4?.programId === P2.id ? "(body programme used!)" : ""}`);
+  check("direct mentorship: closing date = programme end date", ms4?.closingDate === "2026-12-31", ms4?.closingDate);
+
+  // Approval of request 1 -> mentorship in P1
+  const linkParts = url => { const u = new URL(url); return { id: u.searchParams.get("id"), token: u.searchParams.get("token") }; };
+  const mentorLink = linkParts(r1.json.mentorLink), menteeLink = linkParts(r1.json.menteeLink);
+  const page = await api(null, "GET", `/public/approval/${mentorLink.id}?type=mentor&token=${mentorLink.token}`);
+  check("approval page shows the programme name", page.json?.programName === "P1 Leadership", page.json?.programName);
+  await api(null, "PATCH", `/public/approval/${mentorLink.id}`, { type: "mentor", status: "approved", token: mentorLink.token });
+  const done = await api(null, "PATCH", `/public/approval/${menteeLink.id}`, { type: "mentee", status: "approved", token: menteeLink.token });
+  check("both approve -> mentorship opened", done.json?.status === "approved" && !!done.json?.workspaceUrl, `HTTP ${done.status}`);
+  const ws = new URL(done.json.workspaceUrl);
+  const wsData = (await api(null, "GET", `/public/workspace/${ws.searchParams.get("id")}?token=${ws.searchParams.get("token")}`)).json;
+  check("mentorship from an approved request is in its programme", wsData?.programId === P1.id, wsData?.programId);
+  check("... closing date = programme end date", wsData?.closingDate === "2026-12-31", wsData?.closingDate);
+  check("workspace shows the programme name", wsData?.programName === "P1 Leadership", wsData?.programName);
+
+  // A request made while the programme was open can still be approved after it closes
+  const r5 = await api(C, "POST", "/match-request", reqBody(m2, e5));
+  await api(C, "PATCH", `/programs/${P2.id}`, { archived: true });
+  const closedNew = await api(C, "POST", "/mentorships", { mentorId: m2, menteeId: e5, mentorName: "Nazli", menteeName: "Erol" });
+  check("archived programme: new match refused -> 400 program_closed",
+        closedNew.status === 400 && closedNew.json?.code === "program_closed", `HTTP ${closedNew.status}`);
+  const l5m = linkParts(r5.json.mentorLink), l5e = linkParts(r5.json.menteeLink);
+  await api(null, "PATCH", `/public/approval/${l5m.id}`, { type: "mentor", status: "approved", token: l5m.token });
+  const done5 = await api(null, "PATCH", `/public/approval/${l5e.id}`, { type: "mentee", status: "approved", token: l5e.token });
+  check("request made before archiving can still be approved", done5.json?.status === "approved", `HTTP ${done5.status}`);
+  await api(C, "PATCH", `/programs/${P2.id}`, { archived: false });
+
+  // Meeting tracking filter
+  const trP1 = (await api(C, "GET", `/meeting-tracking?programId=${P1.id}`)).json;
+  const trP2 = (await api(C, "GET", `/meeting-tracking?programId=${P2.id}`)).json;
+  const trNone = (await api(C, "GET", `/meeting-tracking?programId=none`)).json;
+  const trAll = (await api(C, "GET", "/meeting-tracking")).json;
+  check("meeting tracking filters by programme",
+        trP1?.stats?.total === 2 && trP2?.stats?.total === 1 && trNone?.stats?.total === 0 && trAll?.stats?.total === 3,
+        `P1 ${trP1?.stats?.total}, P2 ${trP2?.stats?.total}, none ${trNone?.stats?.total}, all ${trAll?.stats?.total}`);
+  check("meeting tracking rows carry their programme",
+        (trP1?.rows || []).every(r => r.programId === P1.id));
+
+  // Mentor leaving a programme where they have an active mentorship
+  const leave = await api(C, "PUT", `/mentors/${m3}/programs`, { programIds: [P2.id] });
+  check("mentor leaving a programme with active mentorships warns first (409)",
+        leave.status === 409 && leave.json?.code === "mentor_has_mentorships_in_program", `HTTP ${leave.status}`);
+  const left = await api(C, "PUT", `/mentors/${m3}/programs?force=true`, { programIds: [P2.id] });
+  const ms4After = (await api(C, "GET", `/mentorships/${ms4.id}`)).json;
+  check("... after confirming, the mentorship keeps running in its programme",
+        left.status === 200 && ms4After?.status === "active" && ms4After?.programId === P1.id,
+        `${ms4After?.status} / ${ms4After?.programId === P1.id ? "P1" : ms4After?.programId}`);
+
+  const delP1 = await api(C, "DELETE", `/programs/${P1.id}`);
+  check("programme with mentorships cannot be deleted -> 409", delP1.status === 409, `HTTP ${delP1.status}`);
+
+  // Organisation WITHOUT programmes: unchanged, typed-in mentees included
+  const bTyped = await api(B, "POST", "/match-request", { mentorId: mentorB, mentorName: "Bora Mentor",
+    menteeId: `mentee_${Date.now()}`, menteeName: "Typed In", menteeEmail: "typed@b.example", developmentNeed: "x" });
+  check("no programmes: typed-in mentee request works as before", bTyped.status === 200, `HTTP ${bTyped.status}`);
+  const bReq = (await api(B, "GET", `/match-request/${bTyped.json?.requestId}`)).json;
+  check("no programmes: the request has no programme", bReq?.programId === "", JSON.stringify(bReq?.programId));
+  const bCand = await api(B, "GET", "/matching-candidates");
+  check("no programmes: candidates without a programme id", bCand.status === 200 && bCand.json?.program === null, `HTTP ${bCand.status}`);
 }
 
 main().catch(err => {

@@ -530,6 +530,21 @@ const mentors = {
     ).all(slugify(companyId)).map(hydrateMentor);
   },
 
+  /** All mentors placed in one programme (any status). */
+  listInProgram(companyId, programId) {
+    return db.prepare(`
+      SELECT m.* FROM mentors m
+        JOIN program_mentors pm ON pm.mentor_id = m.id
+       WHERE m.company_id = ? AND pm.program_id = ?
+       ORDER BY m.created_at DESC
+    `).all(slugify(companyId), programId).map(hydrateMentor);
+  },
+
+  /** Active mentors of one programme - the candidates for a match in it. */
+  listActiveInProgram(companyId, programId) {
+    return mentors.listInProgram(companyId, programId).filter(m => m.status === "active");
+  },
+
   /** Eslestirmeye sadece aktif ve bos kapasitesi olanlar girer. */
   listActiveByCompany(companyId) {
     return db.prepare(
@@ -906,7 +921,7 @@ const matchRequests = {
         match_score, match_reason,
         mentor_token, mentee_token, manager_token,
         manager_approval, mentor_approval, mentee_approval, status,
-        created_at, updated_at
+        program_id, created_at, updated_at
       ) VALUES (
         @id, @companyId, @mentorId, @menteeId,
         @mentorName, @menteeName, @mentorEmail, @menteeEmail,
@@ -915,7 +930,7 @@ const matchRequests = {
         @matchScore, @matchReason,
         @mentorToken, @menteeToken, @managerToken,
         @managerApproval, 'pending', 'pending', 'pending',
-        @createdAt, @updatedAt
+        @programId, @createdAt, @updatedAt
       )
     `).run({
       id,
@@ -941,6 +956,8 @@ const matchRequests = {
 
       mentorToken: newToken(),
       menteeToken: newToken(),
+      // Set by the route from the mentee's programme - never from the browser.
+      programId: body.programId || "",
       createdAt: ts,
       updatedAt: ts
     });
@@ -1065,21 +1082,33 @@ function hydrateMentorship(row) {
 }
 
 const mentorships = {
-  findPair(companyId, mentorId, menteeId) {
+  /** One mentorship per mentor-mentee pair PER PROGRAMME. */
+  findPair(companyId, mentorId, menteeId, programId = "") {
     return hydrateMentorship(
       db.prepare(`
         SELECT * FROM mentorships
-         WHERE company_id = ? AND mentor_id = ? AND mentee_id = ?
+         WHERE company_id = ? AND mentor_id = ? AND mentee_id = ? AND program_id = ?
          LIMIT 1
-      `).get(slugify(companyId), mentorId, menteeId || "")
+      `).get(slugify(companyId), mentorId, menteeId || "", programId || "")
     );
   },
 
+  /**
+   * body.programId: the programme the match was made in ('' = none).
+   * The workspace closing date starts as the programme's end date; HR can
+   * change it later as before.
+   */
   create(companyId, body) {
+    const programId = body.programId || "";
     const existing = mentorships.findPair(
-      companyId, body.mentorId, body.menteeId
+      companyId, body.mentorId, body.menteeId, programId
     );
     if (existing) return { created: false, mentorship: existing };
+
+    const program = programId
+      ? db.prepare(`SELECT end_date FROM programs WHERE id = ?`).get(programId)
+      : null;
+    const closingDate = body.closingDate || (program ? program.end_date : "");
 
     const id = newId();
     const ts = now();
@@ -1090,13 +1119,15 @@ const mentorships = {
         mentor_name, mentee_name, mentor_email, mentee_email,
         mentee_role, mentee_department, development_need,
         goals, development_areas, success_criteria,
-        status, next_meeting_date, access_token, created_at, updated_at
+        status, next_meeting_date, access_token, program_id, closing_date,
+        created_at, updated_at
       ) VALUES (
         @id, @companyId, @mentorId, @menteeId,
         @mentorName, @menteeName, @mentorEmail, @menteeEmail,
         @menteeRole, @menteeDepartment, @developmentNeed,
         @goals, @developmentAreas, @successCriteria,
-        'active', '', @accessToken, @createdAt, @updatedAt
+        'active', '', @accessToken, @programId, @closingDate,
+        @createdAt, @updatedAt
       )
     `).run({
       id,
@@ -1114,6 +1145,8 @@ const mentorships = {
       goals: toJson(body.goals),
       developmentAreas: toJson(body.developmentAreas),
       successCriteria: toJson(body.successCriteria),
+      programId,
+      closingDate,
       createdAt: ts,
       updatedAt: ts
     });
@@ -1575,6 +1608,24 @@ const programs = {
     db.prepare(`UPDATE programs SET archived = ?, updated_at = ? WHERE id = ?`)
       .run(archived ? 1 : 0, now(), id);
     return programs.get(id);
+  },
+
+  /** Does this organisation work with programmes at all? (any, archived too) */
+  companyHasPrograms(companyId) {
+    return !!db.prepare(`SELECT 1 FROM programs WHERE company_id = ? LIMIT 1`).get(slugify(companyId));
+  },
+
+  /** New matches can be made while a programme is planned or running. */
+  isOpen(program) {
+    return !!program && (program.status === "planned" || program.status === "active");
+  },
+
+  /** Active mentorships of one mentor inside one programme. */
+  activeMentorshipsOfMentor(mentorId, programId) {
+    return db.prepare(`
+      SELECT COUNT(*) n FROM mentorships
+       WHERE mentor_id = ? AND program_id = ? AND status = 'active'
+    `).get(mentorId, programId).n;
   },
 
   /** How many match requests / mentorships were made in this programme. */

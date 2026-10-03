@@ -515,6 +515,18 @@
 
     <div class="input-card">
 
+      <!-- ================= PROGRAMME (organisations with programmes) =====
+           Matching happens inside ONE programme: only its mentees and its
+           mentors are listed. The server enforces the same rule. -->
+      <div id="programPane" hidden style="margin-bottom:18px">
+        <div class="step-label" data-i18n="programStepTitle">Program</div>
+        <label for="programSelect" data-i18n="selectProgramLabel">Programme</label>
+        <select id="programSelect" onchange="onProgramChanged()"></select>
+        <div class="hint" id="programHint" data-i18n="programHint">
+          Matching happens inside the selected programme: only its mentees and mentors are listed.
+        </div>
+      </div>
+
       <!-- ================= ADIM 1: MENTEE ================= -->
       <div class="step-label" data-i18n="step1Title">1 · Mentee</div>
 
@@ -679,6 +691,19 @@
         step2Title: "2 · Matching method",
         sourceRegistered: "Registered mentee",
         sourceManual: "Enter manually",
+        programStepTitle: "Programme",
+        selectProgramLabel: "Programme",
+        programHint: "Matching happens inside the selected programme: only its mentees and mentors are listed. Ended and archived programmes are not offered.",
+        noOpenPrograms: "There is no open programme (planned or running). Create one or extend an end date on the Programmes page.",
+        programStatus_planned: "planned",
+        programStatus_active: "running",
+        empty_no_program_mentors: "There is no mentor in this programme.",
+        empty_no_program_mentors_fix: "Place mentors into this programme in the Mentor Registry.",
+        err_program_mentee_required: "This organisation works with programmes: choose a registered mentee placed in a programme.",
+        err_program_not_assigned: "This mentee is not placed in a programme yet. Place them in one in the Mentee Registry.",
+        err_program_closed: "This programme has ended or is archived: no new matches can be made in it.",
+        err_mentor_not_in_program: "This mentor is not in the mentee's programme.",
+        err_program_required: "Choose a programme first.",
         selectMenteeLabel: "Select mentee",
         selectMenteePlaceholder: "— Select a mentee —",
         menteeLoading: "Loading...",
@@ -825,6 +850,19 @@
         step2Title: "2 · Eşleştirme yöntemi",
         sourceRegistered: "Kayıtlı Mentee",
         sourceManual: "Manuel Kayıt",
+        programStepTitle: "Program",
+        selectProgramLabel: "Program",
+        programHint: "Eşleştirme seçilen programın içinde yapılır: yalnızca bu programdaki mentee'ler ve mentorlar listelenir. Sona ermiş ve arşivlenmiş programlar listede yer almaz.",
+        noOpenPrograms: "Açık (planlanan veya devam eden) program yok. Programlar sayfasından program oluşturun veya bitiş tarihini uzatın.",
+        programStatus_planned: "planlanan",
+        programStatus_active: "devam ediyor",
+        empty_no_program_mentors: "Bu programda hiç mentor yok.",
+        empty_no_program_mentors_fix: "Mentor Kayıtları sayfasından mentorları bu programa ekleyin.",
+        err_program_mentee_required: "Bu firma programlarla çalışıyor: bir programa yerleştirilmiş kayıtlı bir mentee seçin.",
+        err_program_not_assigned: "Bu mentee henüz bir programa yerleştirilmemiş. Mentee Kayıtları sayfasından bir programa yerleştirin.",
+        err_program_closed: "Bu program sona ermiş veya arşivlenmiş: içinde yeni eşleşme yapılamaz.",
+        err_mentor_not_in_program: "Bu mentor, mentee'nin programında değil.",
+        err_program_required: "Önce bir program seçin.",
         selectMenteeLabel: "Mentee seçin",
         selectMenteePlaceholder: "— Mentee seçin —",
         menteeLoading: "Yükleniyor...",
@@ -977,6 +1015,7 @@
 
       // Ihtiyac metni sunucuda ve secilen dilde derleniyor; dil degisince
       // listeleri yeniden al ki ozet de o dilde gorunsun.
+      if (typeof renderProgramSelect === "function") renderProgramSelect();
       if (typeof loadCandidates === "function") loadCandidates();
 
       if (lastRecommendations.length) {
@@ -1031,11 +1070,66 @@
     let MENTEES = [];
     let MENTORS = [];
 
-    document.addEventListener("DOMContentLoaded", () => {
+    /* PROGRAMMES: when the organisation has any, matching runs inside the
+       selected programme (PROGRAM_ID). Without programmes nothing changes. */
+    let PROGRAMS = [];
+    let HAS_PROGRAMS = false;
+    let PROGRAM_ID = "";
+
+    document.addEventListener("DOMContentLoaded", async () => {
       applyTranslations();
       checkSmtp();          // e-posta butonlarinin gorunup gorunmeyecegini belirler
+      await loadPrograms();
       loadCandidates();     // kayitli mentee + aktif mentor listeleri
     });
+
+    async function loadPrograms() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/programs`);
+        PROGRAMS = res.ok ? await res.json() : [];
+      } catch { PROGRAMS = []; }
+      HAS_PROGRAMS = PROGRAMS.length > 0;
+
+      document.getElementById("programPane").hidden = !HAS_PROGRAMS;
+      // Typed-in (unregistered) mentees have no programme: not offered then.
+      const manualTab = document.querySelector('#sourceTabs .tab[data-source="manual"]');
+      if (manualTab) manualTab.hidden = HAS_PROGRAMS;
+      if (HAS_PROGRAMS && SOURCE === "manual") setSource("registered");
+
+      const open = PROGRAMS.filter(p => p.status === "planned" || p.status === "active");
+      const remembered = sessionStorage.getItem("matchingProgramId");
+      PROGRAM_ID = open.some(p => p.id === remembered) ? remembered : (open[0] ? open[0].id : "");
+      renderProgramSelect();
+    }
+
+    function renderProgramSelect() {
+      if (!HAS_PROGRAMS) return;
+      const select = document.getElementById("programSelect");
+      const open = PROGRAMS.filter(p => p.status === "planned" || p.status === "active");
+      select.disabled = !open.length;
+      select.innerHTML = open.length
+        ? open.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${escapeHtml(t("programStatus_" + p.status))})</option>`).join("")
+        : `<option value="">${escapeHtml(t("noOpenPrograms"))}</option>`;
+      select.value = PROGRAM_ID;
+      document.getElementById("programHint").textContent = open.length ? t("programHint") : t("noOpenPrograms");
+    }
+
+    function onProgramChanged() {
+      PROGRAM_ID = document.getElementById("programSelect").value;
+      sessionStorage.setItem("matchingProgramId", PROGRAM_ID);
+      // Results of another programme must not stay on screen.
+      lastRecommendations = [];
+      document.getElementById("results").innerHTML = "";
+      const manualResult = document.getElementById("manualResult");
+      if (manualResult) manualResult.innerHTML = "";
+      loadCandidates();
+    }
+
+    /** Server error code -> message in the page language. */
+    function programError(data) {
+      const key = data && data.code ? "err_" + data.code : "";
+      return key && translations[currentLanguage] && translations[currentLanguage][key] ? t(key) : "";
+    }
 
     /* ------------------------------------------------------------------
        ADAY LISTELERI
@@ -1046,8 +1140,18 @@
 
     async function loadCandidates() {
       try {
+        // With programmes and no open programme there is nothing to list.
+        if (HAS_PROGRAMS && !PROGRAM_ID) {
+          MENTEES = [];
+          MENTORS = [];
+          renderMenteeSelect();
+          renderMentorSelect();
+          return;
+        }
+
+        const programPart = HAS_PROGRAMS ? `&programId=${encodeURIComponent(PROGRAM_ID)}` : "";
         const res = await fetch(
-          `${API_BASE_URL}/matching-candidates?language=${encodeURIComponent(currentLanguage)}`,
+          `${API_BASE_URL}/matching-candidates?language=${encodeURIComponent(currentLanguage)}${programPart}`,
           { headers: { "x-api-key": API_KEY } }
         );
 
@@ -1405,7 +1509,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || t("matchingFailed"));
+          throw new Error(programError(data) || data.error || t("matchingFailed"));
         }
 
         // ESKI HATA: skoru 40'in altindaki herkes GIZLENIYORDU.
@@ -1682,7 +1786,7 @@ function renderResults(mentors) {
             if (data.action) lines.push("\n" + t("whatToDo") + " " + data.action);
             throw new Error(lines.join("\n"));
           }
-          throw new Error(data.error || t("approvalRequestFailed"));
+          throw new Error(programError(data) || data.error || t("approvalRequestFailed"));
         }
 
         btn.textContent = t("approvalRequested");
