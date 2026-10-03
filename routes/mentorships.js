@@ -1,7 +1,7 @@
 const express = require("express");
 
 const config = require("../config");
-const { mentors, mentees, mentorships, meetings, meetingDuration, isRealDate } = require("../db/repos");
+const { mentors, mentees, mentorships, meetings, meetingDuration, isRealDate, checkins } = require("../db/repos");
 const { composeMenteeNeed, composeGroupNeed } = require("../lib/menteeNeed");
 const { loadMatchableGroup } = require("../lib/groupRules");
 const { db } = require("../db");
@@ -233,7 +233,8 @@ router.get("/mentorships", requireApiKey, wrap(async (req, res) => {
 
   res.json(mentorships.listByCompany(companyId).map(ms => ({
     ...withWorkspaceLink(ms),
-    workspaceEmailSentAt: lastSent.get(ms.id) || ""
+    workspaceEmailSentAt: lastSent.get(ms.id) || "",
+    checkin: checkins.summary(ms.id)
   })));
 }));
 
@@ -559,7 +560,10 @@ router.get("/meeting-tracking", requireApiKey, wrap(async (req, res) => {
       // Only an UPCOMING date is "next": when a note is saved without a
       // next date, the mentorship keeps the meeting's own (past) date.
       nextMeetingDate: upcoming(ms.nextMeetingDate) ? ms.nextMeetingDate : "",
-      nextMeetingTime: upcoming(ms.nextMeetingDate) ? (ms.nextMeetingTime || "") : ""
+      nextMeetingTime: upcoming(ms.nextMeetingDate) ? (ms.nextMeetingTime || "") : "",
+      // Check-in feedback: when last answered, unanswered rounds, and
+      // whether someone's latest answer asks for HR support.
+      checkin: checkins.summary(ms.id)
     };
   });
 
@@ -571,7 +575,8 @@ router.get("/meeting-tracking", requireApiKey, wrap(async (req, res) => {
       active: active.length,
       completed: rows.filter(r => r.status === "completed").length,
       neverMet: active.filter(r => r.meetingCount === 0).length,
-      silent: active.filter(r => r.daysSinceLast != null && r.daysSinceLast >= SILENT_DAYS).length
+      silent: active.filter(r => r.daysSinceLast != null && r.daysSinceLast >= SILENT_DAYS).length,
+      needsSupport: active.filter(r => r.checkin.needsSupport).length
     },
     rows
   });

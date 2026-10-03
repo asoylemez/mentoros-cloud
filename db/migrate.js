@@ -182,6 +182,45 @@ function run() {
   migrateMenteeGroups();
   removeApprovalFlow();
   migrateGroupMentorships();
+  migrateCheckins();
+}
+
+/**
+ * CHECK-IN FEEDBACK  (mid-programme feedback, any number of rounds)
+ *
+ * One row per person per round. A personal token opens it (no sign-in);
+ * `questions` is a copy of the question set as it was when the round was
+ * sent, so later edits never break earlier answers. member_id = the group
+ * member it is for ('' = not a group). Deleting the mentorship deletes
+ * its rows (ON DELETE CASCADE); mentees.remove deletes a mentee's own.
+ */
+function migrateCheckins() {
+  const has = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='checkins'`).get();
+  if (has) return;
+  db.exec(`
+    CREATE TABLE checkins (
+      id               TEXT PRIMARY KEY,
+      company_id       TEXT NOT NULL,
+      mentorship_id    TEXT NOT NULL REFERENCES mentorships(id) ON DELETE CASCADE,
+      role             TEXT NOT NULL CHECK (role IN ('mentor', 'mentee')),
+      member_id        TEXT NOT NULL DEFAULT '',
+      token            TEXT NOT NULL UNIQUE,
+      status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed')),
+      recipient_name   TEXT NOT NULL DEFAULT '',
+      recipient_email  TEXT NOT NULL DEFAULT '',
+      language         TEXT NOT NULL DEFAULT 'tr',
+      questions        TEXT NOT NULL DEFAULT '[]',
+      answers          TEXT,
+      needs_support    INTEGER NOT NULL DEFAULT 0,
+      sent_at          TEXT NOT NULL,
+      reminder_count   INTEGER NOT NULL DEFAULT 0,
+      last_reminded_at TEXT NOT NULL DEFAULT '',
+      completed_at     TEXT
+    );
+    CREATE INDEX idx_checkins_mentorship ON checkins(mentorship_id, role, sent_at);
+    CREATE INDEX idx_checkins_member ON checkins(member_id);
+  `);
+  console.log("  migration: checkins table added");
 }
 
 /**

@@ -785,6 +785,64 @@ function programLine(programId, lang) {
     : `<div style="margin-bottom:14px">Bu eşleşme <b>${name}</b> programı kapsamındadır.</div>`;
 }
 
+/**
+ * Check-in (mid-programme feedback) request. The link is personal: it
+ * opens this person's own round only. A repeat for an unanswered round
+ * is a reminder (same link).
+ */
+const CHECKIN_TEXT = {
+  tr: {
+    subject: "Ara geri bildirim: mentorluk süreciniz nasıl gidiyor?",
+    reminderSubject: "Hatırlatma - ara geri bildirim: mentorluk süreciniz nasıl gidiyor?",
+    title: "Kısa bir ara geri bildirim",
+    body: ({ name, other, group }) =>
+      `Merhaba ${name},<br><br>` +
+      (group ? `<b>${group}</b> grubundaki ` : `<b>${other}</b> ile yürüttüğünüz `) +
+      `mentorluk süreci için kısa bir ara geri bildirim rica ediyoruz. ` +
+      `Birkaç soru, yaklaşık 2 dakika.` +
+      `<br><br>Bu bir kapanış anketi değildir; süreç devam ederken nasıl gittiğini anlamak içindir. ` +
+      `Cevaplarınızı yalnızca İnsan Kaynakları görür` +
+      (group ? `; mentorunuz ve diğer katılımcılar görmez.` : `; ${other} görmez.`),
+    button: "Geri bildirim formunu aç"
+  },
+  en: {
+    subject: "Mid-programme feedback: how is your mentorship going?",
+    reminderSubject: "Reminder - mid-programme feedback: how is your mentorship going?",
+    title: "A short mid-programme feedback",
+    body: ({ name, other, group }) =>
+      `Hello ${name},<br><br>` +
+      `We would like a short piece of feedback on your mentorship ` +
+      (group ? `in the group <b>${group}</b>. ` : `with <b>${other}</b>. `) +
+      `A few questions, about 2 minutes.` +
+      `<br><br>This is not the closing survey; it is to see how things are going while the mentorship runs. ` +
+      `Only HR sees your answers` +
+      (group ? `; your mentor and the other participants do not.` : `; ${other} does not.`),
+    button: "Open the feedback form"
+  }
+};
+
+async function sendCheckin({ to, name, otherName, groupName, checkin, mentorship, url, reminder = false, lang = "tr" }) {
+  const t = CHECKIN_TEXT[lang === "en" ? "en" : "tr"];
+  return send({
+    to,
+    subject: reminder ? t.reminderSubject : t.subject,
+    html: layout({
+      title: t.title,
+      body: programLine(mentorship.programId, lang) + t.body({
+        name: escapeHtml(name || ""),
+        other: escapeHtml(otherName || "-"),
+        group: groupName ? escapeHtml(groupName) : ""
+      }),
+      button: t.button,
+      url,
+      lang
+    }),
+    companyId: mentorship.companyId,
+    kind: "checkin",
+    refId: mentorship.id
+  });
+}
+
 /** Text that came from people (names) is escaped before it goes into a mail. */
 function escapeHtml(v) {
   return String(v ?? "").replace(/[&<>"']/g,
@@ -917,6 +975,7 @@ module.exports = {
   sendWorkspace,
   sendMeetingInvite,
   sendSurvey,
+  sendCheckin,
   history,
   diagnose
 };

@@ -73,6 +73,7 @@ app.get("/mentee_registry.html", staffAuth.serveStaffPage("mentee_registry.html"
 app.get("/hr_dashboard.html",  staffAuth.serveStaffPage("hr_dashboard.html"));
 app.get("/mentee_matching.html", staffAuth.serveStaffPage("mentee_matching.html"));
 app.get("/programs.html",       staffAuth.serveStaffPage("programs.html"));
+app.get("/checkin_questions.html", staffAuth.serveStaffPage("checkin_questions.html"));
 
 // --- 4. Super admin (tedarikci) ---
 //
@@ -138,6 +139,7 @@ app.use(require("./routes/backups"));   // yedek indirme (yalnizca super admin)
 app.use(require("./routes/people"));
 app.use(require("./routes/programs"));   // mentoring programmes
 app.use(require("./routes/groups"));     // mentee groups
+app.use(require("./routes/checkins"));   // check-in feedback
 app.use(require("./routes/matching"));
 app.use(require("./routes/mentorships"));
 app.use(require("./routes/email"));

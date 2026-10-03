@@ -389,6 +389,7 @@ async function run(server) {
   await programmeMatchingChecks(server, { SA, B, mentorB, foreignProgramId });
   await groupChecks(server, { SA, B });
   await groupMatchChecks(server, { SA, B, mentorB });
+  await checkinChecks(server, { SA, B });
 }
 
 // ---------------------------------------------------------------------
@@ -982,6 +983,124 @@ async function groupMatchChecks(server, ids) {
   } finally {
     db2.close();
   }
+}
+
+// ---------------------------------------------------------------------
+// CHECK-IN FEEDBACK
+// ---------------------------------------------------------------------
+
+async function checkinChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n11) CHECK-IN FEEDBACK\n");
+
+  check("unauthenticated /checkin-questions rejected", (await api(null, "GET", "/checkin-questions")).status === 401);
+  check("an unknown feedback link -> 404", (await api(null, "GET", "/public/checkin/nope")).status === 404);
+
+  const pwF = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-f", name: "tenant-f", password: pwF });
+  const F = await login("tenant-f", pwF);
+  const post = async (url, body) => (await api(F, "POST", url, body)).json;
+
+  // Question set
+  const def = (await api(F, "GET", "/checkin-questions")).json;
+  check("default question set (6 questions)", def?.isDefault === true && def?.questions?.length === 6, `${def?.questions?.length}`);
+  const empty = await api(F, "PUT", "/checkin-questions", { questions: [] });
+  check("empty question set -> 400", empty.status === 400 && empty.json?.errors?.[0]?.code === "no_questions", `HTTP ${empty.status}`);
+  const noText = await api(F, "PUT", "/checkin-questions", { questions: [{ type: "scale5", tr: "Fine" }, { type: "text", tr: " ", en: "" }] });
+  check("question without text -> 400 at its position", noText.status === 400 &&
+        noText.json?.errors?.some(e => e.index === 2 && e.code === "no_text"), JSON.stringify(noText.json?.errors));
+  const custom = [
+    { type: "scale5", tr: "Hedeflere doğru ilerliyoruz.", en: "We are making progress.", optional: false },
+    { type: "yesno", tr: "İK desteği gerekli mi?", en: "Do you need HR support?", optional: false, support: true },
+    { type: "text", tr: "Eklemek istediğiniz?", en: "Anything to add?", optional: true }
+  ];
+  const saved = await api(F, "PUT", "/checkin-questions", { questions: custom });
+  const Q = saved.json?.questions || [];
+  check("custom question set saved (ids assigned)", saved.status === 200 && Q.length === 3 && Q.every(q => /^[a-z0-9_]+$/.test(q.id)),
+        `HTTP ${saved.status}`);
+  const bQs = (await api(B, "GET", "/checkin-questions")).json;
+  check("B does not get F's question set", bQs?.isDefault === true);
+
+  // People
+  const mentorId = (await post("/mentors", { fullName: "Feride Mentor", email: "feride@f.example", role: "Director", capacity: 3 })).id;
+  const mentor2 = (await post("/mentors", { fullName: "Fikret Mentor", email: "fikret@f.example", role: "VP", capacity: 3 })).id;
+  const mentee = async n => (await post("/mentees", { fullName: n, email: `${n.toLowerCase()}@f.example`, role: "Analyst", developmentNeeds: "x" })).id;
+  const m1 = await mentee("Fulya"), g1 = await mentee("Ferit"), g2 = await mentee("Filiz");
+  const ms = (await post("/mentorships", { mentorId, menteeId: m1, closingDate: END_DATE })).mentorship;
+  const G = (await post("/mentee-groups", { name: "F grubu", memberIds: [g1, g2] })).group.id;
+  const gms = (await post("/mentorships", { mentorId: mentor2, groupId: G, closingDate: END_DATE })).mentorship;
+
+  // Sending (no SMTP here: rounds are made, the links come back)
+  const both = await api(F, "POST", `/mentorships/${ms.id}/checkin`, { target: "both", language: "tr" });
+  check("feedback to both: two rounds, links returned when e-mail fails",
+        both.status === 502 && both.json?.failed?.length === 2 && both.json.failed.every(x => x.checkinUrl), `HTTP ${both.status}`);
+  const again = await api(F, "POST", `/mentorships/${ms.id}/checkin`, { target: "mentee", language: "tr" });
+  let list = (await api(F, "GET", `/mentorships/${ms.id}/checkins`)).json;
+  const menteeRound = list?.rounds?.find(r => r.role === "mentee");
+  check("asking an unanswered person again is a reminder (same round)",
+        list?.rounds?.length === 2 && menteeRound?.reminderCount === 1, `${list?.rounds?.length} rounds, ${menteeRound?.reminderCount} reminder(s)`);
+
+  check("B cannot ask feedback for F's mentorship -> 404",
+        (await api(B, "POST", `/mentorships/${ms.id}/checkin`, { target: "both" })).status === 404);
+  check("B cannot read F's feedback -> 404", (await api(B, "GET", `/mentorships/${ms.id}/checkins`)).status === 404);
+
+  // The person's page
+  const tokenOf = url => new URL(url).searchParams.get("token");
+  const tMentee = tokenOf(both.json.failed.find(x => x.role === "mentee").checkinUrl);
+  const tMentor = tokenOf(both.json.failed.find(x => x.role === "mentor").checkinUrl);
+  const page = (await api(null, "GET", `/public/checkin/${tMentee}`)).json;
+  check("the page shows the round's questions", page?.questions?.length === 3 && page.questions[0].tr === custom[0].tr);
+  check("the page shares no e-mail addresses", !JSON.stringify(page || {}).includes("@f.example"));
+
+  // Editing the set does not change a round already sent
+  await api(F, "PUT", "/checkin-questions", { questions: [{ ...Q[0], tr: "DEĞİŞTİ" }, Q[1], Q[2]] });
+  const pageAfter = (await api(null, "GET", `/public/checkin/${tMentee}`)).json;
+  check("a round keeps its own copy of the questions", pageAfter?.questions?.[0]?.tr === custom[0].tr, pageAfter?.questions?.[0]?.tr);
+
+  // Answering
+  const miss = await api(null, "POST", `/public/checkin/${tMentee}`, { answers: { [Q[2].id]: "only optional" } });
+  check("required answers missing -> 400", miss.status === 400 && miss.json?.code === "missing_answers", `HTTP ${miss.status}`);
+  const okA = await api(null, "POST", `/public/checkin/${tMentee}`, { answers: { [Q[0].id]: 4, [Q[1].id]: "yes", [Q[2].id]: "Thanks" } });
+  check("answers saved", okA.status === 200, `HTTP ${okA.status}`);
+  check("an answered link cannot be sent twice -> 409",
+        (await api(null, "POST", `/public/checkin/${tMentee}`, { answers: { [Q[0].id]: 1, [Q[1].id]: "no" } })).status === 409);
+  check("the other person's round is untouched",
+        (await api(null, "GET", `/public/checkin/${tMentor}`)).json?.status === "pending");
+
+  list = (await api(F, "GET", `/mentorships/${ms.id}/checkins`)).json;
+  const done = list?.rounds?.find(r => r.role === "mentee");
+  check("HR sees the answers with \"needs support\"", done?.status === "completed" && done?.answers?.[Q[0].id] === 4 && done?.needsSupport === true);
+  const card = ((await api(F, "GET", "/mentorships")).json || []).find(x => x.id === ms.id);
+  check("the mentorship is marked \"needs support\"", card?.checkin?.needsSupport === true);
+  const tr = (await api(F, "GET", "/meeting-tracking")).json;
+  check("meeting tracking counts it", tr?.stats?.needsSupport === 1, `${tr?.stats?.needsSupport}`);
+
+  // Group: one round per member
+  const grp = await api(F, "POST", `/mentorships/${gms.id}/checkin`, { target: "mentee", language: "en" });
+  const names = (grp.json?.failed || []).map(x => x.name).sort().join(",");
+  check("group: one round per member", names === "Ferit,Filiz", names);
+
+  // KVKK
+  const Database = require("better-sqlite3");
+  const db = new Database(server.dbPath);
+  try {
+    await api(F, "DELETE", `/mentees/${m1}`);
+    const menteeRows = db.prepare(`SELECT COUNT(*) n FROM checkins WHERE mentorship_id = ? AND role = 'mentee'`).get(ms.id).n;
+    const mentorRows = db.prepare(`SELECT COUNT(*) n FROM checkins WHERE mentorship_id = ? AND role = 'mentor'`).get(ms.id).n;
+    check("deleting a mentee deletes their feedback, not the mentor's", menteeRows === 0 && mentorRows === 1, `${menteeRows} / ${mentorRows}`);
+    await api(F, "DELETE", `/mentees/${g1}`);
+    check("deleting a group member deletes only their feedback",
+          db.prepare(`SELECT COUNT(*) n FROM checkins WHERE member_id = ?`).get(g1).n === 0 &&
+          db.prepare(`SELECT COUNT(*) n FROM checkins WHERE member_id = ?`).get(g2).n === 1);
+    await api(F, "DELETE", `/mentorships/${gms.id}?force=true`);
+    check("deleting a mentorship deletes its feedback",
+          db.prepare(`SELECT COUNT(*) n FROM checkins WHERE mentorship_id = ?`).get(gms.id).n === 0);
+  } finally {
+    db.close();
+  }
+
+  const reset = await api(F, "DELETE", "/checkin-questions");
+  check("back to the default questions", reset.status === 200 && reset.json?.isDefault === true && reset.json?.questions?.length === 6);
 }
 
 main().catch(err => {

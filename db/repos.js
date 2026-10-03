@@ -770,6 +770,13 @@ const mentees = {
            AND mentorship_id IN (SELECT id FROM mentorships WHERE mentee_id = ? AND company_id = ?)
       `).run(id, mentee.companyId);
       db.prepare(`DELETE FROM surveys WHERE member_id = ?`).run(id);
+      // their check-in feedback goes the same way
+      db.prepare(`
+        DELETE FROM checkins
+         WHERE role = 'mentee' AND member_id = ''
+           AND mentorship_id IN (SELECT id FROM mentorships WHERE mentee_id = ? AND company_id = ?)
+      `).run(id, mentee.companyId);
+      db.prepare(`DELETE FROM checkins WHERE member_id = ?`).run(id);
 
       db.prepare(`
         UPDATE mentorships
@@ -1921,6 +1928,95 @@ const menteeGroups = {
   }
 };
 
+// =====================================================================
+// CHECK-IN FEEDBACK  (mid-programme feedback rounds)
+// =====================================================================
+
+function hydrateCheckin(row) {
+  const c = camelize(row);
+  if (!c) return null;
+  try { c.questions = JSON.parse(row.questions || "[]"); } catch { c.questions = []; }
+  try { c.answers = row.answers ? JSON.parse(row.answers) : null; } catch { c.answers = null; }
+  c.needsSupport = !!c.needsSupport;
+  return c;
+}
+
+const checkins = {
+  /**
+   * A new round for one person - or, when this person still has an
+   * UNANSWERED round, that same round again (a reminder: same link,
+   * reminder_count + 1). Returns { checkin, reminded }.
+   */
+  openRound(companyId, { mentorshipId, role, memberId = "", recipientName, recipientEmail, language, questions }) {
+    const cid = slugify(companyId);
+    const pending = db.prepare(`
+      SELECT * FROM checkins
+       WHERE company_id = ? AND mentorship_id = ? AND role = ? AND member_id = ? AND status = 'pending'
+       ORDER BY sent_at DESC LIMIT 1
+    `).get(cid, mentorshipId, role, memberId || "");
+
+    if (pending) {
+      db.prepare(`
+        UPDATE checkins SET reminder_count = reminder_count + 1, last_reminded_at = ?,
+               recipient_email = ? WHERE id = ?
+      `).run(now(), recipientEmail || pending.recipient_email, pending.id);
+      return { checkin: checkins.get(pending.id), reminded: true };
+    }
+
+    const id = newId();
+    db.prepare(`
+      INSERT INTO checkins (id, company_id, mentorship_id, role, member_id, token, status,
+                            recipient_name, recipient_email, language, questions, sent_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)
+    `).run(id, cid, mentorshipId, role, memberId || "", newToken(),
+           recipientName || "", recipientEmail || "", language === "en" ? "en" : "tr",
+           JSON.stringify(questions || []), now());
+    return { checkin: checkins.get(id), reminded: false };
+  },
+
+  get(id) {
+    return hydrateCheckin(db.prepare(`SELECT * FROM checkins WHERE id = ?`).get(id));
+  },
+
+  getByToken(token) {
+    if (!token) return null;
+    return hydrateCheckin(db.prepare(`SELECT * FROM checkins WHERE token = ?`).get(String(token)));
+  },
+
+  listByMentorship(mentorshipId) {
+    return db.prepare(`SELECT * FROM checkins WHERE mentorship_id = ? ORDER BY sent_at DESC`)
+      .all(mentorshipId).map(hydrateCheckin);
+  },
+
+  complete(id, answers, needsSupport) {
+    db.prepare(`
+      UPDATE checkins SET status = 'completed', answers = ?, needs_support = ?, completed_at = ?
+       WHERE id = ? AND status = 'pending'
+    `).run(JSON.stringify(answers), needsSupport ? 1 : 0, now(), id);
+    return checkins.get(id);
+  },
+
+  /**
+   * Summary for HR lists: the last answered round, unanswered rounds, and
+   * whether anyone's LATEST answered round asks for HR support.
+   */
+  summary(mentorshipId) {
+    const all = checkins.listByMentorship(mentorshipId);
+    const done = all.filter(c => c.status === "completed");
+    const latestByPerson = new Map();
+    for (const c of done) {                       // newest first
+      const k = `${c.role}:${c.memberId}`;
+      if (!latestByPerson.has(k)) latestByPerson.set(k, c);
+    }
+    return {
+      rounds: all.length,
+      pending: all.filter(c => c.status === "pending").length,
+      lastAnsweredAt: done.length ? done[0].completedAt : "",
+      needsSupport: [...latestByPerson.values()].some(c => c.needsSupport)
+    };
+  }
+};
+
 module.exports = {
   companies,
   mentors,
@@ -1933,5 +2029,6 @@ module.exports = {
   programs,
   programStatus,
   menteeGroups,
-  isRealDate
+  isRealDate,
+  checkins
 };

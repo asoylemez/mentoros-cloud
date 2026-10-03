@@ -554,6 +554,12 @@ const translations = {
     sendSurveyMentor: "Send Survey to Mentor",
     sendSurveyMentee: "Send Survey to Mentee",
     sendSurveyMembers: "Send Survey to Members",
+    checkinLabel: "Feedback", checkinMentor: "Mentor", checkinMentee: "Mentee", checkinMembers: "Members",
+    checkinBoth: "Both", checkinShow: "Show Feedback",
+    checkinNone: "No feedback asked yet.", checkinNoAnswer: "no answer yet", checkinLastAnswer: "last answer",
+    checkinPending: "waiting", checkinSentTo: "Feedback request sent to:", checkinRemindedTo: "Reminder sent to:",
+    checkinNotSent: "Not sent (share the link by hand):", checkinFailed: "The feedback request could not be sent.",
+    checkinReminders: "reminders", needsSupport: "Needs support", colCheckin: "Feedback", yes: "Yes", no: "No",
     deletedMentee: "(deleted mentee)",
     surveyAlreadyDoneBy: "Already answered by",
     group: "Group", people: "people", groupMembers: "Members", groupMember: "Member",
@@ -652,6 +658,12 @@ const translations = {
     sendSurveyMentor: "Mentore Anket Gönder",
     sendSurveyMentee: "Mentee'ye Anket Gönder",
     sendSurveyMembers: "Üyelere Anket Gönder",
+    checkinLabel: "Geri bildirim", checkinMentor: "Mentora", checkinMentee: "Mentee'ye", checkinMembers: "Üyelere",
+    checkinBoth: "İkisine", checkinShow: "Geri Bildirimleri Göster",
+    checkinNone: "Henüz geri bildirim istenmedi.", checkinNoAnswer: "henüz cevap yok", checkinLastAnswer: "son cevap",
+    checkinPending: "bekliyor", checkinSentTo: "Geri bildirim isteği gönderildi:", checkinRemindedTo: "Hatırlatma gönderildi:",
+    checkinNotSent: "Gönderilemedi (bağlantıyı elle paylaşın):", checkinFailed: "Geri bildirim isteği gönderilemedi.",
+    checkinReminders: "hatırlatma", needsSupport: "Destek istiyor", colCheckin: "Geri bildirim", yes: "Evet", no: "Hayır",
     deletedMentee: "(silinmiş mentee)",
     surveyAlreadyDoneBy: "Zaten cevaplayanlar:",
     group: "Grup", people: "kişi", groupMembers: "Üyeler", groupMember: "Üye",
@@ -785,7 +797,10 @@ function renderMentorships() {
               ? `<span class="badge" style="background:#fef3c7;color:#92400e;margin-right:4px">${escapeHtml(t("group"))}</span>${escapeHtml(m.groupName || m.menteeName)} (${(m.members || []).length} ${escapeHtml(t("people"))})`
               : (m.menteeDeleted ? `<span class="muted">${escapeHtml(t("deletedMentee"))}</span>` : escapeHtml(m.menteeName || t("mentee")))}
           </div>
-          <span class="badge ${escapeHtml(mentorshipStatus)}">${escapeHtml(statusText(mentorshipStatus))}</span>
+          <span>
+            ${m.checkin && m.checkin.needsSupport ? `<span class="pill warn" style="margin-right:6px">${escapeHtml(t("needsSupport"))}</span>` : ""}
+            <span class="badge ${escapeHtml(mentorshipStatus)}">${escapeHtml(statusText(mentorshipStatus))}</span>
+          </span>
         </div>
 
         ${m.groupId ? `
@@ -832,6 +847,22 @@ function renderMentorships() {
             ${t("delete")}
           </button>
         </div>
+
+        <div class="survey-row">
+          <div class="survey-label">
+            <div class="muted">${t("checkinLabel")}</div>
+            <div class="muted" style="font-size:11.5px">${checkinStatusText(m.checkin)}</div>
+          </div>
+          <div class="actions" style="margin:0">
+            ${mentorshipStatus === "active" ? `
+              <button onclick="sendCheckin('${escapeJs(m.id)}','mentor',this)">${t("checkinMentor")}</button>
+              <button onclick="sendCheckin('${escapeJs(m.id)}','mentee',this)">${m.groupId ? t("checkinMembers") : t("checkinMentee")}</button>
+              <button onclick="sendCheckin('${escapeJs(m.id)}','both',this)">${t("checkinBoth")}</button>
+            ` : ""}
+            <button onclick="showCheckins('${escapeJs(m.id)}')">${t("checkinShow")}</button>
+          </div>
+        </div>
+        <div id="checkinBox-${escapeHtml(m.id)}"></div>
 
         <div class="survey-row">
           <div class="muted survey-label">${t("surveyLabel")}</div>
@@ -916,6 +947,92 @@ async function sendSurvey(mentorshipId, role, btn) {
 }
 
 /** Cevap panelini acar/kapatir. */
+/* ==================================================================
+   CHECK-IN FEEDBACK  (mid-programme; not the closing survey)
+   ================================================================== */
+
+function checkinStatusText(c) {
+  if (!c || !c.rounds) return escapeHtml(t("checkinNone"));
+  const parts = [];
+  parts.push(c.lastAnsweredAt ? `${t("checkinLastAnswer")} ${formatDate(c.lastAnsweredAt)}` : t("checkinNoAnswer"));
+  if (c.pending) parts.push(`${c.pending} ${t("checkinPending")}`);
+  return escapeHtml(parts.join(" · "));
+}
+
+async function sendCheckin(mentorshipId, target, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t("emailSending");
+  try {
+    const res = await fetch(`${API_BASE_URL}/mentorships/${mentorshipId}/checkin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target, language: currentLanguage })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data.sent && !data.failed) throw new Error(data.error || t("checkinFailed"));
+
+    // Who got it (or a reminder), who did not - with their own link.
+    const lines = [];
+    const fresh = data.sent.filter(x => !x.reminder), again = data.sent.filter(x => x.reminder);
+    if (fresh.length) lines.push(`${t("checkinSentTo")} ${fresh.map(x => x.name).join(", ")}`);
+    if (again.length) lines.push(`${t("checkinRemindedTo")} ${again.map(x => x.name).join(", ")}`);
+    if (data.failed.length) lines.push(`${t("checkinNotSent")}\n` +
+      data.failed.map(x => `${x.name}: ${x.reason}${x.checkinUrl ? "\n  " + x.checkinUrl : ""}`).join("\n"));
+    alert(lines.join("\n\n"));
+    await loadDashboard();
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+async function showCheckins(mentorshipId, forceOpen) {
+  const box = document.getElementById(`checkinBox-${mentorshipId}`);
+  if (!box) return;
+  if (box.innerHTML.trim() && !forceOpen) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="survey-panel"><div class="muted">${t("surveyLoading")}</div></div>`;
+  try {
+    const res = await fetch(`${API_BASE_URL}/mentorships/${mentorshipId}/checkins`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (!data.rounds.length) {
+      box.innerHTML = `<div class="survey-panel"><div class="muted">${escapeHtml(t("checkinNone"))}</div></div>`;
+      return;
+    }
+    const qText = q => (currentLanguage === "en" ? (q.en || q.tr) : (q.tr || q.en)) || "";
+    const answerText = (q, v) => {
+      if (v === undefined || v === null || v === "") return `<span class="muted">—</span>`;
+      if (q.type === "scale5") return `<b>${escapeHtml(String(v))}</b>/5`;
+      if (q.type === "yesno") return escapeHtml(v === "yes" ? t("yes") : t("no"));
+      return escapeHtml(String(v));
+    };
+    box.innerHTML = `<div class="survey-panel">${data.rounds.map(r => `
+      <div class="survey-col" style="margin-bottom:10px">
+        <div class="row" style="margin-bottom:6px">
+          <div><strong>${escapeHtml(r.name || "-")}</strong>
+            <span class="muted"> · ${escapeHtml(r.role === "mentor" ? t("mentor") : t("mentee"))}</span></div>
+          <div>
+            ${r.needsSupport ? `<span class="pill warn">${escapeHtml(t("needsSupport"))}</span>` : ""}
+            <span class="pill ${r.status === "completed" ? "ok" : ""}">${escapeHtml(r.status === "completed" ? t("surveyCompleted") : t("surveyPending"))}</span>
+          </div>
+        </div>
+        <div class="muted" style="font-size:12px">
+          ${escapeHtml(t("surveySentAt"))}: ${escapeHtml(formatDate(r.sentAt))}
+          ${r.reminderCount ? ` · ${escapeHtml(t("checkinReminders"))}: ${r.reminderCount}` : ""}
+          ${r.completedAt ? ` · ${escapeHtml(t("surveyCompletedAt"))}: ${escapeHtml(formatDate(r.completedAt))}` : ""}
+        </div>
+        ${r.status === "completed"
+          ? r.questions.map(q => `<div style="margin-top:6px;font-size:13px">${escapeHtml(qText(q))}<br>${answerText(q, (r.answers || {})[q.id])}</div>`).join("")
+          : `<button style="margin-top:8px;font-size:12px;padding:6px 11px" onclick="copyText('${escapeJs(r.checkinUrl)}')">${escapeHtml(t("surveyCopyLink"))}</button>`}
+      </div>`).join("")}</div>`;
+  } catch {
+    box.innerHTML = `<div class="survey-panel"><div class="muted">${t("surveyLoadFailed")}</div></div>`;
+  }
+}
+
 async function showSurveyAnswers(mentorshipId, forceOpen) {
   const box = document.getElementById(`surveyBox-${mentorshipId}`);
   if (!box) return;
@@ -1297,6 +1414,7 @@ function renderTracking() {
     ${card(s.completed, t("trackCompleted"))}
     ${card(s.neverMet, t("trackNeverMet"), true)}
     ${card(s.silent, t("trackSilent").replace("{n}", TRACKING.silentDays), true)}
+    ${card(s.needsSupport || 0, t("needsSupport"), true)}
   </div>`;
 
   if (!TRACKING.rows.length) {
@@ -1322,6 +1440,8 @@ function renderTracking() {
         <td>${r.lastMeeting ? formatDate(r.lastMeeting) : "—"}</td>
         <td>${sinceText(r.daysSinceLast)}</td>
         <td>${next}</td>
+        <td>${r.checkin && r.checkin.needsSupport ? `<span class="pill warn">${escapeHtml(t("needsSupport"))}</span>`
+              : (r.checkin && r.checkin.lastAnsweredAt ? escapeHtml(formatDate(r.checkin.lastAnsweredAt)) : "—")}</td>
       </tr>`;
     if (open) {
       const list = r.meetings.length
@@ -1329,7 +1449,7 @@ function renderTracking() {
             `<span>${i + 1}. ${formatDate(m.date)} · ${m.durationMinutes != null ? formatMinutes(m.durationMinutes) : escapeHtml(t("durationUnknown"))}</span>`).join("")
         : `<span>${escapeHtml(t("noMeetingYet"))}</span>`;
       const untimed = r.meetingCount - r.timedCount;
-      rows += `<tr class="track-detail"><td colspan="8">
+      rows += `<tr class="track-detail"><td colspan="9">
         <div class="track-meetings">${list}</div>
         ${untimed > 0 && r.timedCount ? `<div class="track-note">${escapeHtml(t("durationPartial").replace("{n}", untimed))}</div>` : ""}
       </td></tr>`;
@@ -1342,6 +1462,7 @@ function renderTracking() {
       <th class="num">${escapeHtml(t("colTotal"))}</th><th class="num">${escapeHtml(t("colAvg"))}</th>
       <th>${escapeHtml(t("colFirst"))}</th><th>${escapeHtml(t("colLast"))}</th>
       <th>${escapeHtml(t("colSince"))}</th><th>${escapeHtml(t("colNext"))}</th>
+      <th>${escapeHtml(t("colCheckin"))}</th>
     </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 

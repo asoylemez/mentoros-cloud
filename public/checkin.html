@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ara geri bildirim</title>
+  <!--
+    Check-in (mid-programme feedback). Opened with a personal token; only
+    HR sees the answers. The questions come from the round's own copy, so
+    they are exactly the ones this round was sent with.
+  -->
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f4f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #1f2430;
+    }
+
+    .topbar {
+      background: #ffffff;
+      border-bottom: 1px solid #e4e6ee;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: #1a2b5e;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px;
+    }
+
+    .brand { font-weight: 700; color: #1a2b5e; font-size: 16px; }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 26px 16px 60px; }
+
+    .header {
+      background: #1a2b5e;
+      color: #fff;
+      border-radius: 12px 12px 0 0;
+      padding: 26px 28px;
+    }
+
+    .header h1 { margin: 0 0 7px; font-size: 22px; }
+    .header p { margin: 0; opacity: 0.9; font-size: 14px; line-height: 1.6; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e4e6ee;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 24px 28px 28px;
+    }
+
+    .privacy {
+      background: #f0f7f2;
+      border: 1px solid #c9e3d2;
+      border-radius: 9px;
+      padding: 13px 15px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #2c5c3e;
+      margin: 0 0 22px;
+    }
+
+    .section { margin-bottom: 26px; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #b5651d;
+      margin-bottom: 14px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid #eceef4;
+    }
+
+    .q { margin-bottom: 20px; }
+
+    .q-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a2b5e;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .q-hint {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 9px;
+      line-height: 1.5;
+    }
+
+    .optional {
+      font-weight: 400;
+      color: #9aa1b1;
+      font-size: 13px;
+    }
+
+    /* --- 1-5 olcek --- */
+
+    .scale {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .scale button {
+      background: #fff;
+      border: 1px solid #d6dae6;
+      border-radius: 9px;
+      padding: 11px 4px 9px;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: center;
+      transition: all 0.12s;
+    }
+
+    .scale button:hover { border-color: #1a2b5e; }
+
+    .scale button.on {
+      background: #1a2b5e;
+      border-color: #1a2b5e;
+      color: #fff;
+    }
+
+    .scale .num { font-size: 17px; font-weight: 700; display: block; }
+    .scale .lbl { font-size: 10.5px; line-height: 1.3; display: block; margin-top: 3px; opacity: 0.85; }
+
+    /* --- 0-10 --- */
+
+    .nps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+    .nps button {
+      flex: 1 1 52px;
+      background: #fff;
+      border: 1px solid #d6dae6;
+      border-radius: 8px;
+      padding: 11px 0;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .nps button:hover { border-color: #1a2b5e; }
+    .nps button.on { background: #1a2b5e; border-color: #1a2b5e; color: #fff; }
+
+    /* --- secenek --- */
+
+    .choice { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+    .choice button {
+      background: #fff;
+      border: 1px solid #d6dae6;
+      border-radius: 9px;
+      padding: 11px 20px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .choice button:hover { border-color: #1a2b5e; }
+    .choice button.on { background: #1a2b5e; border-color: #1a2b5e; color: #fff; }
+
+    textarea {
+      width: 100%;
+      min-height: 96px;
+      padding: 12px 13px;
+      border: 1px solid #d6dae6;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 14.5px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      color: #1f2430;
+    }
+
+    textarea:focus { border-color: #1a2b5e; box-shadow: 0 0 0 3px rgba(26,43,94,0.07); }
+
+    .submit {
+      width: 100%;
+      background: #b5651d;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .submit:hover { background: #9d5518; }
+    .submit:disabled { background: #b9bdc9; cursor: not-allowed; }
+
+    .note {
+      background: #fffbf5;
+      border: 1px solid #f3e0c8;
+      border-radius: 9px;
+      padding: 13px 15px;
+      color: #8a5a2b;
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+
+    .state {
+      background: #fff;
+      border: 1px solid #e4e6ee;
+      border-radius: 12px;
+      padding: 44px 30px;
+      text-align: center;
+    }
+
+    .state h2 { color: #1a2b5e; margin: 0 0 10px; font-size: 20px; }
+    .state p { color: #5b6172; font-size: 14.5px; line-height: 1.65; margin: 0; }
+
+    .tick {
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      background: #e7f4ec;
+      color: #2f7d4f;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 16px;
+    }
+
+    @media (max-width: 560px) {
+      .card, .header { padding-left: 18px; padding-right: 18px; }
+      .scale { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+      .scale .lbl { display: none; }
+      .scale button { padding: 13px 2px; }
+    }
+  </style>
+  <style>
+    textarea { width: 100%; min-height: 84px; border: 1px solid #d7dae3; border-radius: 8px;
+               padding: 10px 12px; font: inherit; font-size: 14px; resize: vertical; margin-top: 8px; }
+    .lang { margin-left: auto; }
+    .lang select { padding: 5px 8px; border-radius: 7px; border: 1px solid #d7dae3; font: inherit; font-size: 13px; }
+    .q.missing .q-text { color: #b42318; }
+    .note:empty { display: none; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">M</div>
+    <div class="brand">MentorOS</div>
+    <div class="lang">
+      <select id="lang" aria-label="Language">
+        <option value="tr">Türkçe</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="wrap" id="app">
+    <div class="state"><p id="loading">…</p></div>
+  </div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get("token") || "";
+
+const T = {
+  tr: {
+    title: "Ara geri bildirim",
+    intro: name => `Merhaba ${name}, mentorluk süreciniz devam ederken nasıl gittiğini merak ediyoruz. Birkaç soru, yaklaşık 2 dakika.`,
+    withWhom: (other, isGroup, role) => role === "mentor"
+      ? (isGroup ? `Grup: ${other}` : `Mentee: ${other}`)
+      : `Mentor: ${other}`,
+    notSurvey: "Bu bir kapanış anketi değildir.",
+    privacy: "Cevaplarınızı yalnızca İnsan Kaynakları görür; mentorluk ilişkisindeki diğer kişi(ler) görmez. Cevaplar yapay zekâya gönderilmez.",
+    optional: "(isteğe bağlı)",
+    agree: ["Kesinlikle katılmıyorum", "Katılmıyorum", "Kararsızım", "Katılıyorum", "Kesinlikle katılıyorum"],
+    yes: "Evet", no: "Hayır",
+    send: "Gönder", sending: "Gönderiliyor…",
+    missing: "Lütfen işaretli zorunlu soruları cevaplayın.",
+    thanks: "Teşekkürler!", thanksText: "Geri bildiriminiz İnsan Kaynakları'na iletildi.",
+    done: "Bu geri bildirim zaten gönderilmiş.", doneText: "Bu bağlantıyla gönderilen cevaplar kaydedildi. Teşekkür ederiz.",
+    invalid: "Bağlantı geçersiz", invalidText: "Bu geri bildirim bağlantısı geçerli değil. Lütfen İnsan Kaynakları ile iletişime geçin.",
+    failed: "Gönderilemedi. Lütfen tekrar deneyin."
+  },
+  en: {
+    title: "Mid-programme feedback",
+    intro: name => `Hello ${name}, we would like to know how your mentorship is going while it runs. A few questions, about 2 minutes.`,
+    withWhom: (other, isGroup, role) => role === "mentor"
+      ? (isGroup ? `Group: ${other}` : `Mentee: ${other}`)
+      : `Mentor: ${other}`,
+    notSurvey: "This is not the closing survey.",
+    privacy: "Only HR sees your answers; the other person or people in the mentorship do not. The answers are not sent to the AI.",
+    optional: "(optional)",
+    agree: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"],
+    yes: "Yes", no: "No",
+    send: "Send", sending: "Sending…",
+    missing: "Please answer the required questions marked.",
+    thanks: "Thank you!", thanksText: "Your feedback has been passed on to HR.",
+    done: "This feedback has already been sent.", doneText: "The answers sent with this link have been saved. Thank you.",
+    invalid: "Invalid link", invalidText: "This feedback link is not valid. Please contact HR.",
+    failed: "Could not be sent. Please try again."
+  }
+};
+
+let DATA = null;
+let LANG = "tr";
+const answers = {};
+const t = k => T[LANG][k];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+/** Question text in the page language, falling back to the other one. */
+const qText = q => (LANG === "en" ? (q.en || q.tr) : (q.tr || q.en)) || "";
+
+function state(title, text, tick) {
+  document.getElementById("app").innerHTML = `
+    <div class="state">${tick ? '<div class="tick">✓</div>' : ""}<h2>${esc(title)}</h2><p>${esc(text)}</p></div>`;
+}
+
+function render() {
+  document.documentElement.lang = LANG;
+  document.title = t("title");
+  if (!DATA) return;
+  if (DATA === "invalid") return state(t("invalid"), t("invalidText"));
+  if (DATA.status === "completed") return state(t("done"), t("doneText"), true);
+
+  const qs = DATA.questions.map((q, i) => {
+    let input = "";
+    if (q.type === "scale5") {
+      input = `<div class="scale">${[1,2,3,4,5].map(n => `
+        <button type="button" class="${answers[q.id] === n ? "on" : ""}" onclick="pick('${q.id}', ${n})">
+          <span class="num">${n}</span><span class="lbl">${esc(t("agree")[n - 1])}</span></button>`).join("")}</div>`;
+    } else if (q.type === "yesno") {
+      input = `<div class="choice">${["yes", "no"].map(v => `
+        <button type="button" class="${answers[q.id] === v ? "on" : ""}" onclick="pick('${q.id}', '${v}')">${esc(t(v))}</button>`).join("")}</div>`;
+    } else {
+      input = `<textarea maxlength="2000" oninput="answers['${q.id}'] = this.value">${esc(answers[q.id] || "")}</textarea>`;
+    }
+    return `<div class="q" id="q_${esc(q.id)}">
+      <div class="q-text">${i + 1}. ${esc(qText(q))} ${q.optional ? `<span class="optional">${esc(t("optional"))}</span>` : ""}</div>
+      ${input}</div>`;
+  }).join("");
+
+  document.getElementById("app").innerHTML = `
+    <div class="header">
+      <h1>${esc(t("title"))}</h1>
+      <p>${esc(t("intro")(DATA.recipientName || ""))}</p>
+      ${DATA.otherName ? `<p style="margin-top:8px"><b>${esc(t("withWhom")(DATA.otherName, DATA.isGroup, DATA.role))}</b>${DATA.companyName ? " · " + esc(DATA.companyName) : ""}</p>` : ""}
+    </div>
+    <div class="card">
+      <div class="privacy"><b>${esc(t("notSurvey"))}</b> ${esc(t("privacy"))}</div>
+      ${qs}
+      <div class="note" id="msg" role="alert"></div>
+      <button class="submit" id="send" onclick="submitForm()">${esc(t("send"))}</button>
+    </div>`;
+}
+
+window.pick = (id, v) => { answers[id] = v; render(); };
+
+window.submitForm = async () => {
+  const missing = DATA.questions.filter(q => !q.optional &&
+    (answers[q.id] === undefined || answers[q.id] === null || String(answers[q.id]).trim() === ""));
+  document.querySelectorAll(".q").forEach(el => el.classList.remove("missing"));
+  if (missing.length) {
+    missing.forEach(q => { const el = document.getElementById("q_" + q.id); if (el) el.classList.add("missing"); });
+    document.getElementById("msg").textContent = t("missing");
+    document.getElementById("q_" + missing[0].id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  const btn = document.getElementById("send");
+  btn.disabled = true; btn.textContent = t("sending");
+  try {
+    const res = await fetch(`/public/checkin/${encodeURIComponent(TOKEN)}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers })
+    });
+    if (res.status === 409) { DATA.status = "completed"; return render(); }
+    if (!res.ok) throw new Error();
+    state(t("thanks"), t("thanksText"), true);
+  } catch {
+    document.getElementById("msg").textContent = t("failed");
+    btn.disabled = false; btn.textContent = t("send");
+  }
+};
+
+document.getElementById("lang").onchange = e => { LANG = e.target.value; render(); };
+
+(async function init() {
+  try {
+    const res = await fetch(`/public/checkin/${encodeURIComponent(TOKEN)}`);
+    DATA = res.ok ? await res.json() : "invalid";
+  } catch { DATA = "invalid"; }
+  if (DATA !== "invalid" && DATA.language) LANG = DATA.language === "en" ? "en" : "tr";
+  document.getElementById("lang").value = LANG;
+  render();
+})();
+</script>
+</body>
+</html>
