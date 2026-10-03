@@ -1,7 +1,9 @@
 const express = require("express");
 
 const config = require("../config");
-const { mentors, mentees, mentorships, meetings, meetingDuration } = require("../db/repos");
+const { mentors, mentees, mentorships, meetings, meetingDuration, isRealDate } = require("../db/repos");
+const { composeMenteeNeed } = require("../lib/menteeNeed");
+const { db } = require("../db");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
 const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, wrap } = require("./_helpers");
@@ -29,35 +31,126 @@ function withWorkspaceLink(ms) {
 // MENTORLUK ILISKILERI
 // =====================================================================
 
+/**
+ * ====================================================================
+ * MATCH = MENTORSHIP  (no approval flow)
+ * ====================================================================
+ *
+ * HR picks the mentor (after the AI suggestions or by hand) and the
+ * mentorship and its workspace open AT ONCE. Nobody is e-mailed here:
+ * HR sends the workspace e-mail from the HR Dashboard when ready.
+ *
+ * Body: { mentorId, menteeId, closingDate?, language }
+ *   - menteeId of a registered mentee: name, e-mail, role and need are
+ *     taken from the RECORDS, never from the browser.
+ *   - a menteeId that matches no record is a typed-in (unregistered)
+ *     mentee - only in an organisation without programmes; then
+ *     menteeName / menteeEmail / menteeRole / menteeDepartment /
+ *     developmentNeed come from the body.
+ *   - period: with a programme it ends on the programme's end date;
+ *     without one HR must give closingDate (YYYY-MM-DD, today or later).
+ */
 router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
   if (!companyId) return;
-  const { mentorId, menteeId } = req.body;
+  const body = req.body || {};
+  const { mentorId, menteeId } = body;
+  const lang = body.language === "en" ? "en" : "tr";
 
   if (!mentorId || !menteeId) {
     return res.status(400).json({ error: "mentorId and menteeId are required" });
   }
 
-  // Both people must belong to the signed-in company.
   const mentor = ownRecord(req, res, mentors.get(mentorId), "Mentor not found");
   if (!mentor) return;
-  const mentee = ownRecord(req, res, mentees.get(menteeId), "Mentee not found");
-  if (!mentee) return;
-  if (refuseGroupMember(res, mentee)) return;
+
+  // A registered mentee must be the organisation's own; an id that
+  // matches no record is a typed-in mentee.
+  let mentee = null;
+  const found = mentees.get(menteeId);
+  if (found) {
+    mentee = ownRecord(req, res, found, "Mentee not found");
+    if (!mentee) return;
+    if (refuseGroupMember(res, mentee)) return;
+  }
 
   // Programme rule; the programme is taken from the mentee, never from the body.
   const rule = programForMatch(res, companyId, mentee, mentor);
   if (!rule) return;
 
-  const { created, mentorship } = mentorships.create(companyId, { ...req.body, programId: rule.programId });
+  // One mentor per mentee at a time.
+  if (mentee) {
+    const engagement = mentees.engagement(companyId, mentee.id);
+    if (engagement.state === "matched") {
+      return res.status(409).json({
+        error: "This mentee already has an active mentorship.",
+        detail: engagement.mentorName ? `Mentor: ${engagement.mentorName}` : undefined,
+        action: "Complete or cancel the existing mentorship before creating a new match.",
+        code: "mentee_already_engaged",
+        state: engagement.state,
+        mentorName: engagement.mentorName,
+        mentorshipId: engagement.mentorshipId
+      });
+    }
+  }
+
+  // Period of the match
+  let closingDate;
+  if (rule.program) {
+    closingDate = rule.program.endDate;
+  } else {
+    closingDate = String(body.closingDate || "").trim();
+    const today = new Date().toISOString().slice(0, 10);
+    if (!isRealDate(closingDate) || closingDate < today) {
+      return res.status(400).json({
+        error: "Give the end date of the match (today or later).",
+        code: "closing_date_required"
+      });
+    }
+  }
+
+  const payload = {
+    programId: rule.programId,
+    closingDate,
+    mentorId: mentor.id,
+    mentorName: mentor.fullName || "",
+    mentorEmail: mentor.email || "",
+    menteeId,
+    goals: [], developmentAreas: [], successCriteria: []
+  };
+  if (mentee) {
+    Object.assign(payload, {
+      menteeName: mentee.fullName || "",
+      menteeEmail: mentee.email || "",
+      menteeRole: mentee.role || "",
+      menteeDepartment: mentee.department || "",
+      developmentNeed: composeMenteeNeed(mentee, lang)
+    });
+  } else {
+    Object.assign(payload, {
+      menteeName: String(body.menteeName || "").trim() || "Mentee",
+      menteeEmail: String(body.menteeEmail || "").trim(),
+      menteeRole: String(body.menteeRole || "").trim(),
+      menteeDepartment: String(body.menteeDepartment || "").trim(),
+      developmentNeed: String(body.developmentNeed || "").trim()
+    });
+  }
+
+  const { created, mentorship } = mentorships.create(companyId, payload);
+  if (!created) {
+    // Same mentor + mentee + programme already had a mentorship (e.g. a
+    // completed one): say so instead of silently reusing it.
+    return res.status(409).json({
+      error: "This mentor and mentee already had a mentorship in this programme.",
+      code: "pair_exists",
+      mentorshipId: mentorship.id
+    });
+  }
 
   const withLink = withWorkspaceLink(mentorship);
-
   res.json({
     success: true,
-    message: created
-      ? "Workspace created"
-      : "A workspace already exists for this match",
+    message: "Mentorship created",
     mentorshipId: mentorship.id,
     mentorship: withLink,
     workspaceUrl: withLink.workspaceUrl
@@ -68,7 +161,18 @@ router.get("/mentorships", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
   if (!companyId) return;
 
-  res.json(mentorships.listByCompany(companyId).map(withWorkspaceLink));
+  // When the workspace e-mail last went out (HR sends it by hand from the
+  // dashboard, so the dashboard shows who has not been told yet).
+  const lastSent = new Map(db.prepare(`
+    SELECT ref_id, MAX(sent_at) AS at FROM email_log
+     WHERE company_id = ? AND kind = 'workspace' AND ok = 1
+     GROUP BY ref_id
+  `).all(companyId).map(r => [r.ref_id, r.at]));
+
+  res.json(mentorships.listByCompany(companyId).map(ms => ({
+    ...withWorkspaceLink(ms),
+    workspaceEmailSentAt: lastSent.get(ms.id) || ""
+  })));
 }));
 
 router.get("/mentorships/:id", requireApiKey, wrap(async (req, res) => {

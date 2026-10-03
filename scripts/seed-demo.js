@@ -277,8 +277,6 @@ function makeMentee(i) {
     preferredMentorProfile: sample(MENTOR_PROFILE, int(1, 2)),
     languages: ["Turkish"],
 
-    managerName: personName(),
-    managerEmail: emailFor("yonetici", 500 + i),
 
     message: "",
     kvkkConsent: 1,

@@ -21,7 +21,7 @@ gerekmez.
 | Alan adı ve DNS | Cloudflare | `app.getmentoros.com` adresini sunucuya yönlendirir | **Hayır** |
 | Uygulama + veritabanı | Render (Frankfurt) | Uygulamayı çalıştırır, veriyi diskte tutar | Altyapı sahibi olarak evet |
 | Yapay zeka | Anthropic (Claude API) | Eşleştirme önerisi üretir | Yalnızca anonim veri |
-| E-posta | SMTP sağlayıcınız | Davet ve onay e-postalarını iletir | **Evet — isim ve e-posta** |
+| E-posta | SMTP sağlayıcınız | Davet ve eşleşme e-postalarını iletir | **Evet — isim ve e-posta** |
 | Tanıtım sitesi | Netlify | `getmentoros.com` ve `www` | Uygulama verisine erişimi yok |
 
 **Önemli:** Cloudflare yalnızca DNS kaydı tutar (proxy kapalı — "DNS only").
@@ -167,7 +167,7 @@ gönderilen her isteğin içeriği satır satır görüntülenebilir.
    **veri işleyen** konumundadır; veri işleme sözleşmesi (DPA)
    gerekmektedir.
 
-2. **SMTP sağlayıcınız** — davet ve onay e-postalarını iletir. Bu
+2. **SMTP sağlayıcınız** — davet ve eşleşme e-postalarını iletir. Bu
    e-postalar **gerçek ad ve e-posta adresi içerir**. Anonimleştirme
    yalnızca yapay zeka çağrıları için geçerlidir, e-posta gönderimi için
    değil.

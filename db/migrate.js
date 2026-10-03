@@ -180,6 +180,41 @@ function run() {
 
   migratePrograms();
   migrateMenteeGroups();
+  removeApprovalFlow();
+}
+
+/**
+ * NO APPROVAL FLOW (October 2026)
+ *
+ * HR now matches directly: the mentorship and its workspace open at once
+ * and HR sends the workspace e-mail from the HR Dashboard. Mentor, mentee
+ * and manager approvals are gone, and manager details are no longer
+ * collected. Data that was only there for the old flow is removed
+ * (KVKK - no data kept without a purpose):
+ *   - match requests still waiting for approval
+ *   - managers' names and e-mail addresses (mentees, old requests)
+ *   - the log of approval e-mails (its recipients include managers)
+ * Approved requests stay as history; their mentorships are not touched.
+ * Safe to run on every start: it only reports when it changed something.
+ */
+function removeApprovalFlow() {
+  const pending = db.prepare(`DELETE FROM match_requests WHERE status = 'pending'`).run().changes;
+  if (pending) console.log(`  migration: ${pending} pending match request(s) removed (no approval flow)`);
+
+  const mgrMentees = db.prepare(`
+    UPDATE mentees SET manager_name = '', manager_email = ''
+     WHERE COALESCE(manager_name, '') != '' OR COALESCE(manager_email, '') != ''
+  `).run().changes;
+  const mgrRequests = db.prepare(`
+    UPDATE match_requests SET manager_name = '', manager_email = '', manager_token = NULL
+     WHERE COALESCE(manager_name, '') != '' OR COALESCE(manager_email, '') != '' OR manager_token IS NOT NULL
+  `).run().changes;
+  if (mgrMentees || mgrRequests) {
+    console.log(`  migration: manager details removed (${mgrMentees} mentee(s), ${mgrRequests} old request(s))`);
+  }
+
+  const approvalMails = db.prepare(`DELETE FROM email_log WHERE kind = 'approval'`).run().changes;
+  if (approvalMails) console.log(`  migration: ${approvalMails} approval e-mail log row(s) removed`);
 }
 
 /**

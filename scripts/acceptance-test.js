@@ -56,7 +56,7 @@ async function main() {
   console.log("\n2) NOTHING WITHOUT SIGNING IN\n");
   // ==================================================================
   const staffApis = [
-    "/mentors", "/mentees", "/mentorships", "/match-requests",
+    "/mentors", "/mentees", "/mentorships",
     "/matching-candidates", "/email/status", "/invite-link",
     "/email/history/x", "/meeting-tracking", "/programs", "/mentee-groups"
   ];
@@ -84,6 +84,10 @@ async function main() {
     check(`${p} redirects to sign-in`, r.status === 302 && loc.includes("/login.html"), `HTTP ${r.status}`);
   }
 
+  const old = await get("/match_approval.html");
+  const oldText = old.status === 200 ? await old.text() : "";
+  check("old approval links show 'no longer used'", oldText.includes("no longer used"), `HTTP ${old.status}`);
+
   // ==================================================================
   if (USER && PASSWORD) {
     console.log(`\n3) SIGNED IN AS "${USER}" (read-only)\n`);
@@ -104,7 +108,7 @@ async function main() {
       if (HTTPS) check("session cookie is Secure (https)", /;\s*secure/i.test(raw));
 
       const C = { Cookie: cookie };
-      for (const ep of ["/mentors", "/mentees", "/mentorships", "/match-requests", "/programs", "/mentee-groups"]) {
+      for (const ep of ["/mentors", "/mentees", "/mentorships", "/programs", "/mentee-groups"]) {
         const r = await get(ep, C);
         check(`own list ${ep}`, r.status === 200, `HTTP ${r.status}`);
       }
@@ -124,7 +128,7 @@ async function main() {
       // An id that is not this organisation's must look exactly like a
       // missing one. A random id is used: nothing is read or changed.
       const foreign = crypto.randomBytes(12).toString("hex");
-      for (const ep of [`/mentors/${foreign}`, `/mentees/${foreign}`, `/mentorships/${foreign}`, `/match-request/${foreign}`]) {
+      for (const ep of [`/mentors/${foreign}`, `/mentees/${foreign}`, `/mentorships/${foreign}`]) {
         const r = await get(ep, C);
         check(`unknown id ${ep.replace(foreign, ":id")} -> 404`, r.status === 404, `HTTP ${r.status}`);
       }

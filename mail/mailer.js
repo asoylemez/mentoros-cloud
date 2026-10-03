@@ -226,63 +226,23 @@ const T = {
       `Giris yapmaniza veya hesap olusturmaniza gerek yok.`,
     inviteButtonMentee: "Kayit Formunu Ac",
 
-    managerSubject: "Mentorluk Eslesmesi - Yonetici Onayiniz Bekleniyor",
-    managerTitle: "Ekip Uyeniz Icin Bir Mentor Onerildi",
-    managerBody: (r) =>
-      `Ekibinizden <b>${r.menteeName || "-"}</b> icin mentorluk programinda ` +
-      `bir mentor onerildi.` +
-
-      // Yonetici NEYI onayladigini gormeli - mentor kim, ne kadar uyumlu, neden.
-      `<br><br>` + card([
-        ["Onerilen mentor", `<b>${r.mentorName || "-"}</b>`],
-        r.matchScore ? ["Uyum puani", `<b>${r.matchScore}/100</b>`] : null,
-        r.menteeRole ? ["Ekip uyesinin rolu", r.menteeRole] : null
-      ]) +
-
-      (r.matchReason
-        ? `<br><b>Neden bu mentor:</b><br>${r.matchReason}` : "") +
-
-      (r.developmentNeed
-        ? `<br><br><b>Gelisim ihtiyaci:</b><br>${r.developmentNeed}` : "") +
-
-      `<br><br>Bu eslesmenin baslamasi <b>oncelikle sizin onayiniza</b> baglidir. ` +
-      `Siz onayladiktan sonra mentor ve mentee'ye de onay baglantisi gonderilecektir.`,
-    managerButton: "Eslesmeyi Incele",
-
-    approvalSubject: `Mentorluk Eslesmesi - Onayiniz Bekleniyor`,
-    approvalTitleMentor: "Size Bir Mentee Onerildi",
-    approvalTitleMentee: "Size Bir Mentor Onerildi",
-    approvalBodyMentor: (r) =>
-      `Mentorluk programinda size <b>${r.menteeName || "-"}</b> mentee olarak onerildi.` +
-      `<br><br>` + card([
-        ["Mentee", `<b>${r.menteeName || "-"}</b>`],
-        r.menteeRole ? ["Rolu", r.menteeRole] : null,
-        r.matchScore ? ["Uyum puani", `<b>${r.matchScore}/100</b>`] : null
-      ]) +
-      (r.matchReason ? `<br><b>Neden siz:</b><br>${r.matchReason}` : "") +
-      (r.developmentNeed ? `<br><br><b>Gelisim ihtiyaci:</b><br>${r.developmentNeed}` : "") +
-      `<br><br>Asagidaki baglantidan eslesmeyi inceleyip onaylayabilir ` +
-      `veya reddedebilirsiniz.`,
-
-    approvalBodyMentee: (r) =>
-      `Mentorluk programinda size <b>${r.mentorName || "-"}</b> mentor olarak onerildi.` +
-      `<br><br>` + card([
-        ["Onerilen mentor", `<b>${r.mentorName || "-"}</b>`],
-        r.matchScore ? ["Uyum puani", `<b>${r.matchScore}/100</b>`] : null
-      ]) +
-      (r.matchReason ? `<br><b>Neden bu mentor:</b><br>${r.matchReason}` : "") +
-      (r.developmentNeed ? `<br><br><b>Gelisim ihtiyaciniz:</b><br>${r.developmentNeed}` : "") +
-      `<br><br>Asagidaki baglantidan eslesmeyi inceleyip onaylayabilir ` +
-      `veya reddedebilirsiniz.`,
-    approvalButton: "Eslesmeyi Incele",
-
-    workspaceSubject: "Mentorluk Calisma Alaniniz Hazir",
-    workspaceTitle: "Calisma Alaniniz Acildi",
-    workspaceBody: (other) =>
-      `<b>${other}</b> ile mentorluk iliskiniz basladi.` +
-      `<br><br>Calisma alaninda gelisim hedeflerinizi gorebilir, toplanti ` +
-      `planlayabilir ve notlarinizi tutabilirsiniz.`,
-    workspaceButton: "Calisma Alanini Ac",
+    // The ONLY mail of a new match (sent by HR from the HR Dashboard).
+    workspaceSubject: "Mentorluk eşleşmeniz: çalışma sayfanız hazır",
+    workspaceTitle: "Mentorluk eşleşmeniz oluşturuldu",
+    workspaceBody: ({ name, other, isMentor, period }) =>
+      `Merhaba ${name},<br><br>` +
+      (isMentor
+        ? `<b>${other}</b> ile mentorluk eşleşmeniz oluşturuldu; bu eşleşmede mentor sizsiniz.`
+        : `<b>${other}</b> ile mentorluk eşleşmeniz oluşturuldu; ${other} sizin mentorunuz olacak.`) +
+      (period ? `<br><br><b>Eşleşmenin süresi:</b> ${period}` : "") +
+      `<br><br>Aşağıdaki bağlantıdan ortak çalışma sayfanıza girebilirsiniz. ` +
+      `Bu sayfa ikinizin ortak alanıdır: gelişim planınızı burada oluşturur, ` +
+      `her görüşmeden sonra toplantı notunu ve süresini kaydeder, aksiyonları ` +
+      `takip eder ve bir sonraki görüşmeyi planlarsınız.` +
+      `<br><br>Sayfa giriş gerektirmez, yalnızca bu bağlantıyla açılır. ` +
+      `Lütfen bağlantıyı başkalarıyla paylaşmayın.`,
+    workspaceButton: "Çalışma sayfasını aç",
+    workspacePeriod: (start, end) => `${start} – ${end}`,
 
     meetingInviteSummary: "Mentorluk Gorusmesi",
     meetingInviteSubject: "Mentorluk Gorusmesi Daveti",
@@ -325,60 +285,23 @@ const T = {
       `No sign-in or account needed.`,
     inviteButtonMentee: "Open Registration Form",
 
-    managerSubject: "Mentorship Match - Your Approval Needed as Manager",
-    managerTitle: "A Mentor Has Been Suggested for Your Team Member",
-    managerBody: (r) =>
-      `A mentor has been suggested for <b>${r.menteeName || "-"}</b> from your team.` +
-
-      // The manager must see WHAT they are approving - who, how good a fit, and why.
-      `<br><br>` + card([
-        ["Suggested mentor", `<b>${r.mentorName || "-"}</b>`],
-        r.matchScore ? ["Match score", `<b>${r.matchScore}/100</b>`] : null,
-        r.menteeRole ? ["Team member's role", r.menteeRole] : null
-      ]) +
-
-      (r.matchReason
-        ? `<br><b>Why this mentor:</b><br>${r.matchReason}` : "") +
-
-      (r.developmentNeed
-        ? `<br><br><b>Development need:</b><br>${r.developmentNeed}` : "") +
-
-      `<br><br>This match can only proceed with <b>your approval first</b>. ` +
-      `Once you approve, the mentor and the mentee will be asked to confirm.`,
-    managerButton: "Review the Match",
-
-    approvalSubject: `Mentorship Match - Your Approval Needed`,
-    approvalTitleMentor: "A Mentee Has Been Suggested for You",
-    approvalTitleMentee: "A Mentor Has Been Suggested for You",
-    approvalBodyMentor: (r) =>
-      `<b>${r.menteeName || "-"}</b> has been suggested as your mentee.` +
-      `<br><br>` + card([
-        ["Mentee", `<b>${r.menteeName || "-"}</b>`],
-        r.menteeRole ? ["Role", r.menteeRole] : null,
-        r.matchScore ? ["Match score", `<b>${r.matchScore}/100</b>`] : null
-      ]) +
-      (r.matchReason ? `<br><b>Why you:</b><br>${r.matchReason}` : "") +
-      (r.developmentNeed ? `<br><br><b>Development need:</b><br>${r.developmentNeed}` : "") +
-      `<br><br>Use the link below to review the match and approve or decline.`,
-
-    approvalBodyMentee: (r) =>
-      `<b>${r.mentorName || "-"}</b> has been suggested as your mentor.` +
-      `<br><br>` + card([
-        ["Suggested mentor", `<b>${r.mentorName || "-"}</b>`],
-        r.matchScore ? ["Match score", `<b>${r.matchScore}/100</b>`] : null
-      ]) +
-      (r.matchReason ? `<br><b>Why this mentor:</b><br>${r.matchReason}` : "") +
-      (r.developmentNeed ? `<br><br><b>Your development need:</b><br>${r.developmentNeed}` : "") +
-      `<br><br>Use the link below to review the match and approve or decline.`,
-    approvalButton: "Review the Match",
-
-    workspaceSubject: "Your Mentorship Workspace Is Ready",
-    workspaceTitle: "Your Workspace Is Open",
-    workspaceBody: (other) =>
-      `Your mentorship with <b>${other}</b> has started.` +
-      `<br><br>In the workspace you can see your development goals, schedule ` +
-      `meetings and keep your notes.`,
-    workspaceButton: "Open Workspace",
+    // The ONLY mail of a new match (sent by HR from the HR Dashboard).
+    workspaceSubject: "Your mentorship match: your workspace is ready",
+    workspaceTitle: "Your mentorship match has been created",
+    workspaceBody: ({ name, other, isMentor, period }) =>
+      `Hello ${name},<br><br>` +
+      (isMentor
+        ? `You have been matched with <b>${other}</b>; you are the mentor in this match.`
+        : `You have been matched with <b>${other}</b>, who will be your mentor.`) +
+      (period ? `<br><br><b>Duration of the match:</b> ${period}` : "") +
+      `<br><br>Use the link below to open your shared workspace. ` +
+      `It is the space you share: you build your development plan there, ` +
+      `record a short note and the duration after every meeting, follow up ` +
+      `on actions and plan your next meeting.` +
+      `<br><br>No sign-in is needed - the page opens only with this link. ` +
+      `Please do not share it with anyone else.`,
+    workspaceButton: "Open the workspace",
+    workspacePeriod: (start, end) => `${start} – ${end}`,
 
     meetingInviteSummary: "Mentoring Session",
     meetingInviteSubject: "Mentoring Session Invitation",
@@ -848,57 +771,41 @@ function programLine(programId, lang) {
     : `<div style="margin-bottom:14px">Bu eşleşme <b>${name}</b> programı kapsamındadır.</div>`;
 }
 
-async function sendApproval({ to, type, request, url, lang = "tr" }) {
-  const t = T[lang] || T.tr;
-  const pl = programLine(request.programId, lang);
-
-  // Yonetici onayi: mentee'nin yoneticisi. Onay surecinin ILK adimi.
-  if (type === "manager") {
-    return send({
-      to,
-      subject: t.managerSubject,
-      html: layout({
-        title: t.managerTitle,
-        body: pl + t.managerBody(request),      // mentor adi, puan, gerekce dahil
-        button: t.managerButton,
-        url,
-        lang
-      }),
-      companyId: request.companyId,
-      kind: "approval",
-      refId: request.id
-    });
-  }
-
-  const isMentor = type === "mentor";
-
-  return send({
-    to,
-    subject: t.approvalSubject,
-    html: layout({
-      title: isMentor ? t.approvalTitleMentor : t.approvalTitleMentee,
-      body: pl + (isMentor
-        ? t.approvalBodyMentor(request)
-        : t.approvalBodyMentee(request)),
-      button: t.approvalButton,
-      url,
-      lang
-    }),
-    companyId: request.companyId,
-    kind: "approval",
-    refId: request.id
-  });
+/** Text that came from people (names) is escaped before it goes into a mail. */
+function escapeHtml(v) {
+  return String(v ?? "").replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-async function sendWorkspace({ to, otherName, mentorship, url, lang = "tr" }) {
+/** "2026-10-03" -> "3 Ekim 2026" / "3 October 2026" */
+function longDate(iso, lang) {
+  const d = new Date(String(iso || "").slice(0, 10) + "T00:00:00Z");
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString(lang === "en" ? "en-GB" : "tr-TR",
+    { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+/**
+ * The match e-mail: who the person is matched with, the period of the
+ * match, the workspace link and what the workspace is for.
+ *   role: "mentor" | "mentee"  - the RECIPIENT's role
+ */
+async function sendWorkspace({ to, role, name, otherName, mentorship, url, lang = "tr" }) {
   const t = T[lang] || T.tr;
+  const start = longDate(mentorship.createdAt, lang);
+  const end = longDate(mentorship.closingDate, lang);
 
   return send({
     to,
     subject: t.workspaceSubject,
     html: layout({
       title: t.workspaceTitle,
-      body: programLine(mentorship.programId, lang) + t.workspaceBody(otherName || "-"),
+      body: programLine(mentorship.programId, lang) + t.workspaceBody({
+        name: escapeHtml(name || ""),
+        other: escapeHtml(otherName || "-"),
+        isMentor: role === "mentor",
+        period: start && end ? t.workspacePeriod(start, end) : ""
+      }),
       button: t.workspaceButton,
       url,
       lang
@@ -952,8 +859,8 @@ async function testConnection(lang = "tr") {
       html: layout({
         title: lang === "en" ? "Connection successful" : "Baglanti basarili",
         body: lang === "en"
-          ? "Your email server is configured correctly. Invitation and approval links can now be sent by email."
-          : "E-posta sunucunuz dogru yapilandirilmis. Davet ve onay baglantilari artik e-posta ile gonderilebilir.",
+          ? "Your email server is configured correctly. Invitations and match e-mails can now be sent."
+          : "E-posta sunucunuz dogru yapilandirilmis. Davetler ve eslesme e-postalari artik gonderilebilir.",
         button: lang === "en" ? "All good" : "Her sey yolunda",
         url: settings.get("site.baseUrl", "#"),
         lang
@@ -991,7 +898,6 @@ module.exports = {
   resetTransport,
   testConnection,
   sendInvite,
-  sendApproval,
   sendWorkspace,
   sendMeetingInvite,
   sendSurvey,

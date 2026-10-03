@@ -67,8 +67,10 @@ mentee_matching.html       İK mentee ihtiyacını yazar → "Eşleştir"
    ai/privacy.js           İsim/e-posta maskelenir, mentorlar M1, M2... olur
    ai/matching.js          Claude anonim profilleri okur, gerekçeli puanlar
         ↓
-match_approval.html        Mentor ve mentee ayrı token'lı linklerle onaylar
-        ↓  ikisi de onaylayınca
+   İK mentoru seçer        → POST /mentorships: ilişki ve çalışma sayfası
+                           hemen açılır (onay adımı yok)
+hr_dashboard.html          İK eşleşme e-postasını mentora ve mentee'ye gönderir
+        ↓
 mentorship_workspace.html  AI hedefleri üretir, taraflar düzenleyebilir,
                            toplantı kurar, not yazar, geçmişe bakar
         ↓
@@ -236,7 +238,7 @@ Böylece müşteri "zaten bağlıymış" sanıp sizin faturanızı şişirmez.
 | Katman | Sayfalar | Nasıl erişilir |
 |---|---|---|
 | **Herkese açık** | `login`, `index`, `register` | Anahtar/giriş yok |
-| **Katılımcı** | `match_approval`, `mentorship_workspace`, `guided_session` | Kendine özel token |
+| **Katılımcı** | `mentorship_workspace`, `guided_session` | Kendine özel token |
 | **Personel (İK)** | `mentor_registry`, `hr_dashboard`, `mentee_matching`, `super_admin` | **Firma girişi zorunlu** |
 | **Yönetici** | `admin` | Ayrı admin şifresi |
 
@@ -273,7 +275,6 @@ Artık mentor/mentee sayfaları paylaşımlı anahtar taşımaz. Her biri yalnı
 kendi kaynağına erişim veren bir token kullanır:
 
 - Kayıt formu → firmanın davet token'ı (sadece "bu firmaya mentor ekle")
-- Onay sayfası → o talebe özel token (sadece o talebi görür/onaylar)
 - Çalışma alanı → o ilişkiye özel token (sadece o ilişkiyi görür)
 
 Token, sahibine başka hiçbir şey göstermez.

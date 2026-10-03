@@ -715,8 +715,8 @@ const mentees = {
       preferredMentorProfile: toJson(body.preferredMentorProfile),
       languages: toJson(body.languages),
       location: body.location || body.country || "",
-      managerName: body.managerName || "",
-      managerEmail: body.managerEmail || "",
+      managerName: "",          // manager details are no longer collected
+      managerEmail: "",
       message: body.message || "",
       kvkkConsent: body.kvkkConsent ? 1 : 0,
       status: body.status === "inactive" ? "inactive" : "active",
@@ -800,24 +800,6 @@ const mentees = {
       };
     }
 
-    const request = db.prepare(`
-      SELECT id, mentor_id, mentor_name, created_at
-        FROM match_requests
-       WHERE company_id = ? AND mentee_id = ? AND status = 'pending'
-       LIMIT 1
-    `).get(cid, menteeId);
-
-    if (request) {
-      return {
-        engaged: true,
-        state: "pending",
-        requestId: request.id,
-        mentorId: request.mentor_id,
-        mentorName: request.mentor_name || "",
-        since: request.created_at
-      };
-    }
-
     // A mentee in a group is matched together with the group, never on
     // their own (the rule works both ways: see menteeGroups.checkMembers).
     const group = db.prepare(`
@@ -890,8 +872,8 @@ const mentees = {
       preferredMentorProfile: toJson(m.preferredMentorProfile),
       languages: toJson(m.languages),
       location: m.location || m.country || "",
-      managerName: m.managerName || "",
-      managerEmail: m.managerEmail || "",
+      managerName: "",          // manager details are no longer collected
+      managerEmail: "",
       message: m.message || "",
       kvkkConsent: m.kvkkConsent ? 1 : 0,
       status: m.status === "inactive" ? "inactive" : "active",
@@ -1844,5 +1826,6 @@ module.exports = {
   surveys,
   programs,
   programStatus,
-  menteeGroups
+  menteeGroups,
+  isRealDate
 };

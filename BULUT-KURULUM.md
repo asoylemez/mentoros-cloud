@@ -76,7 +76,7 @@ CUSTOMER_DEPLOYMENT=true
 
 Dikkat edilecekler:
 
-- **`SITE_BASE_URL`** davet ve onay linklerinde kullanılır. Yanlışsa
+- **`SITE_BASE_URL`** davet ve çalışma sayfası linklerinde kullanılır. Yanlışsa
   gönderilen linkler hata vermez, sadece **açılmaz**.
 - **`DB_PATH`** kalıcı diskinizi göstermeli.
 - **`SETTINGS_SECRET`** bir kez üretilir ve **asla değiştirilmez**.
@@ -100,7 +100,7 @@ Sonra sırasıyla:
    şifre: `hash-password` çalıştırırken girdiğiniz şifre.
 2. **Teknik ayarlar** → Claude API anahtarınızı girin. (AI bağlantısı
    tüm kuruluşlarda ortaktır; maliyeti siz karşılarsınız.)
-3. Aynı ekrandan SMTP bilgilerini girin — davet ve onay e-postaları
+3. Aynı ekrandan SMTP bilgilerini girin — davet ve eşleşme e-postaları
    bunsuz gönderilemez.
 4. Yönetim paneline dönüp ilk kuruluş hesabını oluşturun.
 

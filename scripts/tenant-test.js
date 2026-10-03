@@ -23,6 +23,7 @@ const { spawn } = require("child_process");
 const bcrypt = require("bcryptjs");
 
 const ROOT = path.join(__dirname, "..");
+const END_DATE = "2030-12-31";   // end date of test matches without a programme
 const results = [];
 
 function check(name, passed, detail = "") {
@@ -218,18 +219,13 @@ async function run(server) {
     developmentNeeds: "Wants to improve presentation skills"
   })).id;
   const msA = (await mk(A, "/mentorships", {
-    mentorId: mentorA, menteeId: menteeA, mentorName: "Ayse Mentor", menteeName: "Ali Mentee",
-    mentorEmail: "ayse@a.example", menteeEmail: "ali@a.example",
-    developmentNeed: "Wants to grow as a team lead"
+    mentorId: mentorA, menteeId: menteeA, closingDate: END_DATE
   })).mentorshipId;
   const meetingA = (await mk(A, `/mentorships/${msA}/meetings`, {
     meetingDate: "2026-09-01", title: "Kick-off", durationMinutes: "01:20",
     agenda: "PRIVATE AGENDA TEXT",
     actionItems: [{ text: "Read the plan", status: "open" }]
   })).meetingId;
-  const reqA = (await mk(A, "/match-request", {
-    mentorId: mentorA, mentorName: "Ayse Mentor", menteeId: menteeA2
-  })).requestId;
 
   // An email attempt by A, so A has email history for this mentorship.
   // There is no SMTP: the attempt fails, but it is logged.
@@ -245,8 +241,7 @@ async function run(server) {
   // B's own mentorship - its workspace link is a valid token, but only
   // for B's workspace.
   const wsB = new URL((await mk(B, "/mentorships", {
-    mentorId: mentorB, menteeId: menteeB, mentorName: "Bora Mentor", menteeName: "Banu Mentee",
-    developmentNeed: "Wants to learn negotiation"
+    mentorId: mentorB, menteeId: menteeB, closingDate: END_DATE
   })).workspaceUrl);
   const msB = wsB.searchParams.get("id");
   const tokenB = wsB.searchParams.get("token");
@@ -259,7 +254,6 @@ async function run(server) {
     ["GET", `/mentees/${menteeA}`],
     ["GET", `/mentorships/${msA}`],
     ["GET", `/mentorships/${msA}/meetings`],
-    ["GET", `/match-request/${reqA}`],
     ["GET", `/mentorships/${msA}/surveys`]
   ];
   for (const [m, u] of own) {
@@ -291,19 +285,14 @@ async function run(server) {
     ["PATCH",  `/mentorships/${msA}/meetings/${meetingA}/action`, { index: 0, status: "done" }],
     ["GET",    `/mentorships/${msA}/surveys`],
     ["POST",   `/mentorships/${msA}/survey`, { role: "mentee" }],
-    ["GET",    `/match-request/${reqA}`],
-    ["POST",   `/email/approval/${reqA}`, { target: "both" }],
     ["POST",   `/email/workspace/${msA}`, { target: "both" }],
     // Records of A named in the REQUEST BODY
-    ["POST",   "/mentorships", { mentorId: mentorA, menteeId: menteeB }],
-    ["POST",   "/mentorships", { mentorId: mentorB, menteeId: menteeA }],
+    ["POST",   "/mentorships", { mentorId: mentorA, menteeId: menteeB, closingDate: END_DATE }],
+    ["POST",   "/mentorships", { mentorId: mentorB, menteeId: menteeA2, closingDate: END_DATE }],
     ["POST",   "/match", { menteeId: menteeA }],
-    ["POST",   "/match-request", { mentorId: mentorA, mentorName: "x", menteeId: menteeB }],
-    ["POST",   "/match-request", { mentorId: mentorB, mentorName: "x", menteeId: menteeA }],
     ["POST",   "/development-plan", { mentorshipId: msA }],
     ["POST",   "/guided-session", { mentorshipId: msA, step: 1 }],
     // Destructive calls last
-    ["DELETE", `/match-request/${reqA}`],
     ["DELETE", `/mentorships/${msA}?force=true`],
     ["DELETE", `/mentees/${menteeA}`],
     ["DELETE", `/mentors/${mentorA}?force=true`]
@@ -371,20 +360,15 @@ async function run(server) {
 
   const ms = (await api(A, "GET", `/mentorships/${msA}`)).json;
   check("A's mentorship still active", ms?.status === "active", ms ? ms.status : "deleted");
-  check("A's closing date unchanged", ms && !ms.closingDate, ms?.closingDate || "");
+  check("A's closing date unchanged", ms?.closingDate === END_DATE, ms?.closingDate || "");
   check("A's development plan unchanged", ms && (ms.goals || []).length === 0);
   check("A's meetings unchanged (1 note, action open)",
         ms && (ms.meetings || []).length === 1 && ms.meetings[0].actionItems?.[0]?.status === "open",
         ms ? `${(ms.meetings || []).length} note(s)` : "");
 
-  const req = await api(A, "GET", `/match-request/${reqA}`);
-  check("A's match request still exists", req.status === 200, `HTTP ${req.status}`);
-
   const listB = (await api(B, "GET", "/mentorships")).json || [];
-  const reqB = (await api(B, "GET", "/match-requests")).json || [];
   check("nothing was created for B from A's records",
-        listB.length === 1 && listB[0].id === msB && reqB.length === 0,
-        `${listB.length} mentorship(s), ${reqB.length} request(s)`);
+        listB.length === 1 && listB[0].id === msB, `${listB.length} mentorship(s)`);
 
   // --- 6. A's own changes still work ----------------------------------
   console.log("\n5) ORGANISATION A CAN STILL CHANGE ITS OWN RECORDS\n");
@@ -399,12 +383,59 @@ async function run(server) {
   const upd = await api(A, "PATCH", `/mentors/${mentorA}`, { role: "Vice President" });
   check("A: updates its own mentor", upd.status === 200 && upd.json?.mentor?.role === "Vice President", `HTTP ${upd.status}`);
 
-  const del = await api(A, "DELETE", `/match-request/${reqA}`);
-  check("A: deletes its own match request", del.status === 200, `HTTP ${del.status}`);
+  await directMatchChecks(server, { A, B, mentorA, menteeA, menteeA2, mentorB, msA });
 
   const foreignProgramId = await programmeChecks(server, { A, B, mentorA, menteeA, menteeA2, mentorB, menteeB, msA });
   await programmeMatchingChecks(server, { SA, B, mentorB, foreignProgramId });
   await groupChecks(server, { SA, B });
+}
+
+// ---------------------------------------------------------------------
+// DIRECT MATCH, NO APPROVAL FLOW (organisation without programmes)
+// ---------------------------------------------------------------------
+
+async function directMatchChecks(server, ids) {
+  const { A, mentorA, menteeA, menteeA2, msA } = ids;
+  console.log("\n5b) DIRECT MATCH (NO APPROVALS)\n");
+
+  const match = body => api(A, "POST", "/mentorships", { language: "en", ...body });
+  const noEnd = await match({ mentorId: mentorA, menteeId: menteeA2 });
+  check("no programme: end date required -> 400", noEnd.status === 400 && noEnd.json?.code === "closing_date_required",
+        `HTTP ${noEnd.status}`);
+  const past = await match({ mentorId: mentorA, menteeId: menteeA2, closingDate: "2020-01-01" });
+  check("no programme: end date in the past -> 400", past.status === 400 && past.json?.code === "closing_date_required",
+        `HTTP ${past.status}`);
+  const bad = await match({ mentorId: mentorA, menteeId: menteeA2, closingDate: "2030-02-30" });
+  check("no programme: impossible date -> 400", bad.status === 400, `HTTP ${bad.status}`);
+
+  const ok = await match({ mentorId: mentorA, menteeId: menteeA2, closingDate: END_DATE,
+                           menteeName: "FAKE NAME", menteeEmail: "fake@evil.example" });
+  const ms2 = ok.json?.mentorship;
+  check("match opens the mentorship at once", ok.status === 200 && ms2?.status === "active" && !!ok.json?.workspaceUrl,
+        `HTTP ${ok.status}`);
+  check("... with the mentee's identity from the record (body ignored)",
+        ms2?.menteeName === "Can Mentee" && ms2?.menteeEmail === "can@a.example", `${ms2?.menteeName} / ${ms2?.menteeEmail}`);
+  check("... and HR's end date", ms2?.closingDate === END_DATE, ms2?.closingDate);
+
+  const mentor2 = (await api(A, "POST", "/mentors", { fullName: "Ikinci Mentor", email: "m2@a.example", capacity: 2 })).json?.id;
+  const twice = await match({ mentorId: mentor2, menteeId: menteeA, closingDate: END_DATE });
+  check("a mentee with an active mentorship cannot get a second mentor -> 409",
+        twice.status === 409 && twice.json?.code === "mentee_already_engaged", `HTTP ${twice.status}`);
+
+  await api(A, "PATCH", `/mentorships/${ms2.id}/status`, { status: "completed" });
+  const samePair = await match({ mentorId: mentorA, menteeId: menteeA2, closingDate: END_DATE });
+  check("same mentor and mentee again (old mentorship exists) -> 409 pair_exists",
+        samePair.status === 409 && samePair.json?.code === "pair_exists", `HTTP ${samePair.status}`);
+
+  const list = (await api(A, "GET", "/mentorships")).json || [];
+  const rowA = list.find(m => m.id === msA);
+  check("mentorship list shows the match e-mail as not sent (failed attempt does not count)",
+        rowA && rowA.workspaceEmailSentAt === "", JSON.stringify(rowA?.workspaceEmailSentAt));
+
+  const page = await fetch(BASE + "/match_approval.html?id=x&type=mentor&token=y");
+  const text = await page.text();
+  check("an old approval link explains that it is no longer used",
+        page.status === 200 && text.includes("artık kullanılmıyor") && text.includes("no longer used"));
 }
 
 // ---------------------------------------------------------------------
@@ -599,56 +630,49 @@ async function programmeMatchingChecks(server, ids) {
   check("AI match: typed-in mentee in a programme organisation -> 400",
         aiFree.status === 400 && aiFree.json?.code === "program_mentee_required", `HTTP ${aiFree.status}`);
 
-  // Match requests
-  const reqBody = (mentorId, menteeId) => ({ mentorId, mentorName: "x", menteeId, language: "en" });
-  const wrong = await api(C, "POST", "/match-request", reqBody(m2, e1));
-  check("request: mentor not in the mentee's programme -> 400 mentor_not_in_program",
+  // Direct matches (no approval flow)
+  const match = (mentorId, menteeId, extra = {}) =>
+    api(C, "POST", "/mentorships", { mentorId, menteeId, language: "en", ...extra });
+  const wrong = await match(m2, e1);
+  check("match: mentor not in the mentee's programme -> 400 mentor_not_in_program",
         wrong.status === 400 && wrong.json?.code === "mentor_not_in_program", `HTTP ${wrong.status}`);
-  const typed = await api(C, "POST", "/match-request", { mentorId: m1, mentorName: "x", menteeId: `mentee_${Date.now()}`,
-                                                          menteeName: "Typed In", developmentNeed: "x" });
-  check("request: typed-in mentee in a programme organisation -> 400",
+  const typed = await match(m1, `mentee_${Date.now()}`, { menteeName: "Typed In", developmentNeed: "x" });
+  check("match: typed-in mentee in a programme organisation -> 400",
         typed.status === 400 && typed.json?.code === "program_mentee_required", `HTTP ${typed.status}`);
-  const r1 = await api(C, "POST", "/match-request", reqBody(m1, e1));
-  check("request: mentor and mentee in the same programme -> 200", r1.status === 200, `HTTP ${r1.status}`);
-  const req1 = (await api(C, "GET", `/match-request/${r1.json?.requestId}`)).json;
-  check("request remembers its programme", req1?.programId === P1.id, req1?.programId);
+  const r1 = await match(m1, e1, { closingDate: "2099-01-01" /* ignored with a programme */ });
+  const ms1 = r1.json?.mentorship;
+  check("match: mentor and mentee in the same programme -> mentorship opens", r1.status === 200 && !!ms1, `HTTP ${r1.status}`);
+  check("match: in the mentee's programme, ends with the programme",
+        ms1?.programId === P1.id && ms1?.closingDate === "2026-12-31", `${ms1?.programId} / ${ms1?.closingDate}`);
+  check("match: identity comes from the records, not the body",
+        ms1?.menteeName === "Ece" && ms1?.mentorName === "Mert" && ms1?.menteeEmail === "ece@c.example", ms1?.menteeName);
+  const again = await match(m3, e1);
+  check("match: a mentee with an active mentorship -> 409", again.status === 409 && again.json?.code === "mentee_already_engaged",
+        `HTTP ${again.status}`);
 
-  // Direct mentorship by HR
-  const dWrong = await api(C, "POST", "/mentorships", { mentorId: m2, menteeId: e4, mentorName: "Nazli", menteeName: "Eda" });
-  check("direct mentorship: mentor not in programme -> 400", dWrong.status === 400 && dWrong.json?.code === "mentor_not_in_program",
-        `HTTP ${dWrong.status}`);
-  const dOk = await api(C, "POST", "/mentorships", { mentorId: m3, menteeId: e4, mentorName: "Ozan", menteeName: "Eda",
-                                                     developmentNeed: "x", programId: P2.id /* ignored */ });
+  const dOk = await match(m3, e4, { programId: P2.id /* ignored */ });
   const ms4 = dOk.json?.mentorship;
-  check("direct mentorship: programme taken from the mentee, not the body",
+  check("match: programme taken from the mentee, not the body",
         dOk.status === 200 && ms4?.programId === P1.id, `HTTP ${dOk.status} ${ms4?.programId === P2.id ? "(body programme used!)" : ""}`);
-  check("direct mentorship: closing date = programme end date", ms4?.closingDate === "2026-12-31", ms4?.closingDate);
 
-  // Approval of request 1 -> mentorship in P1
-  const linkParts = url => { const u = new URL(url); return { id: u.searchParams.get("id"), token: u.searchParams.get("token") }; };
-  const mentorLink = linkParts(r1.json.mentorLink), menteeLink = linkParts(r1.json.menteeLink);
-  const page = await api(null, "GET", `/public/approval/${mentorLink.id}?type=mentor&token=${mentorLink.token}`);
-  check("approval page shows the programme name", page.json?.programName === "P1 Leadership", page.json?.programName);
-  await api(null, "PATCH", `/public/approval/${mentorLink.id}`, { type: "mentor", status: "approved", token: mentorLink.token });
-  const done = await api(null, "PATCH", `/public/approval/${menteeLink.id}`, { type: "mentee", status: "approved", token: menteeLink.token });
-  check("both approve -> mentorship opened", done.json?.status === "approved" && !!done.json?.workspaceUrl, `HTTP ${done.status}`);
-  const ws = new URL(done.json.workspaceUrl);
-  const wsData = (await api(null, "GET", `/public/workspace/${ws.searchParams.get("id")}?token=${ws.searchParams.get("token")}`)).json;
-  check("mentorship from an approved request is in its programme", wsData?.programId === P1.id, wsData?.programId);
-  check("... closing date = programme end date", wsData?.closingDate === "2026-12-31", wsData?.closingDate);
+  const wsUrl = new URL(r1.json.workspaceUrl);
+  const wsData = (await api(null, "GET", `/public/workspace/${wsUrl.searchParams.get("id")}?token=${wsUrl.searchParams.get("token")}`)).json;
   check("workspace shows the programme name", wsData?.programName === "P1 Leadership", wsData?.programName);
 
-  // A request made while the programme was open can still be approved after it closes
-  const r5 = await api(C, "POST", "/match-request", reqBody(m2, e5));
+  const r5 = await match(m2, e5);
+  check("match in P2", r5.status === 200, `HTTP ${r5.status}`);
+  const e6 = await mentee("Ezgi", P2.id);
   await api(C, "PATCH", `/programs/${P2.id}`, { archived: true });
-  const closedNew = await api(C, "POST", "/mentorships", { mentorId: m2, menteeId: e5, mentorName: "Nazli", menteeName: "Erol" });
+  const closedNew = await match(m2, e6);
   check("archived programme: new match refused -> 400 program_closed",
         closedNew.status === 400 && closedNew.json?.code === "program_closed", `HTTP ${closedNew.status}`);
-  const l5m = linkParts(r5.json.mentorLink), l5e = linkParts(r5.json.menteeLink);
-  await api(null, "PATCH", `/public/approval/${l5m.id}`, { type: "mentor", status: "approved", token: l5m.token });
-  const done5 = await api(null, "PATCH", `/public/approval/${l5e.id}`, { type: "mentee", status: "approved", token: l5e.token });
-  check("request made before archiving can still be approved", done5.json?.status === "approved", `HTTP ${done5.status}`);
   await api(C, "PATCH", `/programs/${P2.id}`, { archived: false });
+
+  // The approval flow is gone
+  check("old approval endpoints are gone (404)",
+        (await api(C, "POST", "/match-request", { mentorId: m1, menteeId: e4 })).status === 404 &&
+        (await api(C, "GET", "/match-requests")).status === 404 &&
+        (await api(null, "GET", `/public/approval/${ms1?.id}?type=mentor&token=x`)).status === 404);
 
   // Meeting tracking filter
   const trP1 = (await api(C, "GET", `/meeting-tracking?programId=${P1.id}`)).json;
@@ -675,11 +699,12 @@ async function programmeMatchingChecks(server, ids) {
   check("programme with mentorships cannot be deleted -> 409", delP1.status === 409, `HTTP ${delP1.status}`);
 
   // Organisation WITHOUT programmes: unchanged, typed-in mentees included
-  const bTyped = await api(B, "POST", "/match-request", { mentorId: mentorB, mentorName: "Bora Mentor",
+  const bTyped = await api(B, "POST", "/mentorships", { mentorId: mentorB, closingDate: END_DATE,
     menteeId: `mentee_${Date.now()}`, menteeName: "Typed In", menteeEmail: "typed@b.example", developmentNeed: "x" });
-  check("no programmes: typed-in mentee request works as before", bTyped.status === 200, `HTTP ${bTyped.status}`);
-  const bReq = (await api(B, "GET", `/match-request/${bTyped.json?.requestId}`)).json;
-  check("no programmes: the request has no programme", bReq?.programId === "", JSON.stringify(bReq?.programId));
+  check("no programmes: typed-in mentee can be matched", bTyped.status === 200, `HTTP ${bTyped.status}`);
+  check("no programmes: the mentorship has no programme, ends on HR's date",
+        bTyped.json?.mentorship?.programId === "" && bTyped.json?.mentorship?.closingDate === END_DATE,
+        `${JSON.stringify(bTyped.json?.mentorship?.programId)} / ${bTyped.json?.mentorship?.closingDate}`);
   const bCand = await api(B, "GET", "/matching-candidates");
   check("no programmes: candidates without a programme id", bCand.status === 200 && bCand.json?.program === null, `HTTP ${bCand.status}`);
 }
@@ -715,11 +740,9 @@ async function groupChecks(server, ids) {
   const [a1, a2, a3] = many;
   const b1 = await mentee(D, "Baris", PY);
   const c1 = await mentee(D, "Ceren", PX);
-  const d1 = await mentee(D, "Demet", PX);
   const mx = (await post(D, "/mentors", { fullName: "Mentor X", email: "mx@d.example", role: "Director", capacity: 5 })).id;
   await api(D, "PUT", `/mentors/${mx}/programs`, { programIds: [PX] });
-  await api(D, "POST", "/mentorships", { mentorId: mx, menteeId: c1, mentorName: "Mentor X", menteeName: "Ceren", developmentNeed: "x" });
-  await api(D, "POST", "/match-request", { mentorId: mx, mentorName: "Mentor X", menteeId: d1 });
+  await api(D, "POST", "/mentorships", { mentorId: mx, menteeId: c1 });
 
   const mk = body => api(D, "POST", "/mentee-groups", body);
   const expect = async (label, body, status, code) => {
@@ -731,7 +754,6 @@ async function groupChecks(server, ids) {
   await expect("group with 11 members -> 400", { name: "G0", programId: PX, memberIds: many }, 400, "group_size");
   await expect("member from another programme -> 400", { name: "G0", programId: PX, memberIds: [a1, b1] }, 400, "member_wrong_program");
   await expect("member with an individual mentorship -> 409", { name: "G0", programId: PX, memberIds: [a1, c1] }, 409, "member_engaged");
-  await expect("member with a pending request -> 409", { name: "G0", programId: PX, memberIds: [a1, d1] }, 409, "member_engaged");
   await expect("group in an archived programme -> 400", { name: "G0", programId: PZ, memberIds: [a1, a2] }, 400, "program_archived");
   await expect("group without a name -> 400", { name: " ", programId: PX, memberIds: [a1, a2] }, 400, "group_name_required");
 
@@ -755,8 +777,7 @@ async function groupChecks(server, ids) {
 
   // A group member is never matched alone (every route)
   const alone = [
-    ["POST", "/match-request", { mentorId: mx, mentorName: "Mentor X", menteeId: a1 }],
-    ["POST", "/mentorships", { mentorId: mx, menteeId: a1, mentorName: "Mentor X", menteeName: "Uye1" }],
+    ["POST", "/mentorships", { mentorId: mx, menteeId: a1 }],
     ["POST", "/match", { menteeId: a1, language: "en" }]
   ];
   for (const [m, u, body] of alone) {
@@ -774,7 +795,7 @@ async function groupChecks(server, ids) {
   const gc = (await api(D, "GET", `/mentee-groups/candidates?programId=${PX}`)).json;
   const st = id => (gc?.mentees || []).find(m => m.id === id);
   check("group candidates: only the programme's mentees, with their state",
-        st(a1)?.groupId === G1.id && st(c1)?.state === "matched" && st(d1)?.state === "pending" && !st(b1),
+        st(a1)?.groupId === G1.id && st(c1)?.state === "matched" && !st(b1),
         `${gc?.mentees?.length} listed`);
 
   // Organisation B cannot touch D's groups
@@ -805,7 +826,7 @@ async function groupChecks(server, ids) {
 
   // Deleting the group frees the members
   const del = await api(D, "DELETE", `/mentee-groups/${G1.id}`);
-  const free = await api(D, "POST", "/match-request", { mentorId: mx, mentorName: "Mentor X", menteeId: a1 });
+  const free = await api(D, "POST", "/mentorships", { mentorId: mx, menteeId: a1 });
   check("deleting the group frees its members", del.status === 200 && free.status === 200, `HTTP ${del.status} / ${free.status}`);
 }
 

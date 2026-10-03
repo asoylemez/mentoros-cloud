@@ -534,15 +534,9 @@
 
 <!-- STEP 5 -->
 <div class="step" id="step5">
-<div class="step-label" data-i18n="step5Label">Step 5 / 5 — Manager &amp; consent</div>
+<div class="step-label" data-i18n="step5Label">Step 5 / 5 — Message &amp; consent</div>
 <div class="section-title" data-i18n="step5Title">A few final details</div>
-<div class="section-sub" data-i18n="step5Sub">Manager details are optional. If you add them, your manager approves the match first.</div>
-<div class="field-row">
-<div class="field"><label for="managerName"><span data-i18n="managerName">Manager's name</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
-<input data-i18n-placeholder="phManagerName" id="managerName" placeholder="e.g. Mehmet Yılmaz" type="text"/></div>
-<div class="field"><label for="managerEmail"><span data-i18n="managerEmail">Manager's email</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
-<input data-i18n-placeholder="phManagerEmail" id="managerEmail" placeholder="e.g. m.yilmaz@example.com" type="email"/></div>
-</div>
+<div class="section-sub" data-i18n="step5Sub">A short message to your mentor (optional) and your consent.</div>
 <div class="field">
 <label for="menteeMsg"><span data-i18n="menteeMsg">A message to your future mentor</span> <span style="font-weight:400;color:#9ca3af" data-i18n="optional">(optional)</span></label>
 <textarea data-i18n-placeholder="phMenteeMsg" id="menteeMsg" maxlength="400" oninput="updateChar('menteeMsg','menteeMsgCount',400)" placeholder="e.g. I'm eager to learn and open to honest feedback."></textarea>
@@ -552,7 +546,7 @@
 <div class="field">
 <label class="req" data-i18n="kvkkTitle">Data protection (KVKK / GDPR)</label>
 <div class="kvkk-box">
-<p data-i18n="kvkkText">Your personal data (name, email, manager details, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.</p>
+<p data-i18n="kvkkText">Your personal data (name, email, role, development details, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.</p>
 <label class="kvkk-check">
 <input type="checkbox" id="kvkkConsent"/>
 <span data-i18n="kvkkConsentLabel">I have read the above and consent to my personal data being processed for this purpose.</span>
@@ -877,14 +871,12 @@
     preferredMentor: "Preferred mentor profile",
     item_pref_same_function: "Same function", item_pref_diff_function: "Different function",
     item_pref_senior_leader: "Senior leader", item_pref_no_pref: "No preference",
-    step5Label: "Step 5 / 5 — Manager & consent",
+    step5Label: "Step 5 / 5 — Message & consent",
     step5Title: "A few final details",
-    step5Sub: "Manager details are optional. If you add them, your manager approves the match first.",
-    managerName: "Manager's name", phManagerName: "e.g. Mehmet Yılmaz",
-    managerEmail: "Manager's email", phManagerEmail: "e.g. m.yilmaz@example.com",
+    step5Sub: "A short message to your mentor (optional) and your consent.",
     menteeMsg: "A message to your future mentor", phMenteeMsg: "e.g. I'm eager to learn and open to honest feedback.",
     kvkkTitle: "Data protection (KVKK / GDPR)",
-    kvkkText: "Your personal data (name, email, manager details, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.",
+    kvkkText: "Your personal data (name, email, role, development details, etc.) is processed solely for internal mentoring matching, in line with data-protection law. Your data is anonymised before any AI matching.",
     kvkkConsentLabel: "I have read the above and consent to my personal data being processed for this purpose.",
     successTitle: "Registration complete!",
     successText: "Your mentee profile has been created. HR will be able to find you and start the matching process.",
@@ -894,8 +886,6 @@
     validateDevArea: "Please select at least one area to develop (or write your own).",
     validateDevNeeds: "Please describe your development need.",
     validateGoal: "Please describe your career goal.",
-    validateManager: "If you add manager details, please enter both your manager's name and email.",
-    validateManagerEmail: "Please enter a valid email address for your manager.",
     validateKvkk: "Please confirm the data-protection consent to continue.",
     optional: "(optional)"
   });
@@ -933,14 +923,12 @@
     preferredMentor: "Tercih ettiğin mentor profili",
     item_pref_same_function: "Aynı fonksiyondan", item_pref_diff_function: "Farklı fonksiyondan",
     item_pref_senior_leader: "Üst düzey lider", item_pref_no_pref: "Fark etmez",
-    step5Label: "Adım 5 / 5 — Yönetici & onay",
+    step5Label: "Adım 5 / 5 — Mesaj & onay",
     step5Title: "Son birkaç bilgi",
-    step5Sub: "Yönetici bilgileri isteğe bağlı. Girersen eşleşme önce yöneticinin onayına gider.",
-    managerName: "Yöneticinin adı", phManagerName: "örn. Mehmet Yılmaz",
-    managerEmail: "Yöneticinin e-postası", phManagerEmail: "örn. m.yilmaz@ornek.com",
+    step5Sub: "Mentoruna kısa bir mesaj (isteğe bağlı) ve onayın.",
     menteeMsg: "Gelecekteki mentoruna mesajın", phMenteeMsg: "örn. Öğrenmeye hevesliyim ve dürüst geri bildirime açığım.",
     kvkkTitle: "Kişisel verilerin korunması (KVKK)",
-    kvkkText: "Kişisel verilerin (ad, e-posta, yönetici bilgileri vb.) yalnızca kurum içi mentorluk eşleştirmesi amacıyla, KVKK kapsamında işlenir. Verilerin yapay zekâ eşleştirmesinde anonimleştirilerek kullanılır.",
+    kvkkText: "Kişisel verilerin (ad, e-posta, rol, gelişim bilgileri vb.) yalnızca kurum içi mentorluk eşleştirmesi amacıyla, KVKK kapsamında işlenir. Verilerin yapay zekâ eşleştirmesinde anonimleştirilerek kullanılır.",
     kvkkConsentLabel: "Yukarıdaki bilgilendirmeyi okudum ve kişisel verilerimin bu amaçla işlenmesini onaylıyorum.",
     successTitle: "Kayıt tamamlandı!",
     successText: "Mentee profilin oluşturuldu. İnsan Kaynakları seni bulup eşleştirme sürecini başlatabilecek.",
@@ -950,8 +938,6 @@
     validateDevArea: "Lütfen en az bir gelişim alanı seç (veya kendin yaz).",
     validateDevNeeds: "Lütfen gelişim ihtiyacını anlat.",
     validateGoal: "Lütfen kariyer hedefini yaz.",
-    validateManager: "Yönetici bilgisi gireceksen adını ve e-postasını birlikte gir.",
-    validateManagerEmail: "Lütfen yöneticin için geçerli bir e-posta adresi gir.",
     validateKvkk: "Devam etmek için KVKK onayını işaretle.",
     optional: "(isteğe bağlı)"
   });
@@ -1049,8 +1035,6 @@
       languages: getSelectedTagsById('languageTags'),
       preferredMentorProfile: getSelectedTagsById('mentorProfileTags'),
 
-      managerName: document.getElementById('managerName').value.trim(),
-      managerEmail: document.getElementById('managerEmail').value.trim(),
       message: document.getElementById('menteeMsg').value.trim(),
       kvkkConsent: document.getElementById('kvkkConsent').checked,
 
@@ -1068,8 +1052,6 @@
     if (!d.goals) return t('validateGoal');
     // Yonetici bilgisi OPSIYONEL. Ama biri girildiyse digeri de gerekli:
     // e-posta yoksa onay istenemez, isim yoksa e-postada hitap edilemez.
-    if (!!d.managerName !== !!d.managerEmail) return t('validateManager');
-    if (d.managerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.managerEmail)) return t('validateManagerEmail');
     if (!d.kvkkConsent) return t('validateKvkk');
     return '';
   }

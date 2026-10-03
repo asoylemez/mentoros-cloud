@@ -411,10 +411,8 @@
       <div class="field"><label data-i18n="fMentorPref">Tercih ettiği mentor profili <span data-i18n="commaSep">(virgülle ayırın)</span></label><input id="f_preferredMentorProfile"></div>
     </div>
 
-    <div class="section-head" data-i18n="secManager">Yönetici &amp; Durum</div>
+    <div class="section-head" data-i18n="secManager">Durum</div>
     <div class="grid2">
-      <div class="field"><label data-i18n="fManagerName">Yönetici adı</label><input id="f_managerName"></div>
-      <div class="field"><label data-i18n="fManagerEmail">Yönetici e-postası</label><input id="f_managerEmail" type="email"></div>
       <div class="field"><label data-i18n="fStatus">Durum (eşleştirme)</label>
         <select id="f_status">
           <option value="active" data-i18n="optActive">Aktif — eşleştirmeye dahil</option>
@@ -494,7 +492,7 @@ const T = {
     badgeActive: "Aktif", badgeInactive: "Pasif",
     view: "Aç", registered: "Kayıt",
     secBasic: "Temel Bilgiler", secDevelopment: "Gelişim İhtiyacı", secGoals: "Hedefler",
-    secPreferences: "Tercihler", secManager: "Yönetici & Durum", commaSep: "(virgülle ayırın)",
+    secPreferences: "Tercihler", secManager: "Durum", commaSep: "(virgülle ayırın)",
     fFullName: "Ad Soyad", fEmail: "E-posta", fRole: "Rol / Unvan", fDepartment: "Departman",
     fBand: "Kademe", fTenure: "Kıdem", fCountry: "Ülke", fRegion: "Bölge / segment",
     fDevAreas: "Gelişmek istediği alanlar", fDevExtra: "Ek gelişim alanı (serbest)",
@@ -503,7 +501,7 @@ const T = {
     fGoals: "Kariyer hedefi", fExpectations: "Başarı / beklenti",
     fFormats: "Formatlar", fHours: "Aylık ayırabileceği zaman", fLanguages: "Diller",
     fMentorPref: "Tercih ettiği mentor profili",
-    fManagerName: "Yönetici adı", fManagerEmail: "Yönetici e-postası", fMessage: "Mentoruna mesajı",
+    fMessage: "Mentoruna mesajı",
     fStatus: "Durum (eşleştirme)", optActive: "Aktif — eşleştirmeye dahil", optInactive: "Pasif — eşleştirmeye dahil değil",
     delete: "Mentee'yi Sil", cancel: "Vazgeç", save: "Kaydet", saving: "Kaydediliyor…",
     saved: "Kaydedildi ✓", deleted: "Silindi ✓", copied: "Kopyalandı ✓",
@@ -559,7 +557,7 @@ const T = {
     badgeActive: "Active", badgeInactive: "Inactive",
     view: "Open", registered: "Registered",
     secBasic: "Basic information", secDevelopment: "Development needs", secGoals: "Goals",
-    secPreferences: "Preferences", secManager: "Manager & status", commaSep: "(comma-separated)",
+    secPreferences: "Preferences", secManager: "Status", commaSep: "(comma-separated)",
     fFullName: "Full name", fEmail: "Email", fRole: "Title / role", fDepartment: "Department",
     fBand: "Band", fTenure: "Tenure", fCountry: "Country", fRegion: "Region / segment",
     fDevAreas: "Areas to develop", fDevExtra: "Extra development area (free text)",
@@ -568,7 +566,7 @@ const T = {
     fGoals: "Career goal", fExpectations: "Success / expectations",
     fFormats: "Formats", fHours: "Time per month", fLanguages: "Languages",
     fMentorPref: "Preferred mentor profile",
-    fManagerName: "Manager's name", fManagerEmail: "Manager's email", fMessage: "Message to mentor",
+    fMessage: "Message to mentor",
     fStatus: "Status (matching)", optActive: "Active — included in matching", optInactive: "Inactive — excluded from matching",
     delete: "Delete mentee", cancel: "Cancel", save: "Save", saving: "Saving…",
     saved: "Saved ✓", deleted: "Deleted ✓", copied: "Copied ✓",
@@ -745,7 +743,7 @@ $("refreshBtn").onclick = async () => { await loadPrograms(); await loadMentees(
 let EDITING = null;
 const TEXT_FIELDS = ["fullName","email","role","department","band","tenure",
   "devAreasExtra","developmentNeeds","challenge","compExtra","goals","expectations",
-  "hoursPerMonth","managerName","managerEmail","message"];
+  "hoursPerMonth","message"];
 const ARRAY_FIELDS = ["devFunctionalAreas","competenciesToDevelop","formats","languages","preferredMentorProfile"];
 
 window.openMentee = function (id) {

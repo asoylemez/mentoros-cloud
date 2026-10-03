@@ -578,39 +578,24 @@
         </div>
       </div>
 
-      <!-- ============ YONETICI ============
-           Onay surecinin ILK kapisi. Yonetici onaylamadan mentor ve
-           mentee'ye baglanti gonderilmez. -->
-      <div style="background:#f6f7fc;border:1px solid #e3e6f2;border-radius:8px;
-                  padding:14px 16px;margin:4px 0 16px">
-        <div style="font-size:13px;font-weight:600;color:#1a2b5e;margin-bottom:3px"
-             data-i18n="managerSectionTitle">Mentee's Manager</div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5"
-             data-i18n="managerSectionHint">
-          Approval is requested from the manager first. The mentor and the mentee are
-          only contacted after the manager approves.
-        </div>
-
-        <div class="grid-2">
-          <div>
-            <label for="managerName" data-i18n="managerNameLabel">Manager name</label>
-            <input id="managerName" type="text" placeholder="e.g. Michael Brown"
-                   data-i18n-placeholder="managerNamePlaceholder" />
-          </div>
-          <div>
-            <label for="managerEmail" data-i18n="managerEmailLabel">Manager email</label>
-            <input id="managerEmail" type="email" placeholder="e.g. michael.brown@example.com"
-                   data-i18n-placeholder="managerEmailPlaceholder" />
-          </div>
-        </div>
-      </div>
-
       <label for="menteeNeed" data-i18n="developmentNeedLabel">Mentee development need</label>
       <textarea id="menteeNeed" placeholder="Example: I would like to improve my leadership skills, gain confidence in presenting to senior stakeholders, and learn how to manage my career growth in a commercial role." data-i18n-placeholder="developmentNeedPlaceholder"></textarea>
       </div>
       <!-- ---- /kayitsiz mentee ---- -->
 
       <div class="divider"></div>
+
+      <!-- ================= SURE (period of the match) =================
+           With a programme the match ends on the programme's end date;
+           without one HR gives the end date (required). -->
+      <div id="periodPane" style="margin-bottom:18px">
+        <div class="step-label" data-i18n="periodTitle">Eşleşme süresi</div>
+        <div id="closingDateField">
+          <label for="closingDate" data-i18n="closingDateLabel">Eşleşmenin bitiş tarihi *</label>
+          <input id="closingDate" type="date" />
+        </div>
+        <div class="hint" id="periodHint"></div>
+      </div>
 
       <!-- ================= ADIM 2: YONTEM ================= -->
       <div class="step-label" data-i18n="step2Title">2 · Matching method</div>
@@ -647,19 +632,6 @@
 
         <div id="mentorPreview"></div>
 
-        <div style="margin-top:1rem">
-          <label for="manualReason" data-i18n="manualReasonLabel">
-            Reason for this match (optional)
-          </label>
-          <textarea id="manualReason" style="min-height:90px"
-                    placeholder="e.g. Both work in commercial roles; the mentor has led a similar transition."
-                    data-i18n-placeholder="manualReasonPlaceholder"></textarea>
-          <div class="hint" data-i18n="manualReasonHint">
-            This note is shown to the manager in the approval email, so they can see
-            why this mentor was chosen.
-          </div>
-        </div>
-
         <div class="manual-note" data-i18n="manualNoteText">
           Manual matching does not use AI. No data is sent to the AI service and no
           match score is calculated — the pairing is your decision.
@@ -667,7 +639,7 @@
 
         <div class="btn-row">
           <button id="manualBtn" onclick="manualMatch()" data-i18n="manualMatchButton">
-            Match and Request Approval
+            Match
           </button>
         </div>
       </div>
@@ -711,11 +683,9 @@
         noMentees: "No mentee records yet. Add mentees from the Mentee Registry page.",
         candidatesFailed: "Could not load mentees and mentors.",
         menteeEngagedMatched: "Already matched with",
-        menteeEngagedPending: "Approval pending with",
         menteeInGroup: "In group:",
         err_mentee_in_group: "This mentee is in a group and is matched together with the group, not on their own.",
         menteeEngagedNote: "A mentee can only work with one mentor at a time. Complete or cancel the existing mentorship first.",
-        menteeEngagedNotePending: "A mentee can only have one open request at a time. Resolve or delete the pending request first from the HR Dashboard.",
         developmentNeedSummary: "Development need",
         noNeedRecorded: "No development information recorded yet. Open the Mentee Registry and complete this mentee's profile.",
         selectMenteeFirst: "Please select a mentee first.",
@@ -737,12 +707,8 @@
         mentorLoading: "Loading...",
         noMentors: "No active mentors available.",
         selectMentorFirst: "Please select a mentor.",
-        manualReasonLabel: "Reason for this match (optional)",
-        manualReasonPlaceholder: "e.g. Both work in commercial roles; the mentor has led a similar transition.",
-        manualReasonHint: "This note is shown to the manager in the approval email, so they can see why this mentor was chosen.",
         manualNoteText: "Manual matching does not use AI. No data is sent to the AI service and no match score is calculated — the pairing is your decision.",
-        manualMatchButton: "Match and Request Approval",
-        manualDefaultReason: "Matched manually by HR.",
+        manualMatchButton: "Match",
         capacityFull: "at capacity",
         capacityFree: "free",
         manualMatchTitle: "Manual match",
@@ -804,40 +770,28 @@
         menteesUnit: "mentee(s)",
         messageToMentee: "Message to mentee",
         copy: "Copy",
-        requestApproval: "Request Approval",
+        requestApproval: "Match",
+        periodTitle: "Duration of the match",
+        closingDateLabel: "End date of the match *",
+        periodHintFree: "The match runs from today to this date. The date appears in the match e-mail and closes the workspace on that day (it stays readable).",
+        periodHintProgram: "The match ends with the programme: {date}.",
+        err_closing_date_required: "Enter the end date of the match (today or later).",
+        err_pair_exists: "This mentor and mentee already had a mentorship in this programme.",
+        matchedTitle: "Match created ✅",
+        matchedText: "The mentorship and its workspace are open. No e-mail has been sent yet: send the match e-mail to the mentor and the mentee from the HR Dashboard when you are ready.",
+        goDashboard: "Go to HR Dashboard",
+        openWorkspace: "Open workspace",
+        copyWorkspaceLink: "Copy workspace link",
+        matching: "Matching...",
+        matched: "Matched",
+        matchFailed: "The match could not be created.",
         mentorDataNotFound: "Mentor data not found.",
-        creatingRequest: "Creating Request...",
-        approvalRequestFailed: "Approval request could not be created.",
-        approvalRequested: "Approval Requested",
-        approvalCreated: "Approval request created ✅",
-        mentorApprovalLink: "Mentor approval link",
-        menteeApprovalLink: "Mentee approval link",
-        copyMentorLink: "Copy Mentor Link",
-        emailBoth: "Email Approval Links to Both",
-        managerSectionTitle: "Mentee's Manager",
-        managerSectionHint: "Approval is requested from the manager first. The mentor and the mentee are only contacted after the manager approves.",
-        managerNameLabel: "Manager name",
-        managerNamePlaceholder: "e.g. Michael Brown",
-        managerEmailLabel: "Manager email",
-        managerEmailPlaceholder: "e.g. michael.brown@example.com",
-        managerApprovalLink: "Manager approval link",
-        managerFirstHint: "Send this first. The mentor and mentee are contacted only after the manager approves.",
-        copyManagerLink: "Copy Manager Link",
-        openManagerLink: "Open Manager Approval",
-        emailManager: "Email Manager",
-        lockedUntilManager: "The links below stay locked until the manager approves. Do not send them yet.",
-        emailBothHint: "Sends the approval link to the mentor and the mentee. No copy-pasting needed.",
-        emailMentor: "Email Mentor",
-        emailMentee: "Email Mentee",
         emailSending: "Sending…",
         emailSent: "Sent ✓",
         emailFailed: "Could not send email",
         emailNotSent: "Not sent:",
         whatToDo: "What to do:",
         smtpNotSet: "To send these links by email, configure the email server in the admin panel (/admin.html).",
-        copyMenteeLink: "Copy Mentee Link",
-        openMentorLink: "Open Mentor Link",
-        openMenteeLink: "Open Mentee Link",
         copied: "Copied!",
         recommendationCopied: "Mentor recommendation copied!",
         copyTextMentorTitle: "Recommended Mentor",
@@ -872,11 +826,9 @@
         noMentees: "Henüz mentee kaydı yok. Mentee Kayıtları sayfasından mentee ekleyin.",
         candidatesFailed: "Mentee ve mentor listesi yüklenemedi.",
         menteeEngagedMatched: "Zaten eşleşti:",
-        menteeEngagedPending: "Onay bekliyor:",
         menteeInGroup: "Grupta:",
         err_mentee_in_group: "Bu mentee bir grupta; tek başına değil, grubuyla birlikte eşleştirilir.",
         menteeEngagedNote: "Bir mentee aynı anda yalnızca bir mentorle çalışabilir. Önce mevcut mentorluğu tamamlayın veya iptal edin.",
-        menteeEngagedNotePending: "Bir mentee'nin aynı anda yalnızca bir açık talebi olabilir. Önce İK Panosundan bekleyen talebi sonuçlandırın veya silin.",
         developmentNeedSummary: "Gelişim ihtiyacı",
         noNeedRecorded: "Henüz gelişim bilgisi girilmemiş. Mentee Kayıtları sayfasından bu mentee'nin profilini tamamlayın.",
         selectMenteeFirst: "Lütfen önce bir mentee seçin.",
@@ -898,12 +850,8 @@
         mentorLoading: "Yükleniyor...",
         noMentors: "Uygun aktif mentor yok.",
         selectMentorFirst: "Lütfen bir mentor seçin.",
-        manualReasonLabel: "Bu eşleştirmenin gerekçesi (isteğe bağlı)",
-        manualReasonPlaceholder: "örn. İkisi de ticari rolde; mentor benzer bir geçişi yönetmiş.",
-        manualReasonHint: "Bu not, yöneticiye giden onay e-postasında görünür; böylece bu mentorun neden seçildiğini görebilir.",
         manualNoteText: "Manuel eşleştirmede yapay zeka kullanılmaz. Yapay zeka servisine hiçbir veri gönderilmez ve uyum puanı hesaplanmaz — eşleştirme sizin kararınızdır.",
-        manualMatchButton: "Eşleştir ve Onay Talebi Gönder",
-        manualDefaultReason: "İK tarafından manuel eşleştirildi.",
+        manualMatchButton: "Eşleştir",
         capacityFull: "kapasite dolu",
         capacityFree: "boş",
         manualMatchTitle: "Manuel eşleştirme",
@@ -965,40 +913,28 @@
         menteesUnit: "mentee",
         messageToMentee: "Mentee’ye mesaj",
         copy: "Kopyala",
-        requestApproval: "Onay Talebi Gönder",
+        requestApproval: "Eşleştir",
+        periodTitle: "Eşleşme süresi",
+        closingDateLabel: "Eşleşmenin bitiş tarihi *",
+        periodHintFree: "Eşleşme bugünden bu tarihe kadar sürer. Tarih eşleşme e-postasında yazar ve o gün çalışma sayfası kapanır (okunabilir kalır).",
+        periodHintProgram: "Eşleşme programla birlikte sona erer: {date}.",
+        err_closing_date_required: "Eşleşmenin bitiş tarihini girin (bugün veya sonrası).",
+        err_pair_exists: "Bu mentor ile mentee'nin bu programda zaten bir mentorluk ilişkisi olmuş.",
+        matchedTitle: "Eşleşme oluşturuldu ✅",
+        matchedText: "Mentorluk ilişkisi ve çalışma sayfası açıldı. Henüz e-posta gönderilmedi: hazır olduğunuzda eşleşme e-postasını HR Dashboard'dan mentora ve mentee'ye gönderin.",
+        goDashboard: "HR Dashboard'a git",
+        openWorkspace: "Çalışma sayfasını aç",
+        copyWorkspaceLink: "Çalışma sayfası bağlantısını kopyala",
+        matching: "Eşleştiriliyor...",
+        matched: "Eşleştirildi",
+        matchFailed: "Eşleşme oluşturulamadı.",
         mentorDataNotFound: "Mentor verisi bulunamadı.",
-        creatingRequest: "Talep Oluşturuluyor...",
-        approvalRequestFailed: "Onay talebi oluşturulamadı.",
-        approvalRequested: "Onay Talebi Gönderildi",
-        approvalCreated: "Onay talebi oluşturuldu ✅",
-        mentorApprovalLink: "Mentor onay linki",
-        menteeApprovalLink: "Mentee onay linki",
-        copyMentorLink: "Mentor Linkini Kopyala",
-        emailBoth: "İkisine de Onay E-postası Gönder",
-        managerSectionTitle: "Mentee'nin Yöneticisi",
-        managerSectionHint: "Onay önce yöneticiden istenir. Mentor ve mentee, ancak yönetici onayladıktan sonra bilgilendirilir.",
-        managerNameLabel: "Yönetici adı",
-        managerNamePlaceholder: "Örn. Mehmet Yılmaz",
-        managerEmailLabel: "Yönetici e-postası",
-        managerEmailPlaceholder: "Örn. mehmet.yilmaz@firma.com",
-        managerApprovalLink: "Yönetici onay bağlantısı",
-        managerFirstHint: "Önce bunu gönderin. Mentor ve mentee, ancak yönetici onayladıktan sonra bilgilendirilir.",
-        copyManagerLink: "Yönetici Linkini Kopyala",
-        openManagerLink: "Yönetici Onayını Aç",
-        emailManager: "Yöneticiye E-posta",
-        lockedUntilManager: "Aşağıdaki bağlantılar yönetici onaylayana kadar kilitlidir. Henüz göndermeyin.",
-        emailBothHint: "Onay bağlantısını mentora ve mentee'ye gönderir. Kopyala-yapıştır gerekmez.",
-        emailMentor: "Mentora E-posta",
-        emailMentee: "Mentee'ye E-posta",
         emailSending: "Gönderiliyor…",
         emailSent: "Gönderildi ✓",
         emailFailed: "E-posta gönderilemedi",
         emailNotSent: "Gönderilemeyenler:",
         whatToDo: "Ne yapmalı:",
         smtpNotSet: "Bu bağlantıları e-posta ile göndermek için yönetici panelinden e-posta sunucusunu yapılandırın (/admin.html).",
-        copyMenteeLink: "Mentee Linkini Kopyala",
-        openMentorLink: "Mentor Linkini Aç",
-        openMenteeLink: "Mentee Linkini Aç",
         copied: "Kopyalandı!",
         recommendationCopied: "Mentor önerisi kopyalandı!",
         copyTextMentorTitle: "Önerilen Mentor",
@@ -1020,6 +956,7 @@
       // Ihtiyac metni sunucuda ve secilen dilde derleniyor; dil degisince
       // listeleri yeniden al ki ozet de o dilde gorunsun.
       if (typeof renderProgramSelect === "function") renderProgramSelect();
+      try { renderPeriod(); } catch { /* programmes not loaded yet - rendered after loading */ }
       if (typeof loadCandidates === "function") loadCandidates();
 
       if (lastRecommendations.length) {
@@ -1082,7 +1019,6 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
       applyTranslations();
-      checkSmtp();          // e-posta butonlarinin gorunup gorunmeyecegini belirler
       await loadPrograms();
       loadCandidates();     // kayitli mentee + aktif mentor listeleri
     });
@@ -1104,6 +1040,7 @@
       const remembered = sessionStorage.getItem("matchingProgramId");
       PROGRAM_ID = open.some(p => p.id === remembered) ? remembered : (open[0] ? open[0].id : "");
       renderProgramSelect();
+      renderPeriod();
     }
 
     function renderProgramSelect() {
@@ -1118,9 +1055,33 @@
       document.getElementById("programHint").textContent = open.length ? t("programHint") : t("noOpenPrograms");
     }
 
+    /* Period of the match: the programme's end date, or (without
+       programmes) an end date HR must enter. */
+    function renderPeriod() {
+      const field = document.getElementById("closingDateField");
+      const hint = document.getElementById("periodHint");
+      const input = document.getElementById("closingDate");
+      input.min = new Date().toISOString().slice(0, 10);
+      if (HAS_PROGRAMS) {
+        const p = PROGRAMS.find(x => x.id === PROGRAM_ID);
+        field.hidden = true;
+        hint.textContent = p ? t("periodHintProgram").replace("{date}", formatLongDate(p.endDate)) : "";
+      } else {
+        field.hidden = false;
+        hint.textContent = t("periodHintFree");
+      }
+    }
+
+    function formatLongDate(iso) {
+      const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+      return isNaN(d) ? "" : d.toLocaleDateString(currentLanguage === "en" ? "en-GB" : "tr-TR",
+        { day: "numeric", month: "long", year: "numeric" });
+    }
+
     function onProgramChanged() {
       PROGRAM_ID = document.getElementById("programSelect").value;
       sessionStorage.setItem("matchingProgramId", PROGRAM_ID);
+      renderPeriod();
       // Results of another programme must not stay on screen.
       lastRecommendations = [];
       document.getElementById("results").innerHTML = "";
@@ -1197,9 +1158,7 @@
         const suffix = !busy ? "" :
           engagement.state === "matched"
             ? ` — ${t("menteeEngagedMatched")} ${engagement.mentorName || "-"}`
-          : engagement.state === "in_group"
-            ? ` — ${t("menteeInGroup")} ${engagement.groupName || "-"}`
-            : ` — ${t("menteeEngagedPending")} ${engagement.mentorName || "-"}`;
+          : ` — ${t("menteeInGroup")} ${engagement.groupName || "-"}`;
 
         const label = [
           m.fullName || "-",
@@ -1308,13 +1267,6 @@
         box.innerHTML = "";
         return;
       }
-
-      // Yonetici alanlarini kayittan doldur - ama DUZENLENEBILIR birak.
-      // IK, mentee kaydindaki yonetici degismisse burada duzeltebilmeli.
-      const managerName = document.getElementById("managerName");
-      const managerEmail = document.getElementById("managerEmail");
-      if (managerName && !managerName.value.trim()) managerName.value = mentee.managerName || "";
-      if (managerEmail && !managerEmail.value.trim()) managerEmail.value = mentee.managerEmail || "";
 
       const meta = [
         mentee.role,
@@ -1715,92 +1667,79 @@ function renderResults(mentors) {
     }
 
     /* ==================================================================
-       ONAY TALEBI  (AI ve manuel yollarin ORTAK cikisi)
-
-       Eslestirmenin nasil yapildigi degisse de onay sureci ayni:
-       yonetici kapisi -> mentor + mentee onayi -> calisma alani.
-       Bu yuzden iki yol da ayni uca (/match-request) baglanir; tek
-       fark, puanin ve gerekcenin nereden geldigidir.
+       MATCH  (common exit of the AI and the manual path)
+       Both create the mentorship directly with POST /mentorships.
        ================================================================== */
 
     /**
-     * Talep olusturur ve onay kutusunu cizer.
-     *
-     * @param mentor    {id|mentorId, fullName, email}
-     * @param score     AI puani (manuel yolda 0)
-     * @param reason    gerekce metni
-     * @param linksBox  onay kutusunun cizilecegi element
-     * @param btn       tiklanan buton (durum yazisi icin)
+     * Creates the mentorship at once (no approval flow). Nobody is
+     * e-mailed here: HR sends the match e-mail from the HR Dashboard.
      */
-    async function createMatchRequest(mentor, score, reason, linksBox, btn) {
+    async function createMatch(mentor, linksBox, btn) {
       const payload = menteePayload();
       if (!payload) return false;
 
-      const original = btn.textContent;
+      const body = {
+        mentorId: mentor.mentorId || mentor.id || "",
+        language: currentLanguage
+      };
 
+      if (!HAS_PROGRAMS) {
+        const end = document.getElementById("closingDate").value;
+        const today = new Date().toISOString().slice(0, 10);
+        if (!end || end < today) {
+          alert(t("err_closing_date_required"));
+          document.getElementById("closingDate").focus();
+          return false;
+        }
+        body.closingDate = end;
+      }
+
+      if (payload.menteeId) {
+        // Registered mentee: the SERVER fills in name, e-mail and need.
+        body.menteeId = payload.menteeId;
+      } else {
+        // Typed-in mentee: no lasting id, so a temporary one is made up.
+        // The one-mentor rule cannot be checked for this mentee.
+        const menteeId = lastMenteeId || `mentee_${Date.now()}`;
+        lastMenteeId = menteeId;
+        Object.assign(body, {
+          menteeId,
+          menteeName: payload.fullName || "Mentee",
+          menteeEmail: payload.email || "",
+          menteeRole: payload.role || "",
+          menteeDepartment: payload.department || "",
+          developmentNeed: payload.developmentNeeds || ""
+        });
+      }
+
+      const original = btn.textContent;
       try {
         btn.disabled = true;
-        btn.textContent = t("creatingRequest");
+        btn.textContent = t("matching");
 
-        // Kayitli mentee'de kimlik ve ihtiyac bilgisini SUNUCU doldurur;
-        // burada sadece menteeId gonderilir.
-        const body = {
-          companyId: COMPANY_ID,
-          mentorId: mentor.mentorId || mentor.id || "",
-          mentorName: mentor.fullName || "",
-          mentorEmail: mentor.email || "",
-          managerName: document.getElementById("managerName").value.trim(),
-          managerEmail: document.getElementById("managerEmail").value.trim(),
-          matchScore: Math.round(Number(score) || 0),
-          matchReason: reason || "",
-          language: currentLanguage
-        };
-
-        if (payload.menteeId) {
-          body.menteeId = payload.menteeId;
-        } else {
-          // Kayitsiz mentee: kalici kimligi yok, bu yuzden gecici bir id
-          // uretilir. Tek-mentor kurali bu mentee icin DOGRULANAMAZ.
-          const menteeId = lastMenteeId || `mentee_${Date.now()}`;
-          lastMenteeId = menteeId;
-
-          body.menteeId = menteeId;
-          body.menteeName = payload.fullName || "Mentee";
-          body.menteeEmail = payload.email || "";
-          body.menteeRole = payload.role || "";
-          body.menteeDepartment = payload.department || "";
-          body.developmentNeed = payload.developmentNeeds || "";
-        }
-
-        const response = await fetch(`${API_BASE_URL}/match-request`, {
+        const response = await fetch(`${API_BASE_URL}/mentorships`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": API_KEY
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body)
         });
-
         const data = await response.json();
 
         if (!response.ok) {
-          // Tek-mentor kurali cignendiginde sunucu 409 doner. IK'ya NE
-          // oldugunu ve NE YAPMASI gerektigini acikca soyle.
           if (data.code === "mentee_already_engaged") {
             const lines = [data.error];
             if (data.mentorName) lines.push(`Mentor: ${data.mentorName}`);
             if (data.action) lines.push("\n" + t("whatToDo") + " " + data.action);
             throw new Error(lines.join("\n"));
           }
-          throw new Error(programError(data) || data.error || t("approvalRequestFailed"));
+          throw new Error(programError(data) || data.error || t("matchFailed"));
         }
 
-        btn.textContent = t("approvalRequested");
-        renderApprovalBox(data, linksBox);
+        btn.textContent = t("matched");
+        renderMatchedBox(data, linksBox);
 
-        // Mentee artik mesgul: listeyi tazele ki tekrar secilemesin.
+        // The mentee is matched now: refresh so they cannot be picked again.
         loadCandidates();
-
         return true;
 
       } catch (error) {
@@ -1811,7 +1750,7 @@ function renderResults(mentors) {
       }
     }
 
-    /** AI sonuc kartindaki "Onay Talebi Gonder" butonu. */
+    /** "Match" button on an AI result card. */
     async function requestApproval(index) {
       const mentor = lastRecommendations[index];
 
@@ -1820,10 +1759,8 @@ function renderResults(mentors) {
         return;
       }
 
-      await createMatchRequest(
+      await createMatch(
         mentor,
-        mentor.score || 0,
-        mentor.aiReason || mentor.aiSummary || "",
         document.getElementById(`approvalLinks_${index}`),
         document.getElementById(`approvalBtn_${index}`)
       );
@@ -1840,11 +1777,6 @@ function renderResults(mentors) {
 
       const box = document.getElementById("manualResult");
       const btn = document.getElementById("manualBtn");
-
-      // Gerekce bos birakilabilir; o zaman kaydin manuel oldugu yazilir.
-      const reason =
-        document.getElementById("manualReason").value.trim() ||
-        t("manualDefaultReason");
 
       box.innerHTML = `
         <div class="mentor-card">
@@ -1863,19 +1795,13 @@ function renderResults(mentors) {
         </div>
       `;
 
-      const ok = await createMatchRequest(
-        mentor,
-        0,                                  // manuel yolda AI puani yok
-        reason,
-        document.getElementById("manualLinks"),
-        btn
-      );
+      const ok = await createMatch(mentor, document.getElementById("manualLinks"), btn);
 
       if (ok) {
         box.scrollIntoView({ behavior: "smooth", block: "center" });
 
         // Butonu tekrar ac: IK sonraki mentee'yi eslestirebilsin.
-        // Ayni mentee'ye ikinci talep denenirse sunucu zaten 409 doner.
+        // A second match for the same mentee is refused by the server (409).
         setTimeout(() => {
           btn.disabled = false;
           btn.textContent = t("manualMatchButton");
@@ -1886,166 +1812,25 @@ function renderResults(mentors) {
     }
 
     /** Onay linkleri kutusu (iki yol da ayni kutuyu kullanir). */
-    function renderApprovalBox(data, linksBox) {
-      const rid = data.requestId;
-      const gated = !!data.managerRequired;
-
-      const mailBtn = (target, label) => SMTP_READY
-        ? `<button class="mail-btn" onclick="emailApproval('${escapeJs(rid)}','${target}',this)">${escapeHtml(label)}</button>`
-        : "";
-
-      // ==============================================================
-      // ONAY SIRASI
-      //
-      // Yonetici girilmisse ONCE o onaylamali. Mentor ve mentee
-      // linkleri gorunur ama e-posta butonlari GIZLENIR - IK
-      // yanlislikla once onlara gondermesin.
-      // ==============================================================
-
-      const stepBadge = (n) => gated
-        ? `<span style="background:#1a2b5e;color:#fff;font-size:10px;font-weight:700;
-            padding:2px 7px;border-radius:9px;margin-right:6px">${n}</span>`
-        : "";
-
+    function renderMatchedBox(data, linksBox) {
+      const url = data.workspaceUrl || "";
       linksBox.innerHTML = `
         <div class="approval-box">
-          <h3>${escapeHtml(t("approvalCreated"))}</h3>
-
-          ${gated ? `
-            <div class="approval-link-row" style="border-left:3px solid #b5651d;
-                 background:#fffbf5;padding-left:13px">
-              <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-                <span style="background:#b5651d;color:#fff;font-size:10px;font-weight:700;
-                      padding:2px 7px;border-radius:9px">1</span>
-                <strong>${escapeHtml(t("managerApprovalLink"))}</strong>
-              </div>
-              <div style="font-size:12px;color:#8a5a2b;margin-bottom:8px">
-                ${escapeHtml(t("managerFirstHint"))}
-              </div>
-              <div class="approval-url">${escapeHtml(data.managerLink)}</div>
-              <div class="link-actions">
-                <button onclick="copyText('${escapeJs(data.managerLink)}')">${escapeHtml(t("copyManagerLink"))}</button>
-                <button class="open-btn" onclick="openLink('${escapeJs(data.managerLink)}')">${escapeHtml(t("openManagerLink"))}</button>
-                ${mailBtn("manager", t("emailManager"))}
-              </div>
-            </div>
-
-            <div style="font-size:12px;color:#8a5a2b;background:#fffbf5;
-                 border:1px solid #f3e0c8;border-radius:6px;padding:9px 12px;margin:0 0 12px">
-              ${escapeHtml(t("lockedUntilManager"))}
-            </div>
-          ` : ""}
-
-          ${!gated && SMTP_READY ? `
-            <div style="margin:0 0 18px">
-              <button class="mail-btn" style="padding:11px 22px;font-size:15px"
-                      onclick="emailApproval('${escapeJs(rid)}','both',this)">
-                ${escapeHtml(t("emailBoth"))}
-              </button>
-              <div style="font-size:12px;color:#6b7280;margin-top:7px">
-                ${escapeHtml(t("emailBothHint"))}
-              </div>
-            </div>
-          ` : ""}
-
-          ${!gated && !SMTP_READY ? `
-            <div style="font-size:12px;color:#6b7280;margin:0 0 16px">
-              ${escapeHtml(t("smtpNotSet"))}
-            </div>
-          ` : ""}
-
-          <div class="approval-link-row">
-            <strong>${stepBadge(2)}${escapeHtml(t("mentorApprovalLink"))}</strong>
-            <div class="approval-url">${escapeHtml(data.mentorLink)}</div>
-            <div class="link-actions">
-              <button onclick="copyText('${escapeJs(data.mentorLink)}')">${escapeHtml(t("copyMentorLink"))}</button>
-              <button class="open-btn" onclick="openLink('${escapeJs(data.mentorLink)}')">${escapeHtml(t("openMentorLink"))}</button>
-              ${gated ? "" : mailBtn("mentor", t("emailMentor"))}
-            </div>
+          <h3>${escapeHtml(t("matchedTitle"))}</h3>
+          <div style="font-size:13px;color:#4b5563;margin:0 0 14px;line-height:1.55">
+            ${escapeHtml(t("matchedText"))}
           </div>
-
           <div class="approval-link-row">
-            <strong>${stepBadge(2)}${escapeHtml(t("menteeApprovalLink"))}</strong>
-            <div class="approval-url">${escapeHtml(data.menteeLink)}</div>
+            <div class="approval-url">${escapeHtml(url)}</div>
             <div class="link-actions">
-              <button onclick="copyText('${escapeJs(data.menteeLink)}')">${escapeHtml(t("copyMenteeLink"))}</button>
-              <button class="open-btn" onclick="openLink('${escapeJs(data.menteeLink)}')">${escapeHtml(t("openMenteeLink"))}</button>
-              ${gated ? "" : mailBtn("mentee", t("emailMentee"))}
+              <button onclick="copyText('${escapeJs(url)}')">${escapeHtml(t("copyWorkspaceLink"))}</button>
+              <button class="open-btn" onclick="openLink('${escapeJs(url)}')">${escapeHtml(t("openWorkspace"))}</button>
+              <button class="mail-btn" onclick="location.href='/hr_dashboard.html'">${escapeHtml(t("goDashboard"))}</button>
             </div>
           </div>
         </div>
       `;
-
       linksBox.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-
-    /* ==============================================================
-       E-POSTA GONDERIMI
-
-       Butonlar sadece SMTP yapilandirilmissa gorunur.
-       ============================================================== */
-
-    let SMTP_READY = false;
-
-    async function checkSmtp() {
-      try {
-        const res = await fetch(`${API_BASE_URL}/email/status`, {
-          headers: { "x-api-key": API_KEY }
-        });
-        SMTP_READY = res.ok && (await res.json()).configured;
-      } catch {
-        SMTP_READY = false;
-      }
-    }
-
-    async function emailApproval(requestId, target, btn) {
-      const original = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = t("emailSending");
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/email/approval/${requestId}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": API_KEY
-          },
-          body: JSON.stringify({ target, lang: currentLanguage || "en" })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          const parts = [data.error || t("emailFailed")];
-          if (data.detail) parts.push(data.detail);
-          if (data.action) parts.push("\n" + t("whatToDo") + " " + data.action);
-          throw new Error(parts.join("\n"));
-        }
-
-        // Kismi basarisizlik: bazilari gitti, bazilari gitmedi.
-        // IK'ya NE gitmedigini ve NEDEN gitmedigini soyle.
-        if (data.failed && data.failed.length) {
-          const reasons = data.failed
-            .map(f => `${f.type || f.email}: ${f.reason}`)
-            .join("\n");
-
-          alert(`${data.message}\n\n${t("emailNotSent")}\n${reasons}`);
-          btn.textContent = original;
-          btn.disabled = false;
-          return;
-        }
-
-        btn.textContent = t("emailSent");
-        setTimeout(() => {
-          btn.textContent = original;
-          btn.disabled = false;
-        }, 2500);
-
-      } catch (e) {
-        alert(e.message);
-        btn.textContent = original;
-        btn.disabled = false;
-      }
     }
 
     function copyText(text) {

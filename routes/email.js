@@ -1,7 +1,7 @@
 const express = require("express");
 
 const config = require("../config");
-const { companies, mentors, matchRequests, mentorships } = require("../db/repos");
+const { companies, mentors, mentorships } = require("../db/repos");
 const mailer = require("../mail/mailer");
 const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
@@ -41,7 +41,6 @@ const M = {
     en: "At least one email address is required."
   },
   companyNotFound: { tr: "Company not found", en: "Company not found" },
-  requestNotFound: { tr: "Request not found", en: "Request not found" },
   mentorshipNotFound: { tr: "Mentorship not found", en: "Mentorship not found" },
   invitesSent: {
     tr: n => `${n} davet gonderildi.`,
@@ -50,10 +49,6 @@ const M = {
   partial: {
     tr: (ok, bad) => `${ok} gonderildi, ${bad} basarisiz.`,
     en: (ok, bad) => `${ok} sent, ${bad} failed.`
-  },
-  approvalSent: {
-    tr: list => `Onay baglantisi gonderildi: ${list}`,
-    en: list => `Approval link sent to: ${list}`
   },
   workspaceSent: {
     tr: list => `Calisma alani baglantisi gonderildi: ${list}`,
@@ -142,124 +137,6 @@ router.post("/email/invite", requireApiKey, wrap(async (req, res) => {
 }));
 
 // =====================================================================
-// 2. ONAY LINKLERI
-// =====================================================================
-
-router.post("/email/approval/:id", requireApiKey, wrap(async (req, res) => {
-  const { target = "both", lang = "tr" } = req.body;
-
-  const request = ownRecord(req, res, matchRequests.get(req.params.id), m("requestNotFound", lang));
-  if (!request) return;
-
-  const base = config.siteBaseUrl;
-  const c = encodeURIComponent(request.companyId);
-
-  const link = (type, token) =>
-    `${base}/match_approval.html?id=${request.id}&type=${type}&token=${token}&company=${c}`;
-
-  const targets = [];
-
-  // --- Yonetici ---
-  if (target === "manager") {
-    if (request.managerApproval === "not_required") {
-      return res.status(400).json({
-        error: lang === "tr"
-          ? "Bu talep icin yonetici bilgisi girilmemis."
-          : "No manager was entered for this request."
-      });
-    }
-
-    targets.push({
-      type: "manager",
-      email: request.managerEmail || "",
-      url: link("manager", request.managerToken)
-    });
-  }
-
-  /**
-   * YONETICI KAPISI
-   *
-   * Yonetici henuz onaylamadiysa mentor ve mentee'ye e-posta GONDERILMEZ.
-   * Sebep: yonetici reddederse mentorun ve mentee'nin zamani bosa
-   * harcanmis, beklenti bosuna yaratilmis olur.
-   */
-  const gateBlocked =
-    (target === "mentor" || target === "mentee" || target === "both") &&
-    !matchRequests.managerGateOpen(request);
-
-  if (gateBlocked) {
-    return res.status(409).json({
-      error: lang === "tr"
-        ? "Once yoneticinin onayi gerekiyor."
-        : "The manager must approve first.",
-      detail: lang === "tr"
-        ? `Bu eslesme icin once ${request.managerName || "mentee'nin yoneticisi"} ` +
-          `onay vermeli. Onaylandiktan sonra mentor ve mentee'ye baglanti gonderebilirsiniz.`
-        : `${request.managerName || "The mentee's manager"} must approve this match ` +
-          `first. After that you can send the links to the mentor and the mentee.`,
-      code: "manager_pending"
-    });
-  }
-
-  if (target === "mentor" || target === "both") {
-    // Mentor e-postasi talepte yoksa mentor kaydindan al.
-    const email = request.mentorEmail ||
-                  mentors.get(request.mentorId)?.email || "";
-
-    targets.push({ type: "mentor", email, url: link("mentor", request.mentorToken) });
-  }
-
-  if (target === "mentee" || target === "both") {
-    targets.push({
-      type: "mentee",
-      email: request.menteeEmail || "",
-      url: link("mentee", request.menteeToken)
-    });
-  }
-
-  const sent = [];
-  const failed = [];
-
-  for (const t of targets) {
-    if (!t.email) {
-      failed.push({
-        type: t.type,
-        reason: {
-          mentor: m("noMentorEmail", lang),
-          mentee: m("noMenteeEmail", lang),
-          manager: m("noManagerEmail", lang)
-        }[t.type]
-      });
-      continue;
-    }
-
-    try {
-      await mailer.sendApproval({
-        to: t.email,
-        type: t.type,
-        request,
-        url: t.url,
-        lang
-      });
-      sent.push({ type: t.type, email: t.email });
-
-    } catch (error) {
-      if (error.code === "SMTP_NOT_CONFIGURED") return fail(res, error);
-      failed.push({ type: t.type, email: t.email, reason: error.message });
-    }
-  }
-
-  res.json({
-    success: sent.length > 0,
-    sent,
-    failed,
-    message: sent.length
-      ? m("approvalSent", lang, sent.map(s => s.email).join(", "))
-      : m("noneSent", lang)
-  });
-}));
-
-// =====================================================================
 // 3. CALISMA ALANI LINKI
 // =====================================================================
 
@@ -276,11 +153,11 @@ router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
 
   if (target === "mentor" || target === "both") {
     const email = ms.mentorEmail || mentors.get(ms.mentorId)?.email || "";
-    targets.push({ type: "mentor", email, other: ms.menteeName });
+    targets.push({ type: "mentor", email, name: ms.mentorName, other: ms.menteeName });
   }
 
   if (target === "mentee" || target === "both") {
-    targets.push({ type: "mentee", email: ms.menteeEmail || "", other: ms.mentorName });
+    targets.push({ type: "mentee", email: ms.menteeEmail || "", name: ms.menteeName, other: ms.mentorName });
   }
 
   const sent = [];
@@ -295,6 +172,8 @@ router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
     try {
       await mailer.sendWorkspace({
         to: t.email,
+        role: t.type,
+        name: t.name,
         otherName: t.other,
         mentorship: ms,
         url,

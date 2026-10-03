@@ -485,10 +485,6 @@
       </div>
 
     <div id="errorBox"></div>
-    <div id="stats"><div class="loading" data-i18n="loadingDashboard">Loading dashboard...</div></div>
-
-    <h2 class="section-title" data-i18n="pendingApprovalsTitle">Eşleşme Talepleri</h2>
-    <div id="approvalList"></div>
 
     <h2 class="section-title" data-i18n="trackingTitle">Meeting Tracking</h2>
     <div class="section-sub" data-i18n="trackingSub">Only the dates and durations of meetings are shown here, not what was discussed.</div>
@@ -508,29 +504,19 @@ const API_KEY = "mentor-demo-key-2026";
 const SITE_BASE_URL = window.location.origin;
 
 let mentorships = [];
-let approvalRequests = [];
 let currentLanguage = localStorage.getItem("mentorAppLang") || "en";
 
 const translations = {
   en: {
     pageTitle: "HR Mentorship Dashboard",
-    subtitle: "Monitor mentorships, pending approvals and active mentor–mentee relationships.",
+    subtitle: "Monitor mentorships, meetings and the match e-mails of mentor–mentee pairs.",
     languageLabel: "Language",
     loadingDashboard: "Loading dashboard...",
-    pendingApprovalsTitle: "Match Requests",
     delete: "Delete",
     deleteFailed: "Deletion failed",
-    confirmDeleteRequest: "Delete this match request? This cannot be undone.",
-    deleteRequestKeepsWorkspace: "Note: the workspace created from this request will NOT be deleted and keeps running.",
     confirmDeleteMentorship: "Delete this mentorship? This cannot be undone.",
     confirmDeleteAnyway: "Delete anyway?",
     activeMentorshipsTitle: "Active Mentorships",
-    totalMentorships: "Total Mentorships",
-    activeMentorships: "Active Mentorships",
-    pendingApprovals: "Pending Approvals",
-    approvedRequests: "Approved Requests",
-    rejectedRequests: "Rejected Requests",
-    noApprovalRequests: "No approval requests yet.",
     noMentorships: "No mentorships created yet.",
     programFilterLabel: "Programme", programAll: "All programmes", programNone: "No programme",
     trackingTitle: "Meeting Tracking",
@@ -544,12 +530,6 @@ const translations = {
     hoursShort: "h", minutesShort: "min",
     durationUnknown: "duration not given",
     durationPartial: "{n} meeting(s) have no duration recorded; totals and averages count only the rest.",
-    mentorApproval: "Mentor approval",
-    managerApproval: "Manager approval",
-    rejectedBy: "Declined by",
-    by_manager: "the manager",
-    by_mentor: "the mentor",
-    by_mentee: "the mentee",
     reason_timing: "Timing isn't right at the moment",
     reason_priority: "This isn't the current development priority",
     reason_workload: "Workload doesn't allow it right now",
@@ -557,10 +537,8 @@ const translations = {
     reason_not_my_area: "Not the mentor's area of expertise",
     reason_different_mentor: "A different mentor would be a better fit",
     reason_other: "Other",
-    waitingManager: "waiting for manager",
     copyManagerLink: "Copy Manager Link",
     emailManager: "Email Manager",
-    menteeApproval: "Mentee approval",
     created: "Created",
     nextMeeting: "Next Meeting",
     notSet: "Not set",
@@ -571,10 +549,6 @@ const translations = {
     closingDateCleared: "Cleared ✓",
     closingDateSaveFailed: "Could not save the closing date",
     saving: "Saving...",
-    copyMentorLink: "Copy Mentor Link",
-    copyMenteeLink: "Copy Mentee Link",
-    openMentorApproval: "Open Mentor Approval",
-    openMenteeApproval: "Open Mentee Approval",
     openWorkspace: "Open Workspace",
     surveyLabel: "Closure survey",
     sendSurveyMentor: "Send Survey to Mentor",
@@ -604,8 +578,11 @@ const translations = {
     surveyLinkCopied: "Survey link copied.",
     surveyCopyLink: "Copy link",
     copied: "Copied!",
-    emailBoth: "Email Both",
-    emailWorkspace: "Email Workspace Link",
+    emailWorkspace: "Send match e-mail",
+    matchStarted: "Match started",
+    matchEmail: "Match e-mail",
+    matchEmailSent: "sent",
+    matchEmailNotSent: "not sent yet",
     emailSending: "Sending…",
     emailSent: "Sent ✓",
     emailFailed: "Could not send email",
@@ -614,7 +591,6 @@ const translations = {
     mentor: "Mentor",
     mentee: "Mentee",
     couldNotLoadMentorships: "Could not load mentorships.",
-    couldNotLoadApprovals: "Could not load approval requests.",
     status: {
       active: "active",
       approved: "approved",
@@ -627,23 +603,14 @@ const translations = {
   },
   tr: {
     pageTitle: "İK Mentorluk Paneli",
-    subtitle: "Mentorlukları, bekleyen onayları ve aktif mentor–mentee ilişkilerini takip edin.",
+    subtitle: "Mentorlukları, toplantıları ve mentor–mentee eşleşme e-postalarını takip edin.",
     languageLabel: "Dil",
     loadingDashboard: "Panel yükleniyor...",
-    pendingApprovalsTitle: "Eşleşme Talepleri",
     delete: "Sil",
     deleteFailed: "Silme başarısız",
-    confirmDeleteRequest: "Bu eşleşme talebini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
-    deleteRequestKeepsWorkspace: "Not: Bu talepten oluşan çalışma alanı SİLİNMEZ, çalışmaya devam eder.",
     confirmDeleteMentorship: "Bu mentorluk ilişkisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
     confirmDeleteAnyway: "Yine de silinsin mi?",
     activeMentorshipsTitle: "Aktif Mentorluklar",
-    totalMentorships: "Toplam Mentorluk",
-    activeMentorships: "Aktif Mentorluk",
-    pendingApprovals: "Bekleyen Onay",
-    approvedRequests: "Onaylanan Talepler",
-    rejectedRequests: "Reddedilen Talepler",
-    noApprovalRequests: "Henüz onay talebi yok.",
     noMentorships: "Henüz oluşturulmuş mentorluk yok.",
     programFilterLabel: "Program", programAll: "Tüm programlar", programNone: "Programsız",
     trackingTitle: "Toplantı Takibi",
@@ -657,12 +624,6 @@ const translations = {
     hoursShort: "sa", minutesShort: "dk",
     durationUnknown: "süre girilmemiş",
     durationPartial: "{n} toplantıda süre girilmemiş; toplam ve ortalama yalnızca süresi girilenlerden hesaplanır.",
-    mentorApproval: "Mentor onayı",
-    managerApproval: "Yönetici onayı",
-    rejectedBy: "Reddeden:",
-    by_manager: "yönetici",
-    by_mentor: "mentor",
-    by_mentee: "mentee",
     reason_timing: "Şu an zamanlaması uygun değil",
     reason_priority: "Şu anki gelişim önceliği bu değil",
     reason_workload: "İş yükü şu an buna izin vermiyor",
@@ -670,10 +631,8 @@ const translations = {
     reason_other: "Diğer",
     reason_not_my_area: "Mentorun uzmanlık alanı değil",
     reason_different_mentor: "Farklı bir mentor daha uygun olur",
-    waitingManager: "yönetici bekleniyor",
     copyManagerLink: "Yönetici Linkini Kopyala",
     emailManager: "Yöneticiye E-posta",
-    menteeApproval: "Mentee onayı",
     created: "Oluşturulma tarihi",
     nextMeeting: "Sonraki görüşme",
     notSet: "Belirlenmedi",
@@ -684,10 +643,6 @@ const translations = {
     closingDateCleared: "Temizlendi ✓",
     closingDateSaveFailed: "Kapanış tarihi kaydedilemedi",
     saving: "Kaydediliyor...",
-    copyMentorLink: "Mentor Linkini Kopyala",
-    copyMenteeLink: "Mentee Linkini Kopyala",
-    openMentorApproval: "Mentor Onayını Aç",
-    openMenteeApproval: "Mentee Onayını Aç",
     openWorkspace: "Workspace’i Aç",
     surveyLabel: "Kapanış anketi",
     sendSurveyMentor: "Mentore Anket Gönder",
@@ -717,8 +672,11 @@ const translations = {
     surveyLinkCopied: "Anket linki kopyalandı.",
     surveyCopyLink: "Linki kopyala",
     copied: "Kopyalandı!",
-    emailBoth: "İkisine de E-posta Gönder",
-    emailWorkspace: "Çalışma Alanı Linkini Gönder",
+    emailWorkspace: "Eşleşme e-postasını gönder",
+    matchStarted: "Eşleşme başlangıcı",
+    matchEmail: "Eşleşme e-postası",
+    matchEmailSent: "gönderildi",
+    matchEmailNotSent: "henüz gönderilmedi",
     emailSending: "Gönderiliyor…",
     emailSent: "Gönderildi ✓",
     emailFailed: "E-posta gönderilemedi",
@@ -727,7 +685,6 @@ const translations = {
     mentor: "Mentor",
     mentee: "Mentee",
     couldNotLoadMentorships: "Mentorluklar yüklenemedi.",
-    couldNotLoadApprovals: "Onay talepleri yüklenemedi.",
     status: {
       active: "aktif",
       approved: "onaylandı",
@@ -756,8 +713,6 @@ function setLanguage(lang) {
   document.getElementById("languageSelect").value = currentLanguage;
   applyTranslations();
   renderProgramFilter();
-  renderStats();
-  renderApprovals();
   renderMentorships();
   renderTracking();
 }
@@ -780,20 +735,11 @@ async function loadDashboard() {
       { headers: { "x-api-key": API_KEY } }
     );
 
-    const approvalsRes = await fetch(
-      `${API_BASE_URL}/match-requests?companyId=${COMPANY_ID}`,
-      { headers: { "x-api-key": API_KEY } }
-    );
-
     if (!mentorshipRes.ok) throw new Error(t("couldNotLoadMentorships"));
-    if (!approvalsRes.ok) throw new Error(t("couldNotLoadApprovals"));
 
     mentorships = await mentorshipRes.json();
-    approvalRequests = await approvalsRes.json();
 
     await loadPrograms();
-    renderStats();
-    renderApprovals();
     renderMentorships();
     await loadTracking();
 
@@ -804,159 +750,7 @@ async function loadDashboard() {
   }
 }
 
-function renderStats() {
-  const mentorships = shownMentorships();          // programme filter
-  const approvalRequests = shownRequests();
-  const activeMentorships = mentorships.filter(m => m.status === "active").length;
-  const pendingApprovals = approvalRequests.filter(r => r.status === "pending").length;
-  const approvedRequests = approvalRequests.filter(r => r.status === "approved").length;
-  const rejectedRequests = approvalRequests.filter(r =>
-    r.mentorApproval === "rejected" || r.menteeApproval === "rejected" || r.status === "rejected"
-  ).length;
 
-  document.getElementById("stats").innerHTML = `
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number">${mentorships.length}</div>
-        <div class="stat-label">${t("totalMentorships")}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${activeMentorships}</div>
-        <div class="stat-label">${t("activeMentorships")}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${pendingApprovals}</div>
-        <div class="stat-label">${t("pendingApprovals")}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${approvedRequests}</div>
-        <div class="stat-label">${t("approvedRequests")}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${rejectedRequests}</div>
-        <div class="stat-label">${t("rejectedRequests")}</div>
-      </div>
-    </div>
-  `;
-}
-
-function renderApprovals() {
-  const container = document.getElementById("approvalList");
-  const approvalRequests = shownRequests();        // programme filter
-
-  if (!approvalRequests.length) {
-    container.innerHTML = `<div class="empty">${t("noApprovalRequests")}</div>`;
-    return;
-  }
-
-  let html = "";
-
-  approvalRequests.forEach(req => {
-    const mentorLink = req.mentorLink || "#";
-    const menteeLink = req.menteeLink || "#";
-    const requestStatus = req.status || "pending";
-    const mentorApproval = req.mentorApproval || "pending";
-    const menteeApproval = req.menteeApproval || "pending";
-
-    // Yonetici kapisi: girilmisse ve henuz onaylamadiysa mentor/mentee
-    // e-postalari GONDERILEMEZ. IK yanlislikla once onlara gondermesin.
-    const managerApproval = req.managerApproval || "not_required";
-    const hasManager = managerApproval !== "not_required";
-    const gated = hasManager && managerApproval !== "approved";
-
-    html += `
-      <div class="card">
-        <div class="row">
-          <div class="pair-title">
-            ${programBadge(req.programId)}
-            <strong>${escapeHtml(req.mentorName || t("mentor"))}</strong>
-            →
-            ${escapeHtml(req.menteeName || t("mentee"))}
-          </div>
-          <span class="badge ${escapeHtml(requestStatus)}">${escapeHtml(statusText(requestStatus))}</span>
-        </div>
-
-        ${hasManager ? `
-          <div class="row">
-            <div class="muted">
-              ${t("managerApproval")}
-              ${req.managerName ? `<span style="color:#9ca3af"> · ${escapeHtml(req.managerName)}</span>` : ""}
-            </div>
-            <span class="badge ${escapeHtml(managerApproval)}">${escapeHtml(statusText(managerApproval))}</span>
-          </div>
-        ` : ""}
-
-        <div class="row">
-          <div class="muted">
-            ${t("mentorApproval")}
-            ${gated ? `<span style="color:#b5651d;font-size:12px"> · ${t("waitingManager")}</span>` : ""}
-          </div>
-          <span class="badge ${escapeHtml(mentorApproval)}">${escapeHtml(statusText(mentorApproval))}</span>
-        </div>
-
-        <div class="row">
-          <div class="muted">
-            ${t("menteeApproval")}
-            ${gated ? `<span style="color:#b5651d;font-size:12px"> · ${t("waitingManager")}</span>` : ""}
-          </div>
-          <span class="badge ${escapeHtml(menteeApproval)}">${escapeHtml(statusText(menteeApproval))}</span>
-        </div>
-
-        ${req.status === "rejected" && (req.rejectionCategory || req.rejectionNote) ? `
-          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;
-               padding:12px 14px;margin:10px 0;font-size:13px;line-height:1.55">
-            <div style="color:#b91c1c;font-weight:600;margin-bottom:4px">
-              ${t("rejectedBy")} ${escapeHtml(t("by_" + (req.rejectedBy || "mentee")))}
-            </div>
-            ${req.rejectionCategory ? `
-              <div style="color:#7f1d1d">${escapeHtml(t("reason_" + req.rejectionCategory))}</div>
-            ` : ""}
-            ${req.rejectionNote ? `
-              <div style="color:#991b1b;margin-top:6px;font-style:italic">
-                "${escapeHtml(req.rejectionNote)}"
-              </div>
-            ` : ""}
-          </div>
-        ` : ""}
-
-        <div class="row">
-          <div class="muted">${t("created")}</div>
-          <div>${formatDate(req.createdAt)}</div>
-        </div>
-
-        <div class="actions">
-          ${gated ? `
-            <button class="secondary-btn" onclick="copyText('${escapeJs(req.managerLink || "")}')">${t("copyManagerLink")}</button>
-            ${SMTP_READY ? `
-              <button class="mail-btn" style="background:#b5651d;border-color:#b5651d"
-                      onclick="emailApproval('${escapeJs(req.id)}', 'manager', this)">
-                ${t("emailManager")}
-              </button>
-            ` : ""}
-          ` : ""}
-          <button class="secondary-btn" onclick="copyText('${escapeJs(mentorLink)}')">${t("copyMentorLink")}</button>
-          <button class="secondary-btn" onclick="copyText('${escapeJs(menteeLink)}')">${t("copyMenteeLink")}</button>
-          ${SMTP_READY && !gated ? `
-            <button class="mail-btn" onclick="emailApproval('${escapeJs(req.id)}', 'both', this)">
-              ${t("emailBoth")}
-            </button>
-          ` : ""}
-          <button onclick="openLink('${escapeJs(mentorLink)}')">${t("openMentorApproval")}</button>
-          <button onclick="openLink('${escapeJs(menteeLink)}')">${t("openMenteeApproval")}</button>
-          ${req.mentorshipId ? `
-            <button class="green-btn" onclick="openWorkspace('${escapeJs(req.mentorshipId)}')">${t("openWorkspace")}</button>
-          ` : ""}
-          <button class="danger-btn"
-                  onclick="deleteRequest('${escapeJs(req.id)}', '${escapeJs(req.mentorName || "")} → ${escapeJs(req.menteeName || "")}', ${req.mentorshipId ? "true" : "false"})">
-            ${t("delete")}
-          </button>
-        </div>
-      </div>
-    `;
-  });
-
-  container.innerHTML = html;
-}
 
 function renderMentorships() {
   const container = document.getElementById("mentorshipList");
@@ -985,8 +779,20 @@ function renderMentorships() {
         </div>
 
         <div class="row">
+          <div class="muted">${t("matchStarted")}</div>
+          <div>${escapeHtml(formatDate(m.createdAt))}</div>
+        </div>
+
+        <div class="row">
           <div class="muted">${t("nextMeeting")}</div>
           <div>${escapeHtml(m.nextMeetingDate || t("notSet"))}</div>
+        </div>
+
+        <div class="row">
+          <div class="muted">${t("matchEmail")}</div>
+          <div>${m.workspaceEmailSentAt
+            ? `<span class="pill ok">${escapeHtml(t("matchEmailSent"))} ${escapeHtml(formatDate(m.workspaceEmailSentAt))}</span>`
+            : `<span class="pill warn">${escapeHtml(t("matchEmailNotSent"))}</span>`}</div>
         </div>
 
         <div class="row">
@@ -1221,7 +1027,7 @@ async function checkSmtp() {
   }
 }
 
-async function sendEmail(url, body, btn, okLabel) {
+async function sendEmail(url, body, btn, okLabel, onDone) {
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = t("emailSending");
@@ -1259,6 +1065,7 @@ async function sendEmail(url, body, btn, okLabel) {
     }
 
     btn.textContent = okLabel;
+    if (onDone) onDone();
     setTimeout(() => {
       btn.textContent = original;
       btn.disabled = false;
@@ -1271,21 +1078,14 @@ async function sendEmail(url, body, btn, okLabel) {
   }
 }
 
-function emailApproval(requestId, target, btn) {
-  sendEmail(
-    `${API_BASE_URL}/email/approval/${requestId}`,
-    { target },
-    btn,
-    t("emailSent")
-  );
-}
 
 function emailWorkspace(mentorshipId, btn) {
   sendEmail(
     `${API_BASE_URL}/email/workspace/${mentorshipId}`,
     { target: "both" },
     btn,
-    t("emailSent")
+    t("emailSent"),
+    () => setTimeout(loadDashboard, 1200)    // show "sent" on the card
   );
 }
 
@@ -1295,30 +1095,6 @@ function emailWorkspace(mentorshipId, btn) {
    acikca yazilir - "emin misiniz?" tek basina yeterli degildir.
    ================================================================== */
 
-async function deleteRequest(id, label, hasWorkspace) {
-  let message = `${t("confirmDeleteRequest")}\n\n${label}`;
-
-  if (hasWorkspace) {
-    message += `\n\n${t("deleteRequestKeepsWorkspace")}`;
-  }
-
-  if (!confirm(message)) return;
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/match-request/${id}`, {
-      method: "DELETE",
-      headers: { "x-api-key": API_KEY }
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || t("deleteFailed"));
-
-    await loadDashboard();
-
-  } catch (e) {
-    alert(t("deleteFailed") + ": " + e.message);
-  }
-}
 
 async function deleteMentorship(id, label) {
   if (!confirm(`${t("confirmDeleteMentorship")}\n\n${label}`)) return;
@@ -1578,7 +1354,6 @@ function renderProgramFilter() {
 const inProgramFilter = x => PROGRAM_FILTER === "all" ||
   (PROGRAM_FILTER === "none" ? !x.programId : x.programId === PROGRAM_FILTER);
 function shownMentorships() { return mentorships.filter(inProgramFilter); }
-function shownRequests() { return approvalRequests.filter(inProgramFilter); }
 
 function programBadge(programId) {
   const p = programId && PROGRAMS.find(x => x.id === programId);
@@ -1590,8 +1365,6 @@ function programBadge(programId) {
 async function onProgramFilter(value) {
   PROGRAM_FILTER = value;
   sessionStorage.setItem("dashboardProgram", value);
-  renderStats();
-  renderApprovals();
   renderMentorships();
   await loadTracking();
 }
