@@ -718,6 +718,7 @@
       const data = await res.json();
       COMPANY_ID = data.companyId;
       COMPANY_NAME = data.companyName;
+      if (window.MentorOSLogo) MentorOSLogo.show(data.logoUrl);
 
       // Firma adini alt basliga yaz
       renderHeaderSubtitle();
@@ -1338,5 +1339,6 @@
 
   applyTranslations();
 </script>
+<script src="/assets/company-logo.js"></script>
 </body>
 </html>

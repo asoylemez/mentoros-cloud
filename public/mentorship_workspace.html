@@ -1508,6 +1508,7 @@
       // The mentoring programme this workspace belongs to (if any).
       const programBadge = document.getElementById("programBadge");
       programBadge.textContent = data.programName ? `${t("programme")}: ${data.programName}` : "";
+      if (window.MentorOSLogo) MentorOSLogo.show(data.logoUrl);
       programBadge.style.display = data.programName ? "" : "none";
 
       // Kapanis tarihi (varsa) baslikta gorunur. Tarih gecse bile sayfa
@@ -1807,5 +1808,6 @@
       } catch { /* announcements are optional on this page */ }
     }
   </script>
+<script src="/assets/company-logo.js"></script>
 </body>
 </html>

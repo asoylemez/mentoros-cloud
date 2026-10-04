@@ -286,6 +286,12 @@
       <div class="hint"><a href="#" onclick="genPass('editPass');return false;">Rastgele üret</a></div>
     </div>
 
+    <div class="field">
+      <label>Logo</label>
+      <div id="editLogo" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"></div>
+      <div class="hint">PNG veya JPG, en fazla 500 KB. Kuruluş logosunu kendi "Firma Ayarları" sayfasından da yükleyebilir; burada değiştirip kaldırabilirsiniz.</div>
+    </div>
+
     <div class="warn-note">
       Şifreyi değiştirmek, süreyi güncellemek veya hesabı pasife almak
       <strong>o hesabın açık oturumlarını anında kapatır.</strong>
@@ -408,7 +414,7 @@ function render() {
       <tbody>
         ${companies.map(c => `
           <tr>
-            <td class="name">${esc(c.name)}</td>
+            <td class="name">${c.logoUrl ? `<img src="${esc(c.logoUrl)}" alt="" style="height:22px;max-width:80px;object-fit:contain;vertical-align:middle;margin-right:8px">` : ""}${esc(c.name)}</td>
             <td class="uname">${esc(c.loginName)}</td>
             <td>${c.hasPassword
               ? `<div class="pw">
@@ -504,7 +510,46 @@ function openEdit(id) {
   document.getElementById("editExp").value = c.expiresAt || "";
   document.getElementById("editStatus").value = c.status;
   document.getElementById("editPass").value = "";
+  renderEditLogo(c);
   document.getElementById("editModal").classList.add("show");
+}
+
+/* ---------------- LOGO (super admin may replace or remove it) ---------------- */
+
+function renderEditLogo(c) {
+  document.getElementById("editLogo").innerHTML = `
+    ${c.logoUrl ? `<img src="${esc(c.logoUrl)}" alt="" style="height:40px;max-width:180px;object-fit:contain;border:1px solid #e5e7eb;border-radius:6px;padding:4px;background:#fff">`
+                : `<span class="counts">Logo yok</span>`}
+    <label class="sm" style="display:inline-block;cursor:pointer;border:1px solid #d7dae3;border-radius:8px;padding:6px 10px;font-size:13px">
+      ${c.logoUrl ? "Değiştir" : "Yükle"}<input type="file" accept="image/png,image/jpeg" style="display:none" onchange="uploadLogo(this)">
+    </label>
+    ${c.logoUrl ? `<button class="sm danger" onclick="removeLogo()">Kaldır</button>` : ""}`;
+}
+
+async function uploadLogo(input) {
+  const file = input.files[0];
+  input.value = "";
+  if (!file || !editingId) return;
+  if (file.size > 500 * 1024) { alert("Logo en fazla 500 KB olabilir."); return; }
+  const res = await fetch(`/companies/${encodeURIComponent(editingId)}/logo`, {
+    method: "PUT", headers: { "Content-Type": "application/octet-stream" }, body: file
+  });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) { alert(d.code === "logo_bad_type" ? "Logo PNG veya JPG olmalı." : d.code === "logo_too_big" ? "Logo en fazla 500 KB olabilir." : (d.error || "Logo yüklenemedi.")); return; }
+  await afterLogoChange(d.logo ? d.logo.url : "");
+}
+
+async function removeLogo() {
+  if (!editingId || !confirm("Bu kuruluşun logosu kaldırılsın mı?")) return;
+  const res = await fetch(`/companies/${encodeURIComponent(editingId)}/logo`, { method: "DELETE" });
+  if (!res.ok) { alert("Logo kaldırılamadı."); return; }
+  await afterLogoChange("");
+}
+
+async function afterLogoChange(url) {
+  const c = companies.find(x => x.companyId === editingId);
+  if (c) { c.logoUrl = url; renderEditLogo(c); }
+  render();
 }
 
 /* ---------------- SIFRE GOSTER / KOPYALA ---------------- */

@@ -274,7 +274,8 @@ router.get("/public/survey/:token", wrap(async (req, res) => {
     otherName,
     language: survey.language,
     definition: getSurvey(survey.role, survey.language),
-    answers: survey.status === "completed" ? survey.answers : null
+    answers: survey.status === "completed" ? survey.answers : null,
+    logoUrl: require("../lib/logo").logos.url(survey.companyId)
   });
 }));
 

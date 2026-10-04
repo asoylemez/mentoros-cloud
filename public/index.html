@@ -234,6 +234,15 @@
         <button data-i18n="openButton">Open</button>
       </div>
 
+      <!-- Organisation settings (logo) -->
+      <div class="card" onclick="goTo('company_settings.html')">
+        <div class="card-title" data-i18n="companySettingsTitle">Organisation Settings</div>
+        <div class="card-desc" data-i18n="companySettingsDesc">
+          Your organisation's logo on screens, e-mails and reports.
+        </div>
+        <button data-i18n="openButton">Open</button>
+      </div>
+
       <!-- Reports -->
       <div class="card" onclick="goTo('reports.html')">
         <div class="card-title" data-i18n="reportsTitle">Reports</div>
@@ -311,6 +320,8 @@
         checkinTitle: "Feedback Questions",
         announcementsTitle: "Announcements",
         reportsTitle: "Reports",
+        companySettingsTitle: "Organisation Settings",
+        companySettingsDesc: "Your organisation's logo on screens, e-mails and reports.",
         reportsDesc: "Management report and survey results, as PDF or Excel.",
         announcementsDesc: "Send announcements by e-mail to mentors, mentees and groups.",
         checkinDesc: "The questions of the mid-programme feedback sent to mentors and mentees.",
@@ -334,6 +345,8 @@
         checkinTitle: "Geri Bildirim Soruları",
         announcementsTitle: "Duyurular",
         reportsTitle: "Raporlar",
+        companySettingsTitle: "Firma Ayarları",
+        companySettingsDesc: "Firmanızın logosu: ekranlarda, e-postalarda ve raporlarda.",
         reportsDesc: "Yönetim raporu ve anket sonuçları; PDF veya Excel olarak.",
         announcementsDesc: "Mentor, mentee ve gruplara e-posta ile duyuru gönderin.",
         checkinDesc: "Mentor ve mentee'lere gönderilen ara geri bildirimin soruları.",
@@ -376,5 +389,6 @@
 
 
 
+<script src="/assets/company-logo.js" data-staff></script>
 </body>
 </html>

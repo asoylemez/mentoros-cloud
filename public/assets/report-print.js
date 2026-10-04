@@ -3,7 +3,7 @@
  * REPORT PRINTING  (PDF through the browser's own print dialogue)
  * ====================================================================
  *
- * MentorOSPrint.printReport({ title, subtitle, sections, footer, landscape })
+ * MentorOSPrint.printReport({ title, subtitle, sections, footer, landscape, logoUrl })
  * builds a clean report page and opens the print dialogue, where the user
  * picks "Save as PDF". No PDF library: nothing to install.
  *
@@ -164,18 +164,30 @@
     container.id = "mos-print";
     container.innerHTML = `
       <table class="mos-p-head"><tbody><tr>
+        ${opts.logoUrl ? `<td style="width:1%;padding-right:14px"><img class="mos-p-logo" src="${esc(opts.logoUrl)}" alt=""
+            style="height:42px;max-width:180px;width:auto;object-fit:contain;display:block"></td>` : ""}
         <td><p class="mos-p-title">${esc(opts.title)}</p>${opts.subtitle ? `<p class="mos-p-sub">${esc(opts.subtitle)}</p>` : ""}</td>
         <td style="text-align:right;width:170px"><span class="mos-p-brand">MentorOS</span></td>
       </tr></tbody></table>
       ${(opts.sections || []).map(renderSection).join("")}
       <div class="mos-p-foot">${esc(opts.footer || "MentorOS")} &middot; ${esc(stamp)}</div>`;
     document.body.appendChild(container);
-    window.print();
-    setTimeout(() => {
-      container.remove();
-      const o = document.getElementById("mos-print-orient");
-      if (o) o.remove();
-    }, 500);
+
+    // Wait for the organisation's logo before opening the dialogue, or
+    // the PDF would come out without it (at most 3 seconds).
+    const logo = container.querySelector(".mos-p-logo");
+    const ready = !logo || logo.complete ? Promise.resolve() : new Promise(res => {
+      logo.onload = logo.onerror = res;
+      setTimeout(res, 3000);
+    });
+    ready.then(() => {
+      window.print();
+      setTimeout(() => {
+        container.remove();
+        const o = document.getElementById("mos-print-orient");
+        if (o) o.remove();
+      }, 500);
+    });
   }
 
   window.MentorOSPrint = { printReport };

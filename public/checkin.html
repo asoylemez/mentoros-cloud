@@ -397,11 +397,13 @@ document.getElementById("lang").onchange = e => { LANG = e.target.value; render(
   try {
     const res = await fetch(`/public/checkin/${encodeURIComponent(TOKEN)}`);
     DATA = res.ok ? await res.json() : "invalid";
+    if (DATA !== "invalid" && window.MentorOSLogo) MentorOSLogo.show(DATA.logoUrl);
   } catch { DATA = "invalid"; }
   if (DATA !== "invalid" && DATA.language) LANG = DATA.language === "en" ? "en" : "tr";
   document.getElementById("lang").value = LANG;
   render();
 })();
 </script>
+<script src="/assets/company-logo.js"></script>
 </body>
 </html>

@@ -357,6 +357,7 @@ function layout({ title, body, button, url, lang }) {
                     border:1px solid #e0e0e0;overflow:hidden;">
 
         <tr><td style="background:#1a2b5e;padding:22px 28px;">
+          <!--COMPANY_LOGO-->
           <span style="color:#ffffff;font-size:19px;font-weight:700;">MentorOS</span>
         </td></tr>
 
@@ -558,6 +559,7 @@ function meetingInviteLayout({ title, intro, rows, lang }) {
              style="max-width:560px;background:#ffffff;border-radius:10px;
                     border:1px solid #e0e0e0;overflow:hidden;">
         <tr><td style="background:#1a2b5e;padding:22px 28px;">
+          <!--COMPANY_LOGO-->
           <span style="color:#ffffff;font-size:19px;font-weight:700;">MentorOS</span>
         </td></tr>
         <tr><td style="padding:30px 28px;">
@@ -661,6 +663,7 @@ async function sendMeetingInvite({
   // getTransport() SMTP yapilandirilmamissa firlatir - route yakalar.
   const transport = getTransport();
   const results = [];
+  const branded = withCompanyLogo(html, mentorship.companyId);
 
   for (const to of recipients) {
     try {
@@ -668,7 +671,8 @@ async function sendMeetingInvite({
         from: `"${c.fromName}" <${c.fromEmail}>`,
         to,
         subject: t.meetingInviteSubject,
-        html,
+        html: branded.html,
+        ...(branded.files.length ? { attachments: branded.files } : {}),
         icalEvent: { method: "REQUEST", filename: "davet.ics", content: ics }
       });
       log({
@@ -722,6 +726,26 @@ function log({ companyId, kind, recipient, subject, refId, ok, error }) {
 }
 
 /**
+ * The organisation's logo, embedded in the mail (CID): mail programs
+ * block remote images by default, an embedded one is always shown.
+ * Fills the <!--COMPANY_LOGO--> place in the layout, or removes it.
+ */
+function withCompanyLogo(html, companyId, attachments) {
+  const files = attachments && attachments.length ? [...attachments] : [];
+  if (!String(html).includes("<!--COMPANY_LOGO-->")) return { html, files };
+  const img = companyId ? require("../lib/logo").logos.image(companyId) : null;
+  if (!img) return { html: html.replace("<!--COMPANY_LOGO-->", ""), files };
+  files.push({ filename: img.mime === "image/png" ? "logo.png" : "logo.jpg", content: img.data,
+               contentType: img.mime, cid: "company-logo@mentoros" });
+  return {
+    html: html.replace("<!--COMPANY_LOGO-->",
+      `<img src="cid:company-logo@mentoros" alt="" style="display:block;max-height:44px;max-width:200px;` +
+      `background:#ffffff;padding:6px 8px;border-radius:6px;margin:0 0 10px;">`),
+    files
+  };
+}
+
+/**
  * fromName / replyTo (optional): announcements go out with the
  * organisation's name as sender name and its own reply address, so that
  * replies reach HR instead of the platform's no-reply mailbox.
@@ -739,13 +763,15 @@ async function send({ to, subject, html, companyId, kind, refId, fromName, reply
     const transport = getTransport();
 
     const name = String(fromName || c.fromName || "").replace(/["\r\n]/g, "").trim();
+    let files;
+    ({ html, files } = withCompanyLogo(html, companyId, attachments));
     await transport.sendMail({
       from: `"${name}" <${c.fromEmail}>`,
       to,
       subject,
       html,
       ...(replyTo ? { replyTo } : {}),
-      ...(attachments && attachments.length ? { attachments } : {})
+      ...(files.length ? { attachments: files } : {})
     });
 
     log({ companyId, kind, recipient: to, subject, refId, ok: true });

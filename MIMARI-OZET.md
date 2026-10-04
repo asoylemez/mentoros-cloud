@@ -76,6 +76,12 @@ konuşulanlar, aksiyonlar) göndermez. Not içeriği çalışma sayfasındadır.
 Çalışma sayfası bağlantısını İK dağıttığı için İK de o sayfayı
 açabilir; bu, kuruluşun kendi kullanım kuralına bırakılmıştır.
 
+**Kuruluş logosu** (PNG/JPG, en fazla 500 KB; SVG kabul edilmez) da
+veritabanında saklanır. Rastgele ve her yüklemede değişen bir adresten
+(`/logo/<token>`) sunulur; e-postalara uzak bir resim olarak değil, gömülü
+(CID) olarak eklenir. Logoyu kuruluş kendi "Firma Ayarları" sayfasından,
+süper admin de yönetim panelinden değiştirebilir.
+
 **Raporlar** (Yönetim Raporu, Anket Sonuçları) yalnızca kuruluşun kendi
 verisinden ve yalnızca İK oturumunda üretilir; yapay zekâya gitmez.
 Toplantılar yalnızca tarih ve süreleriyle yer alır. Anket cevapları ekranda

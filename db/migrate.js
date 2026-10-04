@@ -185,6 +185,30 @@ function run() {
   migrateCheckins();
   migrateAnnouncements();
   migrateAnnouncementAttachments();
+  migrateCompanyLogos();
+}
+
+/**
+ * COMPANY LOGOS
+ * One logo per organisation, kept in the database (encrypted, backed up).
+ * `token` is random and changes with every upload: the public image URL
+ * (/logo/<token>) cannot be guessed and old copies drop out of caches.
+ */
+function migrateCompanyLogos() {
+  const has = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='company_logos'`).get();
+  if (has) return;
+  db.exec(`
+    CREATE TABLE company_logos (
+      company_id  TEXT PRIMARY KEY REFERENCES companies(company_id) ON DELETE CASCADE,
+      mime        TEXT NOT NULL,
+      data        BLOB NOT NULL,
+      size        INTEGER NOT NULL,
+      token       TEXT NOT NULL UNIQUE,
+      updated_at  TEXT NOT NULL,
+      updated_by  TEXT NOT NULL DEFAULT ''
+    );
+  `);
+  console.log("  migration: company logos table added");
 }
 
 /**

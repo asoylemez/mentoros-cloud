@@ -408,6 +408,7 @@ async function run(server) {
   await announcementChecks(server, { SA, B });
   await attachmentChecks(server, { SA, B });
   await reportChecks(server, { SA, B });
+  await logoChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -1581,6 +1582,104 @@ async function reportChecks(server, ids) {
   check("a deleted mentee appears as \"(deleted mentee)\"", crow && crow[1] === "(deleted mentee)" && !JSON.stringify(after).includes("Cem Raporlu"),
         JSON.stringify(crow));
   check("... and their closing survey is gone from the results", val(await rep("surveys"), "Closing surveys sent") === 0);
+}
+
+// ---------------------------------------------------------------------
+// ORGANISATION LOGO
+// ---------------------------------------------------------------------
+
+// A real 1x1 PNG and the start of a JPEG; anything else must be refused.
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+const JPG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), crypto.randomBytes(500)]);
+
+async function putLogo(cookie, url, bytes) {
+  const r = await fetch(BASE + url, { method: "PUT", headers: { Cookie: cookie || "", "Content-Type": "application/octet-stream" }, body: bytes });
+  let json = null; try { json = await r.json(); } catch { json = null; }
+  return { status: r.status, json };
+}
+
+async function logoChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n17) ORGANISATION LOGO\n");
+
+  check("unauthenticated /my-company rejected", (await api(null, "GET", "/my-company")).status === 401);
+  check("unauthenticated logo upload rejected", (await putLogo(null, "/company-logo", PNG)).status === 401);
+
+  const pwK = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-k", name: "K Logo", password: pwK });
+  const K = await login("tenant-k", pwK);
+
+  const up = await putLogo(K, "/company-logo", PNG);
+  const url1 = up.json?.logo?.url;
+  check("a PNG logo is saved", up.status === 200 && /^\/logo\/[0-9a-f]{32}$/.test(url1 || ""), `HTTP ${up.status}`);
+  const img = await fetch(BASE + url1);
+  check("the logo is served as an image, unchanged",
+        img.status === 200 && img.headers.get("content-type") === "image/png" && Buffer.from(await img.arrayBuffer()).equals(PNG) &&
+        img.headers.get("x-content-type-options") === "nosniff");
+  const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+  check("an SVG is refused (it can carry script)", (await putLogo(K, "/company-logo", svg)).json?.code === "logo_bad_type");
+  check("a GIF is refused", (await putLogo(K, "/company-logo", Buffer.from("GIF89a" + "x".repeat(50)))).json?.code === "logo_bad_type");
+  check("a logo over 500 KB is refused",
+        (await putLogo(K, "/company-logo", Buffer.concat([PNG, Buffer.alloc(500 * 1024)]))).json?.code === "logo_too_big");
+  check("a much larger upload -> 413", (await putLogo(K, "/company-logo", Buffer.alloc(700 * 1024))).status === 413);
+
+  const up2 = await putLogo(K, "/company-logo", JPG);
+  const url2 = up2.json?.logo?.url;
+  check("a new upload gets a new address; the old one is gone",
+        up2.status === 200 && url2 !== url1 && (await fetch(BASE + url1)).status === 404 &&
+        (await fetch(BASE + url2)).headers.get("content-type") === "image/jpeg");
+
+  // Organisation B
+  const bBefore = (await api(B, "GET", "/my-company")).json;
+  check("B does not see K's logo", bBefore && !bBefore.logo);
+  check("an organisation cannot use the super admin logo route -> 403",
+        (await putLogo(B, "/companies/tenant-k/logo", PNG)).status === 403);
+
+  // Where the address is handed to participant pages
+  const mentorId = (await api(K, "POST", "/mentors", { fullName: "Kaan", email: "kaan@k.example", role: "Director", capacity: 2 })).json.id;
+  const menteeId = (await api(K, "POST", "/mentees", { fullName: "Kerem", email: "kerem@k.example", role: "Analyst", developmentNeeds: "x" })).json.id;
+  const ms = (await api(K, "POST", "/mentorships", { mentorId, menteeId, closingDate: END_DATE })).json.mentorship;
+  const wsu = new URL(ms.workspaceUrl);
+  const wsData = (await api(null, "GET", `/public/workspace/${wsu.searchParams.get("id")}?token=${wsu.searchParams.get("token")}`)).json;
+  const inv = (await api(K, "GET", "/invite-link")).json;
+  const invToken = new URL(inv.inviteUrl || inv.url || "http://x/?invite=").searchParams.get("invite");
+  const invData = (await api(null, "GET", `/public/invite/${invToken}`)).json;
+  check("workspace and registration pages get the logo address",
+        wsData?.logoUrl === url2 && invData?.logoUrl === url2, `${wsData?.logoUrl} / ${invData?.logoUrl}`);
+
+  // E-mails embed it
+  const sink = await startSink();
+  try {
+    const tok = (await api(null, "POST", "/admin/login", { password: server.superPassword })).json?.token;
+    await fetch(BASE + "/admin/smtp-config", { method: "PUT", headers: { "Content-Type": "application/json", "x-admin-token": tok },
+      body: JSON.stringify({ host: "127.0.0.1", port: sink.port, secure: false, fromName: "MentorOS Test", fromEmail: "noreply@test.example" }) });
+    await api(K, "POST", `/email/workspace/${ms.id}`, { target: "mentee", lang: "en" });
+    const withLogo = sink.messages.find(m => m.rcpt[0] === "kerem@k.example");
+    check("e-mails carry the logo embedded (CID), not as a remote image",
+          !!withLogo && /cid:company-logo@mentoros/.test(withLogo.raw) && /Content-ID: <company-logo@mentoros>/i.test(withLogo.raw) &&
+          !/\/logo\/[0-9a-f]{32}/.test(withLogo.raw));
+
+    // Super admin replaces, then removes
+    const sa = await putLogo(SA, "/companies/tenant-k/logo", PNG);
+    const url3 = sa.json?.logo?.url;
+    check("super admin replaces an organisation's logo", sa.status === 200 && url3 && url3 !== url2 &&
+          (await api(K, "GET", "/my-company")).json?.logo?.url === url3);
+    const del = await api(SA, "DELETE", "/companies/tenant-k/logo");
+    check("super admin removes it", del.status === 200 && !(await api(K, "GET", "/my-company")).json?.logo && (await fetch(BASE + url3)).status === 404);
+    const before = sink.messages.length;
+    await api(K, "POST", `/email/workspace/${ms.id}`, { target: "mentee", lang: "en" });
+    const plain = sink.messages.slice(before).find(m => m.rcpt[0] === "kerem@k.example");
+    check("without a logo the e-mail has no logo part", !!plain && !/company-logo@mentoros/.test(plain.raw));
+  } finally {
+    sink.close();
+  }
+
+  // HR removes its own; deleting the organisation removes the logo too
+  const again = (await putLogo(K, "/company-logo", PNG)).json?.logo?.url;
+  check("HR removes its own logo", (await api(K, "DELETE", "/company-logo")).status === 200 && (await fetch(BASE + again)).status === 404);
+  const last = (await putLogo(K, "/company-logo", PNG)).json?.logo?.url;
+  await api(SA, "DELETE", "/companies/tenant-k?force=true");
+  check("deleting the organisation deletes its logo", (await fetch(BASE + last)).status === 404);
 }
 
 main().catch(err => {

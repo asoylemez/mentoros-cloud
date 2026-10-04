@@ -301,6 +301,8 @@
 <body>
 
 <div class="page-wrap">
+<!-- the organisation's logo (assets/company-logo.js) -->
+<div data-company-logo style="margin:0 0 12px;min-height:0"></div>
 <div class="language-switcher"><select id="languageSelect" onchange="setLanguage(this.value)"><option value="en">English</option><option value="tr">Türkçe</option></select></div>
 
 <div class="form-header">
@@ -612,6 +614,7 @@
       const data = await res.json();
       COMPANY_ID = data.companyId;
       COMPANY_NAME = data.companyName;
+      if (window.MentorOSLogo) MentorOSLogo.show(data.logoUrl);
       renderHeaderSubtitle();
     } catch { fail(); }
   })();
@@ -1127,5 +1130,6 @@
 
   applyTranslations();
 </script>
+<script src="/assets/company-logo.js"></script>
 </body>
 </html>

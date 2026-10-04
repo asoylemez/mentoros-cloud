@@ -4,6 +4,7 @@ const config = require("../config");
 const { mentors, mentorships, checkins, companies } = require("../db/repos");
 const mailer = require("../mail/mailer");
 const questionSet = require("../lib/checkinQuestions");
+const { logos } = require("../lib/logo");
 const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
 const router = express.Router();
@@ -181,6 +182,7 @@ router.get("/public/checkin/:token", wrap(async (req, res) => {
       : (ms ? ms.mentorName : ""),
     isGroup: !!(ms && ms.groupId),
     companyName: company ? company.name : "",
+    logoUrl: ms ? logos.url(ms.companyId) : "",
     language: c.language,
     questions: c.questions,
     completedAt: c.completedAt

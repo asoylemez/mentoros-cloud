@@ -271,6 +271,7 @@ function downloadPdf() {
   MentorOSPrint.printReport({
     landscape: true,                 // the tables have up to 12 columns
     lang: LANG,
+    logoUrl: LOGO_URL,               // the organisation's logo, if it has one
     title: DATA.title,
     subtitle: DATA.subtitle,
     sections,
@@ -289,6 +290,9 @@ function downloadXlsx() {
   const range = [$("from").value, $("to").value].filter(Boolean).join("_");
   MentorXlsx.download(`${T[LANG].files[REPORT]}${range ? "_" + range : ""}_${stamp}.xlsx`, sheets);
 }
+
+let LOGO_URL = "";
+fetch("/my-company").then(r => r.ok ? r.json() : null).then(d => { LOGO_URL = (d && d.logo && d.logo.url) || ""; }).catch(() => {});
 
 /* ---------------- Programme filter ---------------- */
 async function loadPrograms() {
@@ -320,5 +324,6 @@ $("xlsxBtn").onclick = downloadXlsx;
 applyStatic();
 loadPrograms().then(load);
 </script>
+<script src="/assets/company-logo.js" data-staff></script>
 </body>
 </html>

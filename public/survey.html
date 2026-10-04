@@ -359,6 +359,7 @@
         }
 
         DEF = data.definition;
+        if (window.MentorOSLogo) MentorOSLogo.show(data.logoUrl);
         render(data);
 
       } catch {
@@ -547,5 +548,6 @@
     load();
 
   </script>
+<script src="/assets/company-logo.js"></script>
 </body>
 </html>

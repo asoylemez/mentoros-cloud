@@ -65,7 +65,8 @@ router.post("/companies", staffAuth.requireSuperAdmin, wrap(async (req, res) => 
 
 // Firma listesi (sifre hash'i asla donmez) - SADECE super admin
 router.get("/companies", staffAuth.requireSuperAdmin, wrap(async (req, res) => {
-  res.json(companies.list());
+  const { logos } = require("../lib/logo");
+  res.json(companies.list().map(c => ({ ...c, logoUrl: logos.url(c.companyId) })));
 }));
 
 /**

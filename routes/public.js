@@ -1,4 +1,5 @@
 const express = require("express");
+const { logos } = require("../lib/logo");
 
 const {
   companies, mentors, mentees, mentorships, meetings,
@@ -35,7 +36,8 @@ router.get("/public/invite/:token", wrap(async (req, res) => {
   // Sadece formun ihtiyaci olan kadar bilgi doner.
   res.json({
     companyId: company.companyId,
-    companyName: company.name
+    companyName: company.name,
+    logoUrl: logos.url(company.companyId)
   });
 }));
 
@@ -114,6 +116,7 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
   // Erisim token'i kendisini geri dondurmez.
   const { accessToken, ...safe } = full;
   safe.programName = programNameOf(full.programId);
+  safe.logoUrl = logos.url(full.companyId);
   // Group: members by name only - the workspace link is shared by the
   // whole group, so it does not carry the members' e-mail addresses.
   safe.members = (full.members || []).map(m => ({ fullName: m.fullName, role: m.role }));

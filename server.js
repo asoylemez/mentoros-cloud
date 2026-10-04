@@ -76,6 +76,7 @@ app.get("/programs.html",       staffAuth.serveStaffPage("programs.html"));
 app.get("/checkin_questions.html", staffAuth.serveStaffPage("checkin_questions.html"));
 app.get("/announcements.html",  staffAuth.serveStaffPage("announcements.html"));
 app.get("/reports.html",        staffAuth.serveStaffPage("reports.html"));
+app.get("/company_settings.html", staffAuth.serveStaffPage("company_settings.html"));
 
 // --- 4. Super admin (tedarikci) ---
 //
@@ -144,6 +145,7 @@ app.use(require("./routes/groups"));     // mentee groups
 app.use(require("./routes/checkins"));   // check-in feedback
 app.use(require("./routes/announcements")); // announcements
 app.use(require("./routes/reports"));    // reports
+app.use(require("./routes/logo"));       // organisation logo
 app.use(require("./routes/matching"));
 app.use(require("./routes/mentorships"));
 app.use(require("./routes/email"));

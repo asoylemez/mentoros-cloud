@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Firma Ayarları — MentorOS</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --copper: #b5651d;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #23262d;
+    --muted: #6b7280;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --warn: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff);
+    color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text {
+    font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  select, input, textarea {
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 14px; background: #fff; color: var(--text);
+    width: 100%;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--navy);
+  }
+  select.compact { width: auto; padding: 7px 10px; font-size: 13px; }
+
+  button {
+    padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  button.danger { background: #fff; border-color: var(--err); color: var(--err); }
+  button.danger:hover:not(:disabled) { background: #fef2f2; }
+  button.sm { padding: 6px 11px; font-size: 13px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  h2 { font-size: 15px; color: var(--navy); margin-bottom: 5px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+  /* Davet */
+  .invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .invite-row input { flex: 1; min-width: 250px; background: #f9fafb; font-size: 13px; }
+
+  /* İstatistik */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 15px 17px; }
+  .stat-value { font-size: 23px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Tablo */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; padding: 11px 12px; background: #fafbfc;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .3px; white-space: nowrap;
+  }
+  td { padding: 12px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  tr:hover td { background: #fafbfc; }
+
+  .name { font-weight: 600; color: var(--navy); }
+  .email { color: var(--muted); font-size: 12px; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; background: #eef1f6; color: var(--navy); margin: 1px 2px 1px 0;
+  }
+  .badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.active   { background: #dcfce7; color: #15803d; }
+  .badge.inactive { background: #f3f4f6; color: #6b7280; }
+  .badge.full     { background: #fef3c7; color: #92400e; }
+
+  .cap-bar { width: 62px; height: 5px; background: #eceef1; border-radius: 3px; margin-top: 4px; }
+  .cap-fill { height: 100%; border-radius: 3px; background: var(--copper); }
+
+  .actions { display: flex; gap: 6px; white-space: nowrap; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+  /* Modal */
+  .modal {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(15,20,35,.55); padding: 24px;
+    overflow-y: auto;
+  }
+  .modal.open { display: block; }
+  .modal-box {
+    background: #fff; border-radius: 12px; max-width: 760px;
+    margin: 20px auto; padding: 26px 28px;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; gap: 12px;
+  }
+  .modal-close {
+    border: none; background: none; font-size: 22px; color: var(--muted);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 500;
+  }
+  textarea { min-height: 78px; resize: vertical; line-height: 1.5; }
+
+  .section-head {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--muted); font-weight: 600;
+    margin: 22px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .modal-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 13px 15px; font-size: 13px; color: #92400e;
+    line-height: 1.5; margin-bottom: 16px; display: none;
+  }
+  .warn-box.show { display: block; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff; padding: 12px 22px;
+    border-radius: 8px; font-size: 14px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+</style>
+<style>
+  /* Programme page */
+  .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .badge.planned  { background: #e0e7ff; color: #3730a3; }
+  .badge.ended    { background: #fef3c7; color: #92400e; }
+  .badge.archived { background: #f3f4f6; color: #6b7280; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  .desc { color: var(--muted); font-size: 12px; margin-top: 2px; max-width: 360px; }
+  tr.is-archived td { opacity: .65; }
+  .form-error { color: var(--err); font-size: 13px; margin-top: 4px; min-height: 18px; }
+</style>
+<style>
+  .logo-preview { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+  .logo-preview .on-light, .logo-preview .on-dark { border-radius: 10px; padding: 14px 18px; min-width: 220px; min-height: 70px;
+    display: flex; align-items: center; gap: 12px; }
+  .logo-preview .on-light { background: #fff; border: 1px solid var(--border); }
+  .logo-preview .on-dark  { background: #1a2b5e; color: #fff; }
+  .logo-preview img { height: 38px; max-width: 170px; object-fit: contain; }
+  .logo-preview .lbl { font-size: 11.5px; opacity: .7; }
+  .row-inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS</div>
+        <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:2px;">Mentorluk Programı Yönetim Platformu</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact"><option value="tr">Türkçe</option><option value="en">English</option></select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <h1 data-i18n="pageTitle">Firma Ayarları</h1>
+  <div class="sub" id="companyLine"></div>
+
+  <div class="card">
+    <h2 data-i18n="logoTitle">Logo</h2>
+    <div class="card-sub" data-i18n="logoSub">Logonuz İK ekranlarının başlığında, mentor ve mentee'lerin gördüğü sayfalarda, e-postalarda ve PDF raporlarda görünür.</div>
+    <div class="logo-preview" id="preview"></div>
+    <div class="row-inline">
+      <label class="primary" style="display:inline-block;cursor:pointer;border-radius:8px;padding:9px 14px;background:var(--navy);color:#fff;font-size:14px;font-weight:600">
+        <span id="pickLabel" data-i18n="upload">Logo yükle</span>
+        <input type="file" id="file" accept="image/png,image/jpeg" style="display:none">
+      </label>
+      <button class="danger" id="removeBtn" data-i18n="remove" style="display:none">Logoyu kaldır</button>
+    </div>
+    <div class="hint" data-i18n="logoHint">PNG veya JPG, en fazla 500 KB. En iyi sonuç için yatay ve şeffaf arka planlı bir PNG kullanın (örneğin 400×120 piksel). Logo her yerde aynı yükseklikte gösterilir.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const T = {
+  tr: {
+    pageTitle: "Firma Ayarları", logout: "Çıkış", logoTitle: "Logo",
+    logoSub: "Logonuz İK ekranlarının başlığında, mentor ve mentee'lerin gördüğü sayfalarda, e-postalarda ve PDF raporlarda görünür.",
+    upload: "Logo yükle", change: "Logoyu değiştir", remove: "Logoyu kaldır",
+    logoHint: "PNG veya JPG, en fazla 500 KB. En iyi sonuç için yatay ve şeffaf arka planlı bir PNG kullanın (örneğin 400×120 piksel). Logo her yerde aynı yükseklikte gösterilir.",
+    onLight: "Açık zeminde", onDark: "E-posta başlığında", noLogo: "Henüz logo yok",
+    saved: "Logo kaydedildi ✓", removed: "Logo kaldırıldı ✓", removeConfirm: "Logo kaldırılsın mı?",
+    err_logo_bad_type: "Logo PNG veya JPG olmalı (SVG kabul edilmez).", err_logo_too_big: "Logo en fazla 500 KB olabilir.",
+    err_empty_file: "Dosya boş.", failed: "İşlem yapılamadı.", company: "Kuruluş"
+  },
+  en: {
+    pageTitle: "Organisation Settings", logout: "Log out", logoTitle: "Logo",
+    logoSub: "Your logo appears in the header of the HR screens, on the pages mentors and mentees see, in e-mails and in PDF reports.",
+    upload: "Upload logo", change: "Change logo", remove: "Remove logo",
+    logoHint: "PNG or JPG, at most 500 KB. A wide PNG with a transparent background works best (for example 400×120 pixels). The logo is shown at the same height everywhere.",
+    onLight: "On a light background", onDark: "In the e-mail header", noLogo: "No logo yet",
+    saved: "Logo saved ✓", removed: "Logo removed ✓", removeConfirm: "Remove the logo?",
+    err_logo_bad_type: "The logo must be a PNG or JPG image (SVG is not accepted).", err_logo_too_big: "The logo can be at most 500 KB.",
+    err_empty_file: "The file is empty.", failed: "That did not work.", company: "Organisation"
+  }
+};
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+if (!T[LANG]) LANG = "tr";
+const t = k => T[LANG][k] || T.tr[k] || k;
+let ME = null;
+
+function toast(msg, isErr) {
+  const el = $("toast"); el.textContent = msg; el.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => { el.className = "toast"; }, 2600);
+}
+function applyLang() {
+  document.documentElement.lang = LANG; document.title = t("pageTitle") + " — MentorOS";
+  $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  render();
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { location.href = "/index.html"; };
+$("logoutBtn").onclick = async () => { await fetch("/company-logout", { method: "POST" }); location.href = "/login.html"; };
+
+function render() {
+  if (!ME) return;
+  $("companyLine").textContent = `${t("company")}: ${ME.name}`;
+  const url = ME.logo && ME.logo.url;
+  $("preview").innerHTML = url
+    ? `<div class="on-light"><img src="${esc(url)}" alt=""><span class="lbl">${esc(t("onLight"))}</span></div>
+       <div class="on-dark"><img src="${esc(url)}" alt="" style="background:#fff;padding:4px 6px;border-radius:6px"><span class="lbl">${esc(t("onDark"))}</span></div>`
+    : `<div class="on-light"><span class="lbl">${esc(t("noLogo"))}</span></div>`;
+  $("pickLabel").textContent = url ? t("change") : t("upload");
+  $("removeBtn").style.display = url ? "" : "none";
+  if (window.MentorOSLogo) MentorOSLogo.show(url || "");
+}
+
+async function load() {
+  const res = await fetch("/my-company");
+  if (res.status === 401) { location.href = "/login.html"; return; }
+  ME = await res.json();
+  render();
+}
+
+$("file").onchange = async () => {
+  const file = $("file").files[0];
+  $("file").value = "";
+  if (!file) return;
+  if (file.size > 500 * 1024) { toast(t("err_logo_too_big"), true); return; }
+  const res = await fetch("/company-logo", { method: "PUT", headers: { "Content-Type": "application/octet-stream" }, body: file });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) { toast((d.code && T[LANG]["err_" + d.code]) || (res.status === 413 ? t("err_logo_too_big") : d.error || t("failed")), true); return; }
+  ME.logo = d.logo; render(); toast(t("saved"));
+};
+$("removeBtn").onclick = async () => {
+  if (!confirm(t("removeConfirm"))) return;
+  const res = await fetch("/company-logo", { method: "DELETE" });
+  if (!res.ok) { toast(t("failed"), true); return; }
+  ME.logo = null; render(); toast(t("removed"));
+};
+
+applyLang();
+load();
+</script>
+<script src="/assets/company-logo.js"></script>
+</body>
+</html>
