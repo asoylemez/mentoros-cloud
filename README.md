@@ -322,7 +322,7 @@ config.js              Tüm yapılandırma tek yerde
 server.js              İnce, sadece route bağlama
 db/
   schema.sql           Gerçek tablolar, FK, index
-  index.js             better-sqlite3 bağlantısı
+  index.js             SQLite bağlantısı (şifreli: lib/dbCipher.js)
   repos.js             Tüm SQL burada
 ai/
   client.js            TEK Claude çıkışı (anthropic/bedrock/vertex)

@@ -51,6 +51,10 @@ async function main() {
   check("/health answers", health.status === 200, `HTTP ${health.status}`);
   check("personal data masking for AI is ON", h.piiScrubbing === true);
   check("super admin password is configured", h.adminPasswordSet === true);
+  if (HTTPS) {
+    // The live (https) system must run with an encrypted database.
+    check("database is encrypted", h.databaseEncrypted === true, String(h.databaseEncrypted));
+  }
 
   // ==================================================================
   console.log("\n2) NOTHING WITHOUT SIGNING IN\n");

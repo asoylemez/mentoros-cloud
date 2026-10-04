@@ -1,16 +1,36 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const Database = require("better-sqlite3");
-
 const config = require("../config");
+const cipher = require("../lib/dbCipher");
+const backupCore = require("../lib/backup-core");
 
 // --- Baglanti ---------------------------------------------------------
 
 const dbPath = path.resolve(config.dbPath);
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
-const db = new Database(dbPath);
+// ---------------------------------------------------------------------
+// Encryption (lib/dbCipher.js). In the cloud the key is required; a
+// plaintext database is converted ONCE, before anything else opens it,
+// and the plaintext backups are deleted right after.
+// ---------------------------------------------------------------------
+if (config.cloud && !cipher.enabled()) {
+  throw new Error(
+    "DB_ENCRYPTION_KEY is not set. In the cloud (CLOUD=true) the database must be encrypted.\n" +
+    "  Create a key with `npm run db-key`, store it safely and set it in the Environment settings."
+  );
+}
+if (cipher.enabled() && cipher.isPlaintext(dbPath)) {
+  cipher.encryptExistingFile(dbPath);
+  cipher.deletePlaintextBackups(backupCore.BACKUP_DIR);
+}
+if (!cipher.enabled()) {
+  console.warn("  ! DB_ENCRYPTION_KEY is not set: the database is NOT encrypted (local development only).");
+}
+
+const db = cipher.open(dbPath);
+const encrypted = cipher.enabled();
 
 db.pragma("journal_mode = WAL");   // eszamanli okuma/yazma icin
 db.pragma("foreign_keys = ON");    // FK'ler gercekten uygulansin
@@ -91,6 +111,7 @@ function parseCapacity(value) {
 
 module.exports = {
   db,
+  encrypted,
   newId,
   newToken,
   now,

@@ -80,8 +80,8 @@ function backup() {
   // Ozet
   let summary = "";
   try {
-    const Database = require("better-sqlite3");
-    const db = new Database(path.join(dir, "mentoros.db"), { readonly: true });
+    // Opened with the key when encryption is on (lib/dbCipher.js).
+    const db = require("../lib/dbCipher").open(path.join(dir, "mentoros.db"), { readonly: true });
 
     const count = table =>
       db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
@@ -136,7 +136,7 @@ function restore() {
     fs.mkdirSync(safety, { recursive: true });
     fs.copyFileSync(DB_FILE, path.join(safety, "mentoros.db"));
     if (fs.existsSync(ENV_FILE)) {
-      fs.copyFileSync(ENV_FILE, path.join(safety, ".env"));
+      require("../lib/dbCipher").copyEnvWithoutKey(ENV_FILE, path.join(safety, ".env"));
     }
     console.log(`\n  Mevcut durum guvenlik icin yedeklendi:\n  ${safety}`);
   }
@@ -146,7 +146,7 @@ function restore() {
 
   const envBackup = path.join(dir, ".env");
   if (fs.existsSync(envBackup)) {
-    fs.copyFileSync(envBackup, ENV_FILE);
+    require("../lib/dbCipher").restoreEnvKeepingKey(envBackup, ENV_FILE);   // keeps DB_ENCRYPTION_KEY
   }
 
   console.log(`

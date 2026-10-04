@@ -24,6 +24,16 @@ const bcrypt = require("bcryptjs");
 
 const ROOT = path.join(__dirname, "..");
 const END_DATE = "2030-12-31";   // end date of test matches without a programme
+// The temporary server runs ENCRYPTED, like the cloud.
+const TEST_KEY = crypto.randomBytes(32).toString("hex");
+
+/** Opens the temporary database directly, with the test key. */
+function openDb(file) {
+  const Database = require("better-sqlite3-multiple-ciphers");
+  const db = new Database(file);
+  db.pragma(`key='${TEST_KEY}'`);
+  return db;
+}
 const results = [];
 
 function check(name, passed, detail = "") {
@@ -66,6 +76,7 @@ async function startServer() {
     ADMIN_PASSWORD_HASH: bcrypt.hashSync(superPassword, 10),
     SETTINGS_SECRET: crypto.randomBytes(32).toString("hex"),
     CUSTOMER_DEPLOYMENT: "true",       // ignore any AI key in the environment
+    DB_ENCRYPTION_KEY: TEST_KEY,
     PII_SCRUBBING: "true"
   };
 
@@ -390,6 +401,15 @@ async function run(server) {
   await groupChecks(server, { SA, B });
   await groupMatchChecks(server, { SA, B, mentorB });
   await checkinChecks(server, { SA, B });
+
+  // The data on disk is encrypted: no name used above appears in the
+  // database file or its WAL.
+  console.log("\n12) DATA AT REST\n");
+  const bytes = ["", "-wal"].map(x => server.dbPath + x).filter(f => fs.existsSync(f)).map(f => fs.readFileSync(f));
+  const head = bytes[0].subarray(0, 15).toString("latin1");
+  check("the database file is encrypted (no SQLite header)", head !== "SQLite format 3", JSON.stringify(head));
+  const leaked = ["Ayse Mentor", "ayse@a.example", "Feride Mentor", "Hedeflere"].filter(t => bytes.some(b => b.includes(t)));
+  check("no name or e-mail readable in the file or its WAL", leaked.length === 0, leaked.join(", "));
 }
 
 // ---------------------------------------------------------------------
@@ -517,8 +537,7 @@ async function programmeChecks(server, ids) {
         addArch.status === 400 && addArch.json?.code === "program_archived", `HTTP ${addArch.status}`);
 
   // Direct database checks (this test owns the temporary database)
-  const Database = require("better-sqlite3");
-  const db = new Database(server.dbPath);
+  const db = openDb(server.dbPath);
   try {
     // Deleting a mentor removes the programme membership (KVKK)
     await api(A, "PUT", `/mentors/${mentorC}/programs`, { programIds: [pX] });
@@ -931,8 +950,7 @@ async function groupMatchChecks(server, ids) {
         freeNow.status === 409 && freeNow.json?.code === "mentee_already_engaged", `HTTP ${freeNow.status}`);
 
   // KVKK: deleting a member, deleting the mentorship
-  const Database = require("better-sqlite3");
-  const db = new Database(server.dbPath);
+  const db = openDb(server.dbPath);
   try {
     await api(E, "DELETE", `/mentees/${u2}`);
     const m2 = db.prepare(`SELECT COUNT(*) n FROM mentorship_members WHERE mentee_id = ?`).get(u2).n;
@@ -957,7 +975,7 @@ async function groupMatchChecks(server, ids) {
   await api(E, "POST", `/mentorships/${ind.id}/survey`, { role: "mentee", language: "en" });   // no SMTP: survey made, e-mail fails
   await api(E, "POST", `/email/workspace/${ind.id}`, { target: "mentee", lang: "en" });        // logged as failed
 
-  const db2 = new Database(server.dbPath);
+  const db2 = openDb(server.dbPath);
   try {
     const before = {
       surveys: db2.prepare(`SELECT COUNT(*) n FROM surveys WHERE mentorship_id = ? AND role = 'mentee'`).get(ind.id).n,
@@ -1081,8 +1099,7 @@ async function checkinChecks(server, ids) {
   check("group: one round per member", names === "Ferit,Filiz", names);
 
   // KVKK
-  const Database = require("better-sqlite3");
-  const db = new Database(server.dbPath);
+  const db = openDb(server.dbPath);
   try {
     await api(F, "DELETE", `/mentees/${m1}`);
     const menteeRows = db.prepare(`SELECT COUNT(*) n FROM checkins WHERE mentorship_id = ? AND role = 'mentee'`).get(ms.id).n;

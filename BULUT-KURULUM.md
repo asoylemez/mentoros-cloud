@@ -55,14 +55,15 @@ ve servis ayarını kendiniz yaparsınız.
 Bulutta `.env` dosyası kullanılmaz. Değerleri sağlayıcınızın
 **Environment Variables** ekranına girin.
 
-Önce hash ve şifreleme anahtarını üretin:
+Önce hash, ayar anahtarı ve veritabanı şifreleme anahtarını üretin:
 
 ```
 npm install
 npm run hash-password
+npm run db-key
 ```
 
-Ekrana çıkan iki değeri kopyalayın, sonra şunları tanımlayın:
+Ekrana çıkan değerleri kopyalayın, sonra şunları tanımlayın:
 
 ```
 CLOUD=true
@@ -70,6 +71,7 @@ SITE_BASE_URL=https://mentoros.example.com
 DB_PATH=/var/data/mentoros.db
 ADMIN_PASSWORD_HASH=<üretilen>
 SETTINGS_SECRET=<üretilen>
+DB_ENCRYPTION_KEY=<npm run db-key ile üretilen>
 PII_SCRUBBING=true
 CUSTOMER_DEPLOYMENT=true
 ```
@@ -81,6 +83,32 @@ Dikkat edilecekler:
 - **`DB_PATH`** kalıcı diskinizi göstermeli.
 - **`SETTINGS_SECRET`** bir kez üretilir ve **asla değiştirilmez**.
   Değişirse kayıtlı Claude API anahtarı okunamaz hâle gelir.
+- **`DB_ENCRYPTION_KEY`** veritabanını ve yedeklerini şifreler
+  (ChaCha20-Poly1305). `CLOUD=true` iken tanımlı değilse sunucu
+  **açılmaz**. Anahtarı önce bir parola yöneticisine kaydedin:
+  **kaybolursa veri ve yedekler hiçbir şekilde açılamaz.** E-posta ya da
+  sohbetle göndermeyin, git'e koymayın.
+
+### Şifresiz bir veritabanını şifrelemek
+
+Anahtar tanımlıyken sunucu, şifresiz bir veritabanı bulursa ilk
+açılışta onu **bir kez** şifreler: önce bir güvenlik kopyası alır,
+şifreler, anahtarla yeniden açıp her tablonun satır sayısını
+karşılaştırır. Her şey tutarsa şifresiz kopya ve diskteki şifresiz
+eski yedekler silinir; günlükte şu satırlar görünür:
+
+```
+encryption: plaintext database found, encrypting /var/data/mentoros.db ...
+encryption: database encrypted and verified (… tables, … rows)
+```
+
+Bir adım başarısız olursa kopya geri yüklenir, veritabanı şifresiz ve
+bozulmadan kalır ve sunucu açıkça yazılmış bir hatayla durur.
+
+Acil durumda (şifreli dosyayı okuyamayan eski bir sürüme dönmek
+gerekirse) sunucu durdurulup `npm run db-decrypt` çalıştırılır;
+veritabanının yanına şifresiz bir kopya yazar. Bu kopya her şeyi açık
+metin olarak içerir: işi bitince silin.
 
 Uygulama açılırken bu hataları tespit edip **günlüğe açıkça yazar**.
 İlk çalıştırmadan sonra logları mutlaka okuyun.
@@ -149,6 +177,10 @@ Sağlayıcının otomatik yedeği olsa bile **kendi kopyanızı da tutun**.
 **Yedekler** kartı → "Şimdi yedek al ve indir". Tek bir `.db` dosyası
 iner; uygulama çalışırken alınmış tutarlı bir kopyadır, `-wal`/`-shm`
 gerekmez. Kart, son indirmenin üzerinden 7 günden fazla geçtiyse uyarır.
+
+Yedekler de **aynı anahtarla şifrelidir**: indirilen dosya
+`DB_ENCRYPTION_KEY` olmadan açılamaz. Geri yüklemede aynı anahtar
+kullanılmalıdır.
 
 ---
 

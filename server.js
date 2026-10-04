@@ -153,6 +153,7 @@ app.get("/health", (req, res) => {
   res.json({
     status: "ok",
     database: "sqlite",
+    databaseEncrypted: require("./db").encrypted,
     aiConfigured: ai.configured,
     aiProvider: ai.provider,
     aiModel: ai.model,
@@ -248,7 +249,7 @@ app.listen(config.port, "0.0.0.0", () => {
 
   Address used in links : ${config.siteBaseUrl}
 
-  Database      : SQLite  (${config.dbPath})
+  Database      : SQLite  (${config.dbPath})${require("./db").encrypted ? "  - encrypted" : "  - NOT encrypted"}
   PII masking   : ${config.privacy.scrubPii ? "ON" : "OFF (!)"}
   AI            : ${ai.configured ? `${ai.provider} / ${ai.model}` : "NOT CONFIGURED"}
   ---------------------------------------------------------`);

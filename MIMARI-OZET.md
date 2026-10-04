@@ -57,7 +57,11 @@ Sertifika Let's Encrypt tarafından verilir ve otomatik yenilenir.
 ## 4. Veri nerede tutuluyor?
 
 - **Fiziksel konum:** Render'ın Frankfurt (EU Central) bölgesindeki veri merkezi
-- **Biçim:** Tek bir SQLite veritabanı dosyası
+- **Biçim:** Tek bir SQLite veritabanı dosyası, **tamamı şifreli**
+  (SQLite3 Multiple Ciphers, ChaCha20-Poly1305). Anahtar diskte değil,
+  yalnızca sunucunun ortam değişkenlerinde durur; dosyanın bir kopyası
+  anahtar olmadan okunamaz. Otomatik ve indirilen yedekler de aynı
+  anahtarla şifrelidir.
 - **Yol:** `/var/data/mentoros.db` — servise bağlı kalıcı disk (1 GB)
 - **Kapsam:** Mentorluk programları, mentor ve mentee profilleri,
   eşleşmeler, toplantı notları, anket sonuçları, e-posta kayıtları
@@ -194,12 +198,16 @@ bulut sürümü için doğru değildir.
 - **Sunucu yeniden başladığında** açık oturumlar düşer; kullanıcılar
   yeniden giriş yapar. Veri etkilenmez.
 - **Günlük otomatik yedek** alınır ve 14 gün saklanır. Bu yedekler
-  veritabanıyla aynı kalıcı diskte (`/var/data/yedekler`) durur.
+  veritabanıyla aynı kalıcı diskte (`/var/data/yedekler`) durur ve
+  veritabanıyla aynı anahtarla şifrelidir.
 - **Sunucu dışı yedek:** Sağlayıcı yönetim panelinden anlık ya da mevcut
   bir yedeği tek dosya (`.db`) olarak indirir. Dosya tutarlı bir anlık
   görüntüdür (`VACUUM INTO`); ayrıca `-wal`/`-shm` dosyası gerekmez. Her
-  indirme sunucu kaydına yazılır. Dosya tüm kuruluşların verisini
-  içerdiği için erişimi kısıtlı bir yerde saklanmalıdır.
+  indirme sunucu kaydına yazılır. Dosya şifrelidir; açmak için
+  şifreleme anahtarı gerekir. Yine de tüm kuruluşların verisini içerdiği
+  için erişimi kısıtlı bir yerde saklanmalıdır.
+- **Şifreleme anahtarı kaybolursa** veri ve yedekler kurtarılamaz;
+  anahtar bu yüzden ayrıca bir parola yöneticisinde saklanır.
 - **Barındırma sağlayıcısı (Render) yedeklemeden sorumlu değildir;**
   sunucu dışı kopya düzenli alınmalıdır.
 
@@ -210,7 +218,7 @@ bulut sürümü için doğru değildir.
 | | |
 |---|---|
 | Çalışma ortamı | Node.js 22 (Express) |
-| Veritabanı | SQLite (`better-sqlite3`) |
+| Veritabanı | SQLite, tamamı şifreli (`better-sqlite3-multiple-ciphers`, ChaCha20-Poly1305) |
 | Barındırma | Render — Starter (512 MB RAM, 0.5 CPU), Frankfurt |
 | Kalıcı disk | 1 GB, `/var/data` |
 | Şifre saklama | bcrypt |

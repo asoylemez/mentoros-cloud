@@ -136,14 +136,9 @@ router.post("/backups/snapshot", staffAuth.requireSuperAdmin, wrap(async (req, r
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mentoros-yedek-"));
   const tmpFile = path.join(tmpDir, "mentoros.db");
 
-  const Database = require("better-sqlite3");
-  const src = new Database(core.DB_FILE, { readonly: true });
-  try {
-    // Uygulama calisirken bile tutarli tek dosya (bkz. backup-core).
-    src.prepare("VACUUM INTO ?").run(tmpFile);
-  } finally {
-    src.close();
-  }
+  // Consistent single file even while the app runs; encrypted with the
+  // same key when encryption is on (see backup-core.writeSnapshot).
+  core.writeSnapshot(tmpFile);
 
   const name = downloadName(stamp);
   logDownload(req, `${name} (anlik)`);
