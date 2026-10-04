@@ -237,9 +237,23 @@
     <div class="warn-note">
       İndirilen dosya <strong>tüm kuruluşların kişisel verilerini</strong> içerir (isimler, e-postalar,
       toplantı notları). Erişimi kısıtlı ya da şifreli bir yerde saklayın; e-postayla göndermeyin.
-      Claude API anahtarı ve SMTP şifresi dosyada şifreli durur; geri yüklemede aynı
-      <code>SETTINGS_SECRET</code> değeri gerekir.
+      Dosyanın tamamı <code>DB_ENCRYPTION_KEY</code> ile şifrelidir; anahtar olmadan açılamaz.
+      Geri yüklemede aynı <code>DB_ENCRYPTION_KEY</code> ve <code>SETTINGS_SECRET</code> değerleri gerekir.
     </div>
+  </div>
+
+  <!-- Disk ve duyuru ekleri -->
+  <div class="card" id="storageCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">Disk ve duyuru ekleri</h2>
+      <span class="pill off" id="stPill">Yükleniyor…</span>
+    </div>
+    <p class="card-sub" style="margin-top:6px">
+      Duyuru ekleri veritabanında durur; bu yüzden her yedekte de yer kaplar (14 günlük yedekle yaklaşık 15 kopya).
+      Disk doluluğu <strong id="stLimit">%85</strong>'e ulaşınca yeni ek yüklemesi reddedilir; veritabanının
+      yazamaz hâle gelmesi böyle önlenir.
+    </p>
+    <div id="stBody"><div class="empty">Yükleniyor…</div></div>
   </div>
 
 </div>
@@ -744,6 +758,45 @@ async function logout() {
 document.getElementById("newExp").value = oneYearFromNow();
 load();
 loadBackups();
+loadStorage();
+
+/* ---- Disk ve duyuru ekleri ---- */
+function fmtBytes(n) {
+  if (!n) return "0 MB";
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+async function loadStorage() {
+  let d;
+  try { d = await api("/storage-report"); }
+  catch (e) {
+    if (e.message !== "session") document.getElementById("stBody").innerHTML = `<div class="empty">Disk bilgisi alınamadı: ${esc(e.message)}</div>`;
+    return;
+  }
+  const pill = document.getElementById("stPill");
+  const limit = d.limits.diskFullPercent;
+  document.getElementById("stLimit").textContent = `%${limit}`;
+  if (d.disk) {
+    const p = d.disk.usedPercent;
+    pill.className = "pill " + (p >= limit ? "err" : p >= limit - 15 ? "warn" : "ok");
+    pill.textContent = `Disk %${p} dolu`;
+  } else { pill.className = "pill off"; pill.textContent = "Disk bilgisi yok"; }
+  const pct = d.disk ? Math.min(100, d.disk.usedPercent) : 0;
+  const rows = d.byCompany.length
+    ? d.byCompany.map(c => `<tr><td>${esc(c.name || c.companyId)}</td><td style="text-align:right">${c.files}</td>
+        <td style="text-align:right">${fmtBytes(c.bytes)} / ${fmtBytes(d.limits.bytesPerCompany)}</td></tr>`).join("")
+    : `<tr><td colspan="3" class="empty">Henüz ek yok.</td></tr>`;
+  document.getElementById("stBody").innerHTML = `
+    ${d.disk ? `<div style="height:10px;background:#eef0f4;border-radius:999px;overflow:hidden;margin:6px 0 8px">
+      <div style="height:100%;width:${pct}%;background:${pct >= limit ? "#b42318" : pct >= limit - 15 ? "#d97706" : "#1a2b5e"}"></div></div>
+      <div class="hint">${fmtBytes(d.disk.total - d.disk.free)} / ${fmtBytes(d.disk.total)} kullanılıyor · ${fmtBytes(d.disk.free)} boş</div>` : ""}
+    <div class="hint" style="margin-top:6px">Veritabanı: <strong>${fmtBytes(d.databaseBytes)}</strong> ·
+      Diskteki yedekler: <strong>${fmtBytes(d.backupsBytes)}</strong> · Bütün ekler: <strong>${fmtBytes(d.attachmentsBytes)}</strong></div>
+    <table style="width:100%;margin-top:12px;font-size:13.5px;border-collapse:collapse">
+      <thead><tr><th style="text-align:left">Kuruluş</th><th style="text-align:right">Dosya</th><th style="text-align:right">Ek alanı</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+}
 </script>
 </body>
 </html>

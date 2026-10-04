@@ -310,7 +310,16 @@ const companies = {
     if (!existing) return null;
 
     const counts = companies.counts(id);
-    db.prepare(`DELETE FROM companies WHERE company_id = ?`).run(id);
+    db.transaction(() => {
+      // Tables with no foreign key to companies would otherwise keep this
+      // organisation's personal data after it is deleted (KVKK).
+      db.prepare(`DELETE FROM surveys WHERE company_id = ?`).run(id);
+      db.prepare(`DELETE FROM checkins WHERE company_id = ?`).run(id);
+      db.prepare(`DELETE FROM email_log WHERE company_id = ?`).run(id);
+      db.prepare(`DELETE FROM announcements WHERE company_id = ?`).run(id);   // recipients, attachments: CASCADE
+      db.prepare(`DELETE FROM settings WHERE key = ?`).run(`checkin_questions:${id}`);
+      db.prepare(`DELETE FROM companies WHERE company_id = ?`).run(id);       // the rest: CASCADE
+    })();
 
     return { ...existing, deleted: counts };
   },

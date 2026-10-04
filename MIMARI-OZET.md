@@ -62,7 +62,11 @@ Sertifika Let's Encrypt tarafından verilir ve otomatik yenilenir.
   yalnızca sunucunun ortam değişkenlerinde durur; dosyanın bir kopyası
   anahtar olmadan okunamaz. Otomatik ve indirilen yedekler de aynı
   anahtarla şifrelidir.
-- **Yol:** `/var/data/mentoros.db` — servise bağlı kalıcı disk (1 GB)
+- **Yol:** `/var/data/mentoros.db` — servise bağlı kalıcı disk (5 GB)
+- **Duyuru ekleri** de bu veritabanında, aynı şifreyle saklanır. Sınırlar:
+  duyuru başına 10 dosya / 10 MB, kuruluş başına toplam 200 MB. Disk
+  doluluğu %85'e ulaşınca yeni ek kabul edilmez; süper admin panelindeki
+  "Disk ve duyuru ekleri" kartı doluluğu kuruluş bazında gösterir.
 - **Kapsam:** Mentorluk programları, mentor ve mentee profilleri,
   eşleşmeler, toplantı notları, anket sonuçları, e-posta kayıtları
 
@@ -220,7 +224,7 @@ bulut sürümü için doğru değildir.
 | Çalışma ortamı | Node.js 22 (Express) |
 | Veritabanı | SQLite, tamamı şifreli (`better-sqlite3-multiple-ciphers`, ChaCha20-Poly1305) |
 | Barındırma | Render — Starter (512 MB RAM, 0.5 CPU), Frankfurt |
-| Kalıcı disk | 1 GB, `/var/data` |
+| Kalıcı disk | 5 GB, `/var/data` |
 | Şifre saklama | bcrypt |
 | TLS | Let's Encrypt, otomatik yenileme |
 | Yapay zeka | Anthropic Claude API |

@@ -726,7 +726,7 @@ function log({ companyId, kind, recipient, subject, refId, ok, error }) {
  * organisation's name as sender name and its own reply address, so that
  * replies reach HR instead of the platform's no-reply mailbox.
  */
-async function send({ to, subject, html, companyId, kind, refId, fromName, replyTo }) {
+async function send({ to, subject, html, companyId, kind, refId, fromName, replyTo, attachments }) {
   if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
     const error = new Error(`Gecersiz e-posta adresi: ${to || "(bos)"}`);
     log({ companyId, kind, recipient: to || "", subject, refId, ok: false, error: error.message });
@@ -744,7 +744,8 @@ async function send({ to, subject, html, companyId, kind, refId, fromName, reply
       to,
       subject,
       html,
-      ...(replyTo ? { replyTo } : {})
+      ...(replyTo ? { replyTo } : {}),
+      ...(attachments && attachments.length ? { attachments } : {})
     });
 
     log({ companyId, kind, recipient: to, subject, refId, ok: true });
@@ -862,7 +863,7 @@ function personalise(text, name) {
     .replace(/[ \t]+([,.!?;:])/g, "$1");          // "Merhaba ," -> "Merhaba," when there is no name
 }
 
-async function sendAnnouncement({ to, name, subject, body, companyName, replyTo, companyId, refId, lang = "tr" }) {
+async function sendAnnouncement({ to, name, subject, body, companyName, replyTo, companyId, refId, lang = "tr", attachments }) {
   const subj = personalise(subject, name).replace(/[\r\n]+/g, " ").trim();
   const html = escapeHtml(personalise(body, name)).replace(/\n/g, "<br>");
   return send({
@@ -873,7 +874,8 @@ async function sendAnnouncement({ to, name, subject, body, companyName, replyTo,
     kind: "announcement",
     refId,
     fromName: companyName ? `${companyName} - MentorOS` : "",
-    replyTo: replyTo || undefined
+    replyTo: replyTo || undefined,
+    attachments
   });
 }
 

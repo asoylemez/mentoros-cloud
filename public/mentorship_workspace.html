@@ -1801,6 +1801,8 @@
             <div style="font-weight:600;color:#1a2b5e">${esc(a.subject)}</div>
             <div style="font-size:12px;color:#6b7280;margin-bottom:6px">${esc(formatDate(a.sentAt))}</div>
             <div style="white-space:pre-wrap;font-size:14px;color:#374151">${esc(a.body)}</div>
+            ${(a.attachments || []).map(f => `<div style="font-size:13.5px;margin-top:6px">📎
+              <a href="${API_BASE_URL}/public/workspace/${encodeURIComponent(mentorshipId)}/announcements/${encodeURIComponent(a.id)}/attachments/${encodeURIComponent(f.id)}?token=${encodeURIComponent(ACCESS_TOKEN)}">${esc(f.filename)}</a></div>`).join("")}
           </div>`).join("");
       } catch { /* announcements are optional on this page */ }
     }

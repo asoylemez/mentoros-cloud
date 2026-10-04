@@ -318,6 +318,13 @@
       <div class="hint" data-i18n="extraHint">Virgül, boşluk veya satırla ayırın; en fazla 200 adres. Bu kişilere {ad} boş gelir.</div>
     </div>
 
+    <div class="section-head" data-i18n="secFiles">Ekler</div>
+    <div class="rcp-block">
+      <input type="file" id="f_files" multiple>
+      <div class="hint" id="filesHint"></div>
+      <div id="fileList" style="margin-top:8px"></div>
+    </div>
+
     <div class="count-box"><span id="countText">—</span> <a href="#" id="showList" data-i18n="showList">listeyi göster</a>
       <div id="countList" class="hint" style="display:none;max-height:140px;overflow-y:auto"></div></div>
     <div class="form-error" id="edError" role="alert" style="color:var(--err);font-size:13px;min-height:18px;white-space:pre-line"></div>
@@ -338,6 +345,7 @@
     <div class="modal-head"><div><h2 id="dtTitle">—</h2><div class="hint" id="dtMeta" style="margin:2px 0 0"></div></div>
       <button class="modal-close" id="dtClose">&times;</button></div>
     <div class="body-preview" id="dtBody"></div>
+    <div id="dtFiles" style="margin-top:8px"></div>
     <div class="progress"><div id="dtBar" style="width:0%"></div></div>
     <div class="hint" id="dtProgress" style="margin:0 0 10px"></div>
     <div class="table-wrap" style="max-height:320px;overflow-y:auto">
@@ -389,7 +397,16 @@ const T = {
     err_subject_required: "Konu yazın.", err_body_required: "Mesaj yazın.", err_no_recipients: "Bu seçim kimseye ulaşmıyor.",
     err_bad_addresses: "Geçersiz adresler:", err_too_many_addresses: "En fazla 200 ek adres yazılabilir.",
     err_smtp_not_configured: "E-posta sunucusu ayarlanmamış.", err_bad_reply_to: "Yanıt adresi geçerli bir e-posta değil.",
-    loadFailed: "Yüklenemedi."
+    loadFailed: "Yüklenemedi.",
+    secFiles: "Ekler", uploading: "Yükleniyor…", removeFile: "Kaldır",
+    filesHint: "Duyuru başına en fazla 10 dosya ve toplam 10 MB. İzin verilen türler: {types}. Firmanızın ek alanı: {used} / {limit}.",
+    fileUploaded: "Dosya eklendi ✓",
+    err_type_not_allowed: "Bu dosya türüne izin verilmiyor.", err_empty_file: "Dosya boş.",
+    err_too_many_files: "Bir duyuruya en fazla 10 dosya eklenebilir.",
+    err_announcement_too_big: "Bir duyurunun ekleri toplam 10 MB'ı geçemez.",
+    err_company_quota_full: "Firmanızın 200 MB'lık ek alanı doldu. Önce ekli eski duyuruları silin.",
+    err_disk_nearly_full: "Sunucu diski dolmak üzere; şu anda dosya eklenemiyor. Platform yöneticisine haber verin.",
+    err_file_too_large: "Dosya çok büyük (en fazla 10 MB)."
   },
   en: {
     pageTitle: "Announcements", pageSub: "Send announcements by e-mail to mentors and mentees. Every recipient gets their own e-mail; nobody sees the other recipients.",
@@ -422,7 +439,16 @@ const T = {
     err_subject_required: "Write a subject.", err_body_required: "Write a message.", err_no_recipients: "This selection reaches nobody.",
     err_bad_addresses: "Invalid addresses:", err_too_many_addresses: "At most 200 extra addresses.",
     err_smtp_not_configured: "The e-mail server is not set up.", err_bad_reply_to: "The reply address is not a valid e-mail address.",
-    loadFailed: "Could not be loaded."
+    loadFailed: "Could not be loaded.",
+    secFiles: "Attachments", uploading: "Uploading…", removeFile: "Remove",
+    filesHint: "At most 10 files and 10 MB per announcement. Allowed types: {types}. Your organisation's attachment space: {used} / {limit}.",
+    fileUploaded: "File added ✓",
+    err_type_not_allowed: "This file type is not allowed.", err_empty_file: "The file is empty.",
+    err_too_many_files: "At most 10 files per announcement.",
+    err_announcement_too_big: "The attachments of one announcement can be at most 10 MB in total.",
+    err_company_quota_full: "Your organisation's 200 MB attachment space is full. Delete old announcements with attachments first.",
+    err_disk_nearly_full: "The server's disk is nearly full, so no files can be added right now. Please tell the platform administrator.",
+    err_file_too_large: "The file is too large (at most 10 MB)."
   }
 };
 let LANG = localStorage.getItem("mentorAppLang") || "tr";
@@ -490,7 +516,11 @@ async function loadList() {
   render();
   if (LIST.some(a => a.status === "sending")) { clearTimeout(POLL); POLL = setTimeout(loadList, 3000); }
 }
-window.openItem = id => { const a = LIST.find(x => x.id === id); if (!a) return; a.status === "draft" ? openEditor(a) : openDetail(a.id); };
+window.openItem = async id => {
+  const a = LIST.find(x => x.id === id); if (!a) return;
+  if (a.status !== "draft") return openDetail(a.id);
+  try { openEditor(await api(`/announcements/${id}`)); } catch (e) { toast(errText(e), true); }
+};
 
 /* ---- editor ---- */
 function selectionFromForm() {
@@ -555,6 +585,8 @@ function openEditor(a) {
   $("edDelete").style.display = a ? "" : "none";
   $("edSend").disabled = SETTINGS.smtpConfigured === false;
   $("countList").style.display = "none";
+  FILES = (a && a.attachments) || [];
+  renderFiles();
   renderScopes(); refreshCount();
   $("edModal").classList.add("open");
 }
@@ -565,6 +597,57 @@ $("edClose").onclick = () => $("edModal").classList.remove("open");
 $("f_extra").oninput = refreshCount;
 $("peopleFilter").oninput = () => renderPeople();
 $("showList").onclick = e => { e.preventDefault(); const b = $("countList"); b.style.display = b.style.display === "none" ? "block" : "none"; };
+
+/* ---- attachments ---- */
+let FILES = [];
+const fmtSize = n => !n ? "0 KB" : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
+function renderFiles() {
+  const lim = (SETTINGS.attachments && SETTINGS.attachments.limits) || {};
+  $("filesHint").textContent = t("filesHint")
+    .replace("{types}", ((SETTINGS.attachments && SETTINGS.attachments.types) || []).join(", "))
+    .replace("{used}", fmtSize((SETTINGS.attachments && SETTINGS.attachments.usedBytes) || 0))
+    .replace("{limit}", fmtSize(lim.bytesPerCompany || 0));
+  const total = FILES.reduce((a, f) => a + f.size, 0);
+  $("fileList").innerHTML = FILES.map(f => `<div style="display:flex;gap:10px;align-items:center;font-size:13.5px;padding:3px 0">
+      📎 <a href="/announcements/${esc(EDIT.id)}/attachments/${esc(f.id)}">${esc(f.filename)}</a>
+      <span class="hint" style="margin:0">${fmtSize(f.size)}</span>
+      <button class="sm danger" onclick="removeFile('${esc(f.id)}')">${t("removeFile")}</button></div>`).join("") +
+    (FILES.length ? `<div class="hint">${FILES.length} / 10 · ${fmtSize(total)} / 10 MB</div>` : "");
+  if (SETTINGS.attachments) {
+    $("f_files").accept = SETTINGS.attachments.types.map(x => "." + x).join(",");
+  }
+}
+$("f_files").onchange = async () => {
+  const files = [...$("f_files").files];
+  $("f_files").value = "";
+  if (!files.length) return;
+  try {
+    if (!EDIT) await saveDraftNow();          // files belong to a saved draft
+    $("edDelete").style.display = "";
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) { toast(`${file.name}: ${t("err_file_too_large")}`, true); continue; }
+      $("filesHint").textContent = `${t("uploading")} ${file.name}`;
+      const res = await fetch(`/announcements/${EDIT.id}/attachments?name=${encodeURIComponent(file.name)}`, {
+        method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: file
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { toast(`${file.name}: ${(d.code && T[LANG]["err_" + d.code]) || (res.status === 413 ? t("err_file_too_large") : d.error || res.status)}`, true); continue; }
+      FILES.push(d.attachment);
+      if (SETTINGS.attachments) SETTINGS.attachments.usedBytes = d.usedBytes;
+      toast(t("fileUploaded"));
+    }
+  } catch (e) { toast(errText(e), true); }
+  renderFiles();
+  loadList();
+};
+window.removeFile = async id => {
+  try {
+    const d = await api(`/announcements/${EDIT.id}/attachments/${id}`, { method: "DELETE" });
+    FILES = FILES.filter(f => f.id !== id);
+    if (SETTINGS.attachments) SETTINGS.attachments.usedBytes = d.usedBytes;
+    renderFiles();
+  } catch (e) { toast(errText(e), true); }
+};
 
 async function saveDraftNow() {
   const body = JSON.stringify({ subject: $("f_subject").value, body: $("f_body").value, selection: selectionFromForm(), language: LANG });
@@ -603,6 +686,8 @@ async function openDetail(id) {
   $("dtTitle").textContent = a.subject || t("noSubject");
   $("dtMeta").textContent = `${t("st_" + a.status)} · ${fmt(a.sentAt)}`;
   $("dtBody").textContent = a.body;
+  $("dtFiles").innerHTML = (a.attachments || []).map(f =>
+    `<a href="/announcements/${esc(a.id)}/attachments/${esc(f.id)}" style="margin-right:12px">📎 ${esc(f.filename)}</a><span class="hint">${fmtSize(f.size)}</span>`).join("<br>");
   $("dtBar").style.width = r.length ? `${Math.round(done / r.length * 100)}%` : "0%";
   $("dtProgress").textContent = t("progress").replace("{sent}", n("sent")).replace("{failed}", n("failed"))
     .replace("{pending}", n("pending")).replace("{total}", r.length);

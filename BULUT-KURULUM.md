@@ -178,6 +178,13 @@ Sağlayıcının otomatik yedeği olsa bile **kendi kopyanızı da tutun**.
 iner; uygulama çalışırken alınmış tutarlı bir kopyadır, `-wal`/`-shm`
 gerekmez. Kart, son indirmenin üzerinden 7 günden fazla geçtiyse uyarır.
 
+Duyuru ekleri veritabanında durduğu için her yedekte de yer kaplar
+(14 günlük yedekle yaklaşık 15 kopya). Süper admin panelindeki **Disk ve
+duyuru ekleri** kartı doluluğu gösterir; %85'te yeni ek kabul edilmez.
+Disk büyütülürse sınırlar ortam değişkenleriyle ayarlanabilir:
+`DISK_LIMIT_PERCENT` (varsayılan 85) ve `ATTACHMENT_COMPANY_LIMIT_MB`
+(kuruluş başına, varsayılan 200).
+
 Yedekler de **aynı anahtarla şifrelidir**: indirilen dosya
 `DB_ENCRYPTION_KEY` olmadan açılamaz. Geri yüklemede aynı anahtar
 kullanılmalıdır.

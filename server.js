@@ -193,6 +193,11 @@ app.use((req, res, next) => {
 // --- Hata yakalayici --------------------------------------------------
 
 app.use((err, req, res, next) => {
+  // An upload larger than the route allows (express.raw / express.json limit).
+  if (err.type === "entity.too.large" || err.status === 413) {
+    return res.status(413).json({ error: "The file or request is too large.", code: "file_too_large" });
+  }
+
   console.error("Hata:", err.message);
 
   if (err.message?.includes("Gizlilik ihlali")) {

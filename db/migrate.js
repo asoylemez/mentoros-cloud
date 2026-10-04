@@ -184,6 +184,32 @@ function run() {
   migrateGroupMentorships();
   migrateCheckins();
   migrateAnnouncements();
+  migrateAnnouncementAttachments();
+}
+
+/**
+ * ANNOUNCEMENT ATTACHMENTS  (stage 4b)
+ * Files are kept IN the database (so they are encrypted with it and go
+ * into its backups). Limits: lib/announcements.js.
+ */
+function migrateAnnouncementAttachments() {
+  const has = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='announcement_attachments'`).get();
+  if (has) return;
+  db.exec(`
+    CREATE TABLE announcement_attachments (
+      id               TEXT PRIMARY KEY,
+      announcement_id  TEXT NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+      company_id       TEXT NOT NULL,
+      filename         TEXT NOT NULL,
+      mime             TEXT NOT NULL DEFAULT 'application/octet-stream',
+      size             INTEGER NOT NULL,
+      data             BLOB NOT NULL,
+      created_at       TEXT NOT NULL
+    );
+    CREATE INDEX idx_ann_attachments ON announcement_attachments(announcement_id);
+    CREATE INDEX idx_ann_attachments_company ON announcement_attachments(company_id);
+  `);
+  console.log("  migration: announcement attachments table added");
 }
 
 /**

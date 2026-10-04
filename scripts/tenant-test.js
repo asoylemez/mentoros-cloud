@@ -57,7 +57,7 @@ function freePort() {
 // Temporary server
 // ---------------------------------------------------------------------
 
-async function startServer() {
+async function startServer(extraEnv = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "mentoros-tenant-"));
   const port = await freePort();
   const superPassword = crypto.randomBytes(12).toString("hex");
@@ -77,6 +77,10 @@ async function startServer() {
     SETTINGS_SECRET: crypto.randomBytes(32).toString("hex"),
     CUSTOMER_DEPLOYMENT: "true",       // ignore any AI key in the environment
     DB_ENCRYPTION_KEY: TEST_KEY,
+    // The disk guard is checked on its own (section 15); here it must not
+    // depend on how full the machine running the test is.
+    DISK_LIMIT_PERCENT: "100",
+    ...extraEnv,
     PII_SCRUBBING: "true"
   };
 
@@ -402,6 +406,7 @@ async function run(server) {
   await groupMatchChecks(server, { SA, B, mentorB });
   await checkinChecks(server, { SA, B });
   await announcementChecks(server, { SA, B });
+  await attachmentChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -1310,6 +1315,164 @@ async function announcementChecks(server, ids) {
     }
   } finally {
     sink.close();
+  }
+}
+
+// ---------------------------------------------------------------------
+// ANNOUNCEMENT ATTACHMENTS (stage 4b)
+// ---------------------------------------------------------------------
+
+async function upload(cookie, annId, name, bytes, base = BASE) {
+  const r = await fetch(`${base}/announcements/${annId}/attachments?name=${encodeURIComponent(name)}`, {
+    method: "POST", headers: { Cookie: cookie || "", "Content-Type": "application/octet-stream" }, body: bytes
+  });
+  let json = null; try { json = await r.json(); } catch { json = null; }
+  return { status: r.status, json };
+}
+
+async function attachmentChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n15) ANNOUNCEMENT ATTACHMENTS\n");
+
+  const pwH = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-h", name: "H Ltd", password: pwH });
+  const H = await login("tenant-h", pwH);
+  const post = async (url, body) => (await api(H, "POST", url, body)).json;
+  const m1 = (await post("/mentors", { fullName: "Hakan", email: "hakan@h.example", role: "Director", capacity: 3 })).id;
+  const e1 = (await post("/mentees", { fullName: "Hale", email: "hale@h.example", role: "Analyst", developmentNeeds: "x" })).id;
+  const ms = (await post("/mentorships", { mentorId: m1, menteeId: e1, closingDate: END_DATE })).mentorship;
+  const A = (await post("/announcements", { subject: "Belgeler", body: "Ekte {ad}", selection: { mentorIds: [m1], menteeIds: [e1] } })).announcement;
+
+  const pdf = Buffer.concat([Buffer.from("%PDF-1.4\n"), crypto.randomBytes(2000)]);
+  const ok = await upload(H, A.id, "../../gizli/plan.pdf", pdf);
+  check("a PDF is attached (path stripped from its name)", ok.status === 200 && ok.json?.attachment?.filename === "plan.pdf",
+        `HTTP ${ok.status} ${ok.json?.attachment?.filename}`);
+  check("a file type that is not allowed -> 400", (await upload(H, A.id, "setup.exe", Buffer.from("MZ"))).json?.code === "type_not_allowed");
+  check("an empty file -> 400", (await upload(H, A.id, "bos.pdf", Buffer.alloc(0))).json?.code === "empty_file");
+  const big = await upload(H, A.id, "buyuk.pdf", Buffer.alloc(11 * 1024 * 1024, 1));
+  check("a file over 10 MB -> 413", big.status === 413, `HTTP ${big.status}`);
+  const nine = await upload(H, A.id, "dokuz.pdf", Buffer.alloc(9.5 * 1024 * 1024, 2));
+  const over = await upload(H, A.id, "fazla.pdf", Buffer.alloc(600 * 1024, 3));
+  check("an announcement's files are limited to 10 MB in total",
+        nine.status === 200 && over.json?.code === "announcement_too_big", `${nine.status} / ${over.json?.code}`);
+  await api(H, "DELETE", `/announcements/${A.id}/attachments/${nine.json.attachment.id}`);
+  let n = 1;
+  while (n < 10) { await upload(H, A.id, `f${n}.txt`, Buffer.from(`file ${n}`)); n++; }
+  check("at most 10 files per announcement", (await upload(H, A.id, "f11.txt", Buffer.from("x"))).json?.code === "too_many_files");
+
+  // Organisation B
+  check("B cannot add a file to H's announcement -> 404", (await upload(B, A.id, "b.pdf", pdf)).status === 404);
+  check("B cannot download H's file -> 404",
+        (await api(B, "GET", `/announcements/${A.id}/attachments/${ok.json.attachment.id}`)).status === 404);
+
+  // HR download
+  const dl = await fetch(`${BASE}/announcements/${A.id}/attachments/${ok.json.attachment.id}`, { headers: { Cookie: H } });
+  const got = Buffer.from(await dl.arrayBuffer());
+  check("HR downloads the same bytes, as an attachment",
+        got.equals(pdf) && /attachment/.test(dl.headers.get("content-disposition") || "") &&
+        dl.headers.get("x-content-type-options") === "nosniff");
+
+  // Sending with the files attached
+  const sink = await startSink();
+  try {
+    const tok = (await api(null, "POST", "/admin/login", { password: server.superPassword })).json?.token;
+    await fetch(BASE + "/admin/smtp-config", { method: "PUT", headers: { "Content-Type": "application/json", "x-admin-token": tok },
+      body: JSON.stringify({ host: "127.0.0.1", port: sink.port, secure: false, fromName: "MentorOS Test", fromEmail: "noreply@test.example" }) });
+    await api(H, "POST", `/announcements/${A.id}/send`);
+    let a;
+    for (let i = 0; i < 60; i++) {
+      a = (await api(H, "GET", `/announcements/${A.id}`)).json;
+      if (a?.status === "sent") break;
+      await new Promise(res => setTimeout(res, 250));
+    }
+    const msg = sink.messages.find(m => m.rcpt[0] === "hale@h.example");
+    const files = msg ? (msg.raw.match(/filename="?([^";\n]+)"?/g) || []).length : 0;
+    check("every recipient's e-mail carries the files", a.status === "sent" && sink.messages.length === 2 && files >= 10,
+          `${sink.messages.length} mails, ${files} file names`);
+    check("files of a sent announcement cannot change -> 409",
+          (await upload(H, A.id, "late.pdf", pdf)).status === 409 &&
+          (await api(H, "DELETE", `/announcements/${A.id}/attachments/${ok.json.attachment.id}`)).status === 409);
+
+    // Workspace download
+    const u = new URL(ms.workspaceUrl), wid = u.searchParams.get("id"), wt = u.searchParams.get("token");
+    const ws = (await api(null, "GET", `/public/workspace/${wid}/announcements?token=${wt}`)).json || [];
+    check("the workspace lists the files", ws[0]?.attachments?.length === 10);
+    const wdl = await fetch(`${BASE}/public/workspace/${wid}/announcements/${A.id}/attachments/${ok.json.attachment.id}?token=${wt}`);
+    check("... and they download with the workspace link", wdl.status === 200 && Buffer.from(await wdl.arrayBuffer()).equals(pdf));
+    check("... but not with a wrong token -> 403",
+          (await fetch(`${BASE}/public/workspace/${wid}/announcements/${A.id}/attachments/${ok.json.attachment.id}?token=x`)).status === 403);
+    const onlyMentor = (await post("/announcements", { subject: "Yalniz mentor", body: "x", selection: { mentorIds: [m1] } })).announcement;
+    const om = await upload(H, onlyMentor.id, "mentor.pdf", pdf);
+    await api(H, "POST", `/announcements/${onlyMentor.id}/send`);
+    await new Promise(res => setTimeout(res, 1500));
+    check("a file of an announcement the workspace does not show -> 404",
+          (await fetch(`${BASE}/public/workspace/${wid}/announcements/${onlyMentor.id}/attachments/${om.json.attachment.id}?token=${wt}`)).status === 404);
+  } finally {
+    sink.close();
+  }
+
+  // Storage report
+  const rep = await api(SA, "GET", "/storage-report");
+  const hRow = (rep.json?.byCompany || []).find(c => c.companyId === "tenant-h");
+  check("super admin sees disk and attachment space", rep.status === 200 && !!rep.json?.disk && hRow?.files === 11,
+        `HTTP ${rep.status}, ${hRow?.files} file(s)`);
+  check("an organisation cannot see the storage report -> 403", (await api(H, "GET", "/storage-report")).status === 403);
+
+  // Deleting the organisation removes everything (KVKK)
+  const db = openDb(server.dbPath);
+  try {
+    await api(SA, "DELETE", "/companies/tenant-h?force=true");
+    const left = ["announcements", "announcement_attachments", "surveys", "checkins", "email_log", "mentorships", "mentees"]
+      .map(t => [t, db.prepare(`SELECT COUNT(*) n FROM ${t} WHERE company_id = ?`).get("tenant-h").n]).filter(([, n]) => n);
+    check("deleting an organisation leaves none of its data behind", left.length === 0, JSON.stringify(left));
+  } finally {
+    db.close();
+  }
+
+  // Organisation limit and the disk guard: a second server with tiny limits
+  const small = await startServer({ ATTACHMENT_COMPANY_LIMIT_MB: "1" });
+  try {
+    const sa = await (async () => {
+      const r = await fetch(small.base + "/login", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "superadmin", password: small.superPassword }) });
+      return (r.headers.getSetCookie()[0] || "").split(";")[0];
+    })();
+    await fetch(small.base + "/companies", { method: "POST", headers: { Cookie: sa, "Content-Type": "application/json" },
+      body: JSON.stringify({ companyId: "q", name: "Q", password: "QuotaPass123" }) });
+    const lr = await fetch(small.base + "/login", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "q", password: "QuotaPass123" }) });
+    const Q = (lr.headers.getSetCookie()[0] || "").split(";")[0];
+    const mk = await fetch(small.base + "/announcements", { method: "POST", headers: { Cookie: Q, "Content-Type": "application/json" },
+      body: JSON.stringify({ subject: "q", body: "q", selection: {} }) });
+    const qa = (await mk.json()).announcement;
+    const first = await upload(Q, qa.id, "a.pdf", Buffer.alloc(700 * 1024, 1), small.base);
+    const second = await upload(Q, qa.id, "b.pdf", Buffer.alloc(700 * 1024, 2), small.base);
+    check("the organisation's attachment space is enforced", first.status === 200 && second.json?.code === "company_quota_full",
+          `${first.status} / ${second.json?.code}`);
+  } finally {
+    small.child.kill();
+    await new Promise(r => setTimeout(r, 300));
+    fs.rmSync(small.tmp, { recursive: true, force: true });
+  }
+  const full = await startServer({ DISK_LIMIT_PERCENT: "0.01" });
+  try {
+    const r = await fetch(full.base + "/login", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "superadmin", password: full.superPassword }) });
+    const sa = (r.headers.getSetCookie()[0] || "").split(";")[0];
+    await fetch(full.base + "/companies", { method: "POST", headers: { Cookie: sa, "Content-Type": "application/json" },
+      body: JSON.stringify({ companyId: "d", name: "D", password: "DiskPass12345" }) });
+    const lr = await fetch(full.base + "/login", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "d", password: "DiskPass12345" }) });
+    const D = (lr.headers.getSetCookie()[0] || "").split(";")[0];
+    const mk = await fetch(full.base + "/announcements", { method: "POST", headers: { Cookie: D, "Content-Type": "application/json" },
+      body: JSON.stringify({ subject: "d", body: "d", selection: {} }) });
+    const da = (await mk.json()).announcement;
+    const up = await upload(D, da.id, "a.pdf", pdf, full.base);
+    check("a nearly full disk refuses new files (507)", up.status === 507 && up.json?.code === "disk_nearly_full", `HTTP ${up.status}`);
+  } finally {
+    full.child.kill();
+    await new Promise(r => setTimeout(r, 300));
+    fs.rmSync(full.tmp, { recursive: true, force: true });
   }
 }
 
