@@ -368,6 +368,7 @@ function layout({ title, body, button, url, lang }) {
             ${body}
           </div>
 
+          ${url ? `
           <div style="margin:28px 0 8px;">
             <a href="${url}"
                style="display:inline-block;background:#b5651d;color:#ffffff;
@@ -380,7 +381,7 @@ function layout({ title, body, button, url, lang }) {
           <p style="color:#888;font-size:12px;line-height:1.6;margin-top:22px;">
             ${t.linkNote}<br>
             <span style="color:#1a2b5e;word-break:break-all;">${url}</span>
-          </p>
+          </p>` : ""}
         </td></tr>
 
         <tr><td style="background:#fafbfc;padding:16px 28px;
@@ -720,7 +721,12 @@ function log({ companyId, kind, recipient, subject, refId, ok, error }) {
   }
 }
 
-async function send({ to, subject, html, companyId, kind, refId }) {
+/**
+ * fromName / replyTo (optional): announcements go out with the
+ * organisation's name as sender name and its own reply address, so that
+ * replies reach HR instead of the platform's no-reply mailbox.
+ */
+async function send({ to, subject, html, companyId, kind, refId, fromName, replyTo }) {
   if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
     const error = new Error(`Gecersiz e-posta adresi: ${to || "(bos)"}`);
     log({ companyId, kind, recipient: to || "", subject, refId, ok: false, error: error.message });
@@ -732,11 +738,13 @@ async function send({ to, subject, html, companyId, kind, refId }) {
   try {
     const transport = getTransport();
 
+    const name = String(fromName || c.fromName || "").replace(/["\r\n]/g, "").trim();
     await transport.sendMail({
-      from: `"${c.fromName}" <${c.fromEmail}>`,
+      from: `"${name}" <${c.fromEmail}>`,
       to,
       subject,
-      html
+      html,
+      ...(replyTo ? { replyTo } : {})
     });
 
     log({ companyId, kind, recipient: to, subject, refId, ok: true });
@@ -840,6 +848,32 @@ async function sendCheckin({ to, name, otherName, groupName, checkin, mentorship
     companyId: mentorship.companyId,
     kind: "checkin",
     refId: mentorship.id
+  });
+}
+
+/**
+ * ANNOUNCEMENT - one e-mail per recipient (nobody sees the other
+ * addresses). The body is HR's plain text: escaped, line breaks kept.
+ * {ad} (also {name}) becomes the recipient's name.
+ */
+function personalise(text, name) {
+  return String(text || "")
+    .replace(/\{(ad|name)\}/gi, name || "")
+    .replace(/[ \t]+([,.!?;:])/g, "$1");          // "Merhaba ," -> "Merhaba," when there is no name
+}
+
+async function sendAnnouncement({ to, name, subject, body, companyName, replyTo, companyId, refId, lang = "tr" }) {
+  const subj = personalise(subject, name).replace(/[\r\n]+/g, " ").trim();
+  const html = escapeHtml(personalise(body, name)).replace(/\n/g, "<br>");
+  return send({
+    to,
+    subject: subj,
+    html: layout({ title: escapeHtml(subj), body: html, lang }),
+    companyId,
+    kind: "announcement",
+    refId,
+    fromName: companyName ? `${companyName} - MentorOS` : "",
+    replyTo: replyTo || undefined
   });
 }
 
@@ -976,6 +1010,8 @@ module.exports = {
   sendMeetingInvite,
   sendSurvey,
   sendCheckin,
+  sendAnnouncement,
+  personalise,
   history,
   diagnose
 };

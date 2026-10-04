@@ -724,6 +724,13 @@
             </div>
           </section>
 
+          <!-- Announcements sent to EVERYONE in this workspace (an
+               announcement to one side only stays in e-mail). -->
+          <section class="card" id="announcementsCard" hidden>
+            <h2 data-i18n="announcements">Announcements</h2>
+            <div id="announcementsList"></div>
+          </section>
+
           <section class="card">
             <div class="guide-header" onclick="toggleGuide()">
               <h2 data-i18n="guideTitle" style="margin:0">Mentoring Guide</h2>
@@ -960,6 +967,7 @@
         saveMeetingNote: "Save Meeting Note",
         saving: "Saving...",
         meetingHistory: "Meeting History",
+        announcements: "Announcements",
         copyWorkspaceLink: "Copy Workspace Link",
         workspaceId: "Workspace ID",
         workspaceLinkCopied: "Workspace link copied.",
@@ -1055,6 +1063,7 @@
         saveMeetingNote: "Toplantı Notunu Kaydet",
         saving: "Kaydediliyor...",
         meetingHistory: "Toplantı Geçmişi",
+        announcements: "Duyurular",
         copyWorkspaceLink: "Çalışma Alanı Linkini Kopyala",
         workspaceId: "Çalışma Alanı ID",
         workspaceLinkCopied: "Çalışma alanı linki kopyalandı.",
@@ -1776,6 +1785,25 @@
 
     applyLanguage();
     loadWorkspace();
+    loadAnnouncements();
+
+    /* Announcements HR sent to everyone in this workspace. */
+    async function loadAnnouncements() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/announcements?token=${ACCESS_TOKEN}`);
+        if (!res.ok) return;
+        const list = await res.json();
+        const card = document.getElementById("announcementsCard");
+        card.hidden = !list.length;
+        const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+        document.getElementById("announcementsList").innerHTML = list.map(a => `
+          <div style="border-top:1px solid #eef0f5;padding:10px 0">
+            <div style="font-weight:600;color:#1a2b5e">${esc(a.subject)}</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px">${esc(formatDate(a.sentAt))}</div>
+            <div style="white-space:pre-wrap;font-size:14px;color:#374151">${esc(a.body)}</div>
+          </div>`).join("");
+      } catch { /* announcements are optional on this page */ }
+    }
   </script>
 </body>
 </html>

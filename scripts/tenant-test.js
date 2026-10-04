@@ -401,10 +401,11 @@ async function run(server) {
   await groupChecks(server, { SA, B });
   await groupMatchChecks(server, { SA, B, mentorB });
   await checkinChecks(server, { SA, B });
+  await announcementChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
-  console.log("\n12) DATA AT REST\n");
+  console.log("\n14) DATA AT REST\n");
   const bytes = ["", "-wal"].map(x => server.dbPath + x).filter(f => fs.existsSync(f)).map(f => fs.readFileSync(f));
   const head = bytes[0].subarray(0, 15).toString("latin1");
   check("the database file is encrypted (no SQLite header)", head !== "SQLite format 3", JSON.stringify(head));
@@ -1118,6 +1119,198 @@ async function checkinChecks(server, ids) {
 
   const reset = await api(F, "DELETE", "/checkin-questions");
   check("back to the default questions", reset.status === 200 && reset.json?.isDefault === true && reset.json?.questions?.length === 6);
+}
+
+// ---------------------------------------------------------------------
+// ANNOUNCEMENTS (stage 4a) - with a local SMTP sink
+// ---------------------------------------------------------------------
+
+/**
+ * A tiny SMTP server for this test only: accepts every message (and
+ * refuses any recipient starting with "bounce@") and keeps them in memory.
+ */
+function startSink() {
+  return new Promise(resolve => {
+    const messages = [];
+    const srv = net.createServer(sock => {
+      let data = false, buf = "", msg = "", rcpt = [];
+      sock.write("220 sink ESMTP\r\n");
+      sock.on("data", chunk => {
+        buf += chunk.toString("utf8");
+        let i;
+        while ((i = buf.indexOf("\r\n")) >= 0) {
+          const line = buf.slice(0, i); buf = buf.slice(i + 2);
+          if (data) {
+            if (line === ".") { data = false; messages.push({ rcpt, raw: msg }); msg = ""; rcpt = []; sock.write("250 OK\r\n"); }
+            else msg += line + "\n";
+            continue;
+          }
+          const cmd = line.slice(0, 4).toUpperCase();
+          if (cmd === "EHLO") sock.write("250-sink\r\n250 OK\r\n");
+          else if (cmd === "HELO") sock.write("250 sink\r\n");
+          else if (cmd === "RCPT") {
+            const addr = (line.match(/<([^>]*)>/) || [])[1] || "";
+            if (/^bounce@/i.test(addr)) sock.write("550 No such user\r\n");
+            else { rcpt.push(addr); sock.write("250 OK\r\n"); }
+          }
+          else if (cmd === "DATA") { data = true; sock.write("354 go\r\n"); }
+          else if (cmd === "QUIT") { sock.write("221 bye\r\n"); sock.end(); }
+          else sock.write("250 OK\r\n");
+        }
+      });
+    });
+    srv.listen(0, "127.0.0.1", () => resolve({ port: srv.address().port, messages, close: () => srv.close() }));
+  });
+}
+
+/** Decodes a quoted-printable body enough to search it for text. */
+const qp = raw => raw.replace(/=\r?\n/g, "").replace(/=([0-9A-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+
+async function announcementChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n13) ANNOUNCEMENTS\n");
+
+  check("unauthenticated /announcements rejected", (await api(null, "GET", "/announcements")).status === 401);
+
+  const pwG = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-g", name: "G Holding", password: pwG });
+  const G = await login("tenant-g", pwG);
+  const post = async (url, body) => (await api(G, "POST", url, body)).json;
+
+  const PX = (await post("/programs", { name: "PX", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const PY = (await post("/programs", { name: "PY", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const mentor = async (name, programId, status) => {
+    const id = (await post("/mentors", { fullName: name, email: `${name.toLowerCase()}@g.example`, role: "Director", capacity: 3 })).id;
+    await api(G, "PUT", `/mentors/${id}/programs`, { programIds: [programId] });
+    if (status) await api(G, "PATCH", `/mentors/${id}`, { status });
+    return id;
+  };
+  const mentee = async (name, programId, status) => {
+    const id = (await post("/mentees", { fullName: name, email: `${name.toLowerCase()}@g.example`, role: "Analyst", developmentNeeds: "x" })).id;
+    await api(G, "PUT", `/mentees/${id}/program`, { programId });
+    if (status) await api(G, "PATCH", `/mentees/${id}`, { status });
+    return id;
+  };
+  const m1 = await mentor("Gamze", PX), m2 = await mentor("Gokhan", PY), m3 = await mentor("Gulsen", PX, "inactive");
+  const e1 = await mentee("Gul", PX), e2 = await mentee("Gurkan", PY), e3 = await mentee("Gizem", PX, "inactive");
+  const e4 = await mentee("Gonul", PX), e5 = await mentee("Gani", PX);
+  const msInd = (await post("/mentorships", { mentorId: m1, menteeId: e1 })).mentorship;
+  const grp = (await post("/mentee-groups", { name: "G grubu", programId: PX, memberIds: [e4, e5] })).group.id;
+  const msGrp = (await post("/mentorships", { mentorId: m1, groupId: grp })).mentorship;
+
+  // Recipient selection
+  const preview = async (selection, cookie = G) => api(cookie, "POST", "/announcements/preview-recipients", { selection });
+  const names = r => (r.json?.recipients || []).map(x => x.name || x.email).sort().join(",");
+  let r = await preview({ mentors: "programs", mentorProgramIds: [PX] });
+  check("mentors of a programme (active only)", names(r) === "Gamze", names(r));
+  r = await preview({ mentees: "all" });
+  check("all active mentees", names(r) === "Gani,Gonul,Gul,Gurkan", names(r));
+  r = await preview({ groupIds: [grp], menteeIds: [e4], extra: ["GONUL@g.example", "dis@x.example"] });
+  check("each address once (group + person + typed-in)", r.json?.count === 3, names(r));
+  r = await preview({ extra: "ok@x.example, not-an-address" });
+  check("an invalid typed-in address -> 400", r.status === 400 && r.json?.code === "bad_addresses", `HTTP ${r.status}`);
+
+  // Organisation B
+  check("B cannot use G's programme in a selection -> 404",
+        (await preview({ mentors: "programs", mentorProgramIds: [PX] }, B)).status === 404);
+  check("B cannot use G's people in a selection -> 404", (await preview({ menteeIds: [e1] }, B)).status === 404);
+
+  // Draft
+  const draft = await api(G, "POST", "/announcements", {
+    subject: "Program duyurusu", body: "Merhaba {ad},\nYarin kick-off var.",
+    selection: { mentors: "all", mentees: "all", extra: ["dis@x.example", "bounce@x.example"] }, language: "tr" });
+  const A1 = draft.json?.announcement;
+  check("draft saved", draft.status === 200 && A1?.status === "draft", `HTTP ${draft.status}`);
+  const edited = await api(G, "PUT", `/announcements/${A1.id}`, { ...draft.json.announcement, subject: "Program duyurusu {ad}" });
+  check("draft edited", edited.json?.announcement?.subject === "Program duyurusu {ad}");
+  for (const [m, u] of [["GET", `/announcements/${A1.id}`], ["PUT", `/announcements/${A1.id}`], ["POST", `/announcements/${A1.id}/send`],
+                        ["DELETE", `/announcements/${A1.id}`]]) {
+    const x = await api(B, m, u, m === "PUT" ? { subject: "B", body: "B", selection: {} } : undefined);
+    check(`B: ${m} ${u.replace(/[0-9a-f]{24}/, ":id")} -> 404`, x.status === 404, `HTTP ${x.status}`);
+  }
+  const noSmtp = await api(G, "POST", `/announcements/${A1.id}/send`);
+  check("sending without an e-mail server -> 400", noSmtp.status === 400 && noSmtp.json?.code === "smtp_not_configured", `HTTP ${noSmtp.status}`);
+
+  // E-mail server (local sink) and the reply address
+  const sink = await startSink();
+  try {
+    const tok = (await api(null, "POST", "/admin/login", { password: server.superPassword })).json?.token;
+    const cfg = await fetch(BASE + "/admin/smtp-config", { method: "PUT", headers: { "Content-Type": "application/json", "x-admin-token": tok },
+      body: JSON.stringify({ host: "127.0.0.1", port: sink.port, secure: false, fromName: "MentorOS Test", fromEmail: "noreply@test.example" }) });
+    if (cfg.status !== 200) throw new Error("could not configure the test SMTP server");
+    check("an invalid reply address -> 400", (await api(G, "PUT", "/announcement-settings", { replyTo: "nope" })).status === 400);
+    await api(G, "PUT", "/announcement-settings", { replyTo: "ik@g.example" });
+
+    const send = await api(G, "POST", `/announcements/${A1.id}/send`);
+    check("send starts in the background (202)", send.status === 202 && send.json?.queued === 8, `HTTP ${send.status}, ${send.json?.queued}`);
+    let a;
+    for (let i = 0; i < 60; i++) {
+      a = (await api(G, "GET", `/announcements/${A1.id}`)).json;
+      if (a?.status === "sent") break;
+      await new Promise(res => setTimeout(res, 250));
+    }
+    const st = a.recipients.reduce((o, x) => (o[x.status] = (o[x.status] || 0) + 1, o), {});
+    check("all sent except the refused address", a.status === "sent" && st.sent === 7 && st.failed === 1, JSON.stringify(st));
+    check("one e-mail per recipient", sink.messages.length === 7 && sink.messages.every(m => m.rcpt.length === 1), `${sink.messages.length}`);
+    const toGamze = sink.messages.find(m => m.rcpt[0] === "gamze@g.example");
+    const body = toGamze ? qp(toGamze.raw) : "";
+    check("{ad} becomes the recipient's name (subject and body)", /Merhaba Gamze,/.test(body) && /Program duyurusu Gamze/.test(body));
+    check("sender name is the organisation, replies go to HR",
+          /From: "G Holding - MentorOS"/.test(body) && /Reply-To: ik@g\.example/i.test(body));
+    const ext = sink.messages.find(m => m.rcpt[0] === "dis@x.example");
+    check("typed-in address: {ad} left empty", ext && /Merhaba,/.test(qp(ext.raw)));
+    check("a sent announcement cannot be edited -> 409",
+          (await api(G, "PUT", `/announcements/${A1.id}`, { subject: "x", body: "x", selection: {} })).status === 409);
+    check("... or sent twice -> 409", (await api(G, "POST", `/announcements/${A1.id}/send`)).status === 409);
+
+    const re = await api(G, "POST", `/announcements/${A1.id}/resend-failed`);
+    for (let i = 0; i < 40; i++) {
+      a = (await api(G, "GET", `/announcements/${A1.id}`)).json;
+      if (a?.status === "sent") break;
+      await new Promise(res => setTimeout(res, 250));
+    }
+    check("failed ones can be sent again", re.json?.queued === 1 && a.status === "sent" && a.failedCount === 1);
+
+    // Workspace: only announcements sent to EVERYONE in it
+    const sendNow = async (subject, selection) => {
+      const d = (await api(G, "POST", "/announcements", { subject, body: "x", selection })).json.announcement;
+      await api(G, "POST", `/announcements/${d.id}/send`);
+      for (let i = 0; i < 40; i++) {
+        if ((await api(G, "GET", `/announcements/${d.id}`)).json?.status === "sent") break;
+        await new Promise(res => setTimeout(res, 250));
+      }
+      return d.id;
+    };
+    await sendNow("Yalniz mentorlar", { mentors: "all" });
+    await sendNow("Gamze ve Gul", { mentorIds: [m1], menteeIds: [e1] });
+    const wsList = async ms => {
+      const u = new URL(ms.workspaceUrl);
+      return (await api(null, "GET", `/public/workspace/${u.searchParams.get("id")}/announcements?token=${u.searchParams.get("token")}`)).json || [];
+    };
+    const ind = (await wsList(msInd)).map(x => x.subject).sort().join(" | ");
+    const gr = (await wsList(msGrp)).map(x => x.subject).sort().join(" | ");
+    check("individual workspace: announcements sent to both of them", ind === "Gamze ve Gul | Program duyurusu", ind);
+    check("group workspace: only the one sent to the mentor AND every member", gr === "Program duyurusu", gr);
+    check("a workspace with a wrong token -> 403",
+          (await api(null, "GET", `/public/workspace/${msInd.id}/announcements?token=wrong`)).status === 403);
+
+    // KVKK
+    const db = openDb(server.dbPath);
+    try {
+      await api(G, "DELETE", `/mentees/${e2}`);
+      await api(G, "DELETE", `/mentors/${m2}?force=true`);
+      const left = db.prepare(`SELECT COUNT(*) n FROM announcement_recipients WHERE person_id IN (?, ?)`).get(e2, m2).n;
+      check("deleting a mentor or mentee removes them from recipient lists", left === 0, `${left}`);
+      check("... the announcement stays", (await api(G, "GET", `/announcements/${A1.id}`)).status === 200);
+      await api(G, "DELETE", `/announcements/${A1.id}`);
+      check("deleting an announcement deletes its recipient list",
+            db.prepare(`SELECT COUNT(*) n FROM announcement_recipients WHERE announcement_id = ?`).get(A1.id).n === 0);
+    } finally {
+      db.close();
+    }
+  } finally {
+    sink.close();
+  }
 }
 
 main().catch(err => {

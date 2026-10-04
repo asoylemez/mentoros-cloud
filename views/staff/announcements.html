@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Duyurular — MentorOS</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --copper: #b5651d;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #23262d;
+    --muted: #6b7280;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --warn: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff);
+    color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text {
+    font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  select, input, textarea {
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 14px; background: #fff; color: var(--text);
+    width: 100%;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--navy);
+  }
+  select.compact { width: auto; padding: 7px 10px; font-size: 13px; }
+
+  button {
+    padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  button.danger { background: #fff; border-color: var(--err); color: var(--err); }
+  button.danger:hover:not(:disabled) { background: #fef2f2; }
+  button.sm { padding: 6px 11px; font-size: 13px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  h2 { font-size: 15px; color: var(--navy); margin-bottom: 5px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+  /* Davet */
+  .invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .invite-row input { flex: 1; min-width: 250px; background: #f9fafb; font-size: 13px; }
+
+  /* İstatistik */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 15px 17px; }
+  .stat-value { font-size: 23px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Tablo */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; padding: 11px 12px; background: #fafbfc;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .3px; white-space: nowrap;
+  }
+  td { padding: 12px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  tr:hover td { background: #fafbfc; }
+
+  .name { font-weight: 600; color: var(--navy); }
+  .email { color: var(--muted); font-size: 12px; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; background: #eef1f6; color: var(--navy); margin: 1px 2px 1px 0;
+  }
+  .badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.active   { background: #dcfce7; color: #15803d; }
+  .badge.inactive { background: #f3f4f6; color: #6b7280; }
+  .badge.full     { background: #fef3c7; color: #92400e; }
+
+  .cap-bar { width: 62px; height: 5px; background: #eceef1; border-radius: 3px; margin-top: 4px; }
+  .cap-fill { height: 100%; border-radius: 3px; background: var(--copper); }
+
+  .actions { display: flex; gap: 6px; white-space: nowrap; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+  /* Modal */
+  .modal {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(15,20,35,.55); padding: 24px;
+    overflow-y: auto;
+  }
+  .modal.open { display: block; }
+  .modal-box {
+    background: #fff; border-radius: 12px; max-width: 760px;
+    margin: 20px auto; padding: 26px 28px;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; gap: 12px;
+  }
+  .modal-close {
+    border: none; background: none; font-size: 22px; color: var(--muted);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 500;
+  }
+  textarea { min-height: 78px; resize: vertical; line-height: 1.5; }
+
+  .section-head {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--muted); font-weight: 600;
+    margin: 22px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .modal-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 13px 15px; font-size: 13px; color: #92400e;
+    line-height: 1.5; margin-bottom: 16px; display: none;
+  }
+  .warn-box.show { display: block; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff; padding: 12px 22px;
+    border-radius: 8px; font-size: 14px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+</style>
+<style>
+  /* Programme page */
+  .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .badge.planned  { background: #e0e7ff; color: #3730a3; }
+  .badge.ended    { background: #fef3c7; color: #92400e; }
+  .badge.archived { background: #f3f4f6; color: #6b7280; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  .desc { color: var(--muted); font-size: 12px; margin-top: 2px; max-width: 360px; }
+  tr.is-archived td { opacity: .65; }
+  .form-error { color: var(--err); font-size: 13px; margin-top: 4px; min-height: 18px; }
+</style>
+<style>
+  .badge.draft   { background: #f3f4f6; color: #4b5563; }
+  .badge.sending { background: #e0e7ff; color: #3730a3; }
+  .badge.sent    { background: #dcfce7; color: #166534; }
+  .rcp-block { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .rcp-block h4 { margin: 0 0 8px; font-size: 13.5px; color: var(--navy); }
+  .row-inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row-inline select { width: auto; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+  .checks label { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--text); margin: 0; }
+  .checks input { width: auto; }
+  .pick-list { max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
+  .pick-list label { display: flex; gap: 8px; align-items: center; font-size: 13.5px; padding: 2px 0; color: var(--text); margin: 0; }
+  .pick-list input { width: auto; }
+  .count-box { background: #f1f5ff; border: 1px solid #dbe2f3; border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: 10px 0; }
+  .progress { height: 8px; background: #eef0f4; border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .progress > div { height: 100%; background: var(--navy); }
+  .body-preview { white-space: pre-wrap; background: #fafbfd; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 14px; max-height: 220px; overflow-y: auto; }
+  .warn-line { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 14px; }
+  td.err { color: var(--err); font-size: 12px; }
+  .badge.failed  { background: #fee2e2; color: #b91c1c; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS</div>
+        <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:2px;">Mentorluk Programı Yönetim Platformu</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact"><option value="tr">Türkçe</option><option value="en">English</option></select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <div class="head-row" style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+    <div>
+      <h1 data-i18n="pageTitle">Duyurular</h1>
+      <div class="sub" data-i18n="pageSub">Mentor ve mentee'lere e-posta ile duyuru gönderin. Her alıcıya ayrı e-posta gider; kimse diğer alıcıları görmez.</div>
+    </div>
+    <button class="primary" id="newBtn" data-i18n="newAnnouncement">+ Yeni duyuru</button>
+  </div>
+
+  <div class="warn-line" id="smtpWarn" style="display:none" data-i18n="smtpMissing">E-posta sunucusu ayarlanmamış; duyuru gönderilemez. Taslak hazırlayabilirsiniz.</div>
+
+  <div class="card">
+    <h2 data-i18n="settingsTitle">Yanıt adresi</h2>
+    <div class="card-sub" data-i18n="settingsSub">Alıcılar duyuruya yanıt verdiğinde yanıtın gideceği adres (örneğin İK ekibinin e-postası). Boş bırakılırsa yanıtlar platformun gönderim adresine gider ve okunmaz.</div>
+    <div class="row-inline">
+      <input id="replyTo" type="email" placeholder="ik@firma.com" style="max-width:340px">
+      <button id="saveReplyTo" data-i18n="save">Kaydet</button>
+      <span class="hint" id="senderNote" style="margin:0"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-i18n="thSubject">Konu</th><th data-i18n="thStatus">Durum</th>
+          <th data-i18n="thRecipients">Alıcılar</th><th data-i18n="thDate">Tarih</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyBox" style="display:none" data-i18n="empty">Henüz duyuru yok.</div>
+  </div>
+</div>
+
+<!-- ============ EDITOR ============ -->
+<div class="modal" id="edModal">
+  <div class="modal-box" style="max-width:760px">
+    <div class="modal-head"><div><h2 id="edTitle">—</h2></div><button class="modal-close" id="edClose">&times;</button></div>
+
+    <div class="field"><label for="f_subject" data-i18n="fSubject">Konu *</label><input id="f_subject" maxlength="200"></div>
+    <div class="field"><label for="f_body" data-i18n="fBody">Mesaj *</label>
+      <textarea id="f_body" maxlength="20000" style="min-height:180px"></textarea>
+      <div class="hint" data-i18n="bodyHint">{ad} yazdığınız yere her alıcının adı gelir. Örnek: "Merhaba {ad},"</div></div>
+
+    <div class="section-head" data-i18n="secRecipients">Alıcılar</div>
+
+    <div class="rcp-block">
+      <h4 data-i18n="mentorsTitle">Mentorlar</h4>
+      <div class="row-inline">
+        <select id="s_mentors">
+          <option value="none" data-i18n="scopeNone">Hiçbiri</option>
+          <option value="all" data-i18n="scopeAllMentors">Bütün aktif mentorlar</option>
+          <option value="programs" data-i18n="scopePrograms">Seçili programlardakiler</option>
+        </select>
+      </div>
+      <div class="checks" id="mentorPrograms"></div>
+    </div>
+
+    <div class="rcp-block">
+      <h4 data-i18n="menteesTitle">Mentee'ler</h4>
+      <div class="row-inline">
+        <select id="s_mentees">
+          <option value="none" data-i18n="scopeNone">Hiçbiri</option>
+          <option value="all" data-i18n="scopeAllMentees">Bütün aktif mentee'ler</option>
+          <option value="programs" data-i18n="scopePrograms">Seçili programlardakiler</option>
+        </select>
+      </div>
+      <div class="checks" id="menteePrograms"></div>
+    </div>
+
+    <div class="rcp-block" id="groupsBlock">
+      <h4 data-i18n="groupsTitle">Mentee grupları</h4>
+      <div class="checks" id="groupChecks"></div>
+    </div>
+
+    <div class="rcp-block">
+      <h4 data-i18n="peopleTitle">Tek tek kişiler</h4>
+      <input id="peopleFilter" data-i18n-ph="peopleFilter" placeholder="Ada göre süz…">
+      <div class="pick-list" id="peopleList"></div>
+    </div>
+
+    <div class="rcp-block">
+      <h4 data-i18n="extraTitle">Diğer e-posta adresleri</h4>
+      <textarea id="f_extra" style="min-height:60px" data-i18n-ph="extraPh" placeholder="adres@ornek.com, ikinci@ornek.com"></textarea>
+      <div class="hint" data-i18n="extraHint">Virgül, boşluk veya satırla ayırın; en fazla 200 adres. Bu kişilere {ad} boş gelir.</div>
+    </div>
+
+    <div class="count-box"><span id="countText">—</span> <a href="#" id="showList" data-i18n="showList">listeyi göster</a>
+      <div id="countList" class="hint" style="display:none;max-height:140px;overflow-y:auto"></div></div>
+    <div class="form-error" id="edError" role="alert" style="color:var(--err);font-size:13px;min-height:18px;white-space:pre-line"></div>
+
+    <div class="modal-foot">
+      <button class="danger" id="edDelete" data-i18n="del">Sil</button>
+      <div style="display:flex;gap:8px">
+        <button id="edSave" data-i18n="saveDraft">Taslak kaydet</button>
+        <button class="primary" id="edSend" data-i18n="send">Gönder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SENT ANNOUNCEMENT ============ -->
+<div class="modal" id="dtModal">
+  <div class="modal-box" style="max-width:760px">
+    <div class="modal-head"><div><h2 id="dtTitle">—</h2><div class="hint" id="dtMeta" style="margin:2px 0 0"></div></div>
+      <button class="modal-close" id="dtClose">&times;</button></div>
+    <div class="body-preview" id="dtBody"></div>
+    <div class="progress"><div id="dtBar" style="width:0%"></div></div>
+    <div class="hint" id="dtProgress" style="margin:0 0 10px"></div>
+    <div class="table-wrap" style="max-height:320px;overflow-y:auto">
+      <table><thead><tr><th data-i18n="thName">Ad</th><th data-i18n="thEmail">E-posta</th><th data-i18n="thStatus">Durum</th><th></th></tr></thead>
+        <tbody id="dtRows"></tbody></table>
+    </div>
+    <div class="modal-foot">
+      <button class="danger" id="dtDelete" data-i18n="del">Sil</button>
+      <button id="dtResend" data-i18n="resendFailed">Gönderilemeyenlere yeniden gönder</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+const T = {
+  tr: {
+    pageTitle: "Duyurular", pageSub: "Mentor ve mentee'lere e-posta ile duyuru gönderin. Her alıcıya ayrı e-posta gider; kimse diğer alıcıları görmez.",
+    logout: "Çıkış", newAnnouncement: "+ Yeni duyuru",
+    smtpMissing: "E-posta sunucusu ayarlanmamış; duyuru gönderilemez. Taslak hazırlayabilirsiniz.",
+    settingsTitle: "Yanıt adresi",
+    settingsSub: "Alıcılar duyuruya yanıt verdiğinde yanıtın gideceği adres (örneğin İK ekibinin e-postası). Boş bırakılırsa yanıtlar platformun gönderim adresine gider ve okunmaz.",
+    senderNote: "Gönderen adı: {name} - MentorOS", save: "Kaydet", saved: "Kaydedildi ✓",
+    thSubject: "Konu", thStatus: "Durum", thRecipients: "Alıcılar", thDate: "Tarih", thName: "Ad", thEmail: "E-posta",
+    empty: "Henüz duyuru yok.", noSubject: "(konusuz)",
+    st_draft: "Taslak", st_sending: "Gönderiliyor", st_sent: "Gönderildi",
+    r_pending: "Bekliyor", r_sent: "Gönderildi", r_failed: "Gönderilemedi",
+    open: "Aç", edit: "Düzenle", del: "Sil",
+    newTitle: "Yeni duyuru", editTitle: "Duyuruyu düzenle",
+    fSubject: "Konu *", fBody: "Mesaj *", bodyHint: "{ad} yazdığınız yere her alıcının adı gelir. Örnek: \"Merhaba {ad},\"",
+    secRecipients: "Alıcılar", mentorsTitle: "Mentorlar", menteesTitle: "Mentee'ler",
+    scopeNone: "Hiçbiri", scopeAllMentors: "Bütün aktif mentorlar", scopeAllMentees: "Bütün aktif mentee'ler",
+    scopePrograms: "Seçili programlardakiler", groupsTitle: "Mentee grupları", noGroups: "Grup yok.",
+    peopleTitle: "Tek tek kişiler", peopleFilter: "Ada göre süz…",
+    extraTitle: "Diğer e-posta adresleri", extraPh: "adres@ornek.com, ikinci@ornek.com",
+    extraHint: "Virgül, boşluk veya satırla ayırın; en fazla 200 adres. Bu kişilere {ad} boş gelir.",
+    reaches: "Bu seçim {n} kişiye ulaşıyor (aynı adrese bir kez yazılır).", showList: "listeyi göster",
+    saveDraft: "Taslak kaydet", send: "Gönder", sending: "Gönderiliyor…",
+    sendConfirm: "Duyuru {n} kişiye gönderilsin mi? Gönderildikten sonra değiştirilemez.",
+    deleteConfirm: "Bu duyuru silinsin mi? Alıcı listesi de silinir; gönderilmiş e-postalar geri alınamaz.",
+    started: "Gönderim başladı ✓", draftSaved: "Taslak kaydedildi ✓", deleted: "Silindi ✓",
+    progress: "{sent} gönderildi · {failed} gönderilemedi · {pending} bekliyor (toplam {total})",
+    resendFailed: "Gönderilemeyenlere yeniden gönder", resendStarted: "Yeniden gönderim başladı ✓",
+    mentor: "Mentor", mentee: "Mentee", external: "Diğer",
+    err_subject_required: "Konu yazın.", err_body_required: "Mesaj yazın.", err_no_recipients: "Bu seçim kimseye ulaşmıyor.",
+    err_bad_addresses: "Geçersiz adresler:", err_too_many_addresses: "En fazla 200 ek adres yazılabilir.",
+    err_smtp_not_configured: "E-posta sunucusu ayarlanmamış.", err_bad_reply_to: "Yanıt adresi geçerli bir e-posta değil.",
+    loadFailed: "Yüklenemedi."
+  },
+  en: {
+    pageTitle: "Announcements", pageSub: "Send announcements by e-mail to mentors and mentees. Every recipient gets their own e-mail; nobody sees the other recipients.",
+    logout: "Log out", newAnnouncement: "+ New announcement",
+    smtpMissing: "The e-mail server is not set up, so announcements cannot be sent. You can still prepare drafts.",
+    settingsTitle: "Reply address",
+    settingsSub: "Where replies to an announcement go (for example the HR team's address). If empty, replies go to the platform's sending address and are not read.",
+    senderNote: "Sender name: {name} - MentorOS", save: "Save", saved: "Saved ✓",
+    thSubject: "Subject", thStatus: "Status", thRecipients: "Recipients", thDate: "Date", thName: "Name", thEmail: "E-mail",
+    empty: "No announcements yet.", noSubject: "(no subject)",
+    st_draft: "Draft", st_sending: "Sending", st_sent: "Sent",
+    r_pending: "Waiting", r_sent: "Sent", r_failed: "Failed",
+    open: "Open", edit: "Edit", del: "Delete",
+    newTitle: "New announcement", editTitle: "Edit announcement",
+    fSubject: "Subject *", fBody: "Message *", bodyHint: "{ad} is replaced by each recipient's name. Example: \"Hello {ad},\"",
+    secRecipients: "Recipients", mentorsTitle: "Mentors", menteesTitle: "Mentees",
+    scopeNone: "None", scopeAllMentors: "All active mentors", scopeAllMentees: "All active mentees",
+    scopePrograms: "Those in the chosen programmes", groupsTitle: "Mentee groups", noGroups: "No groups.",
+    peopleTitle: "Individual people", peopleFilter: "Filter by name…",
+    extraTitle: "Other e-mail addresses", extraPh: "address@example.com, second@example.com",
+    extraHint: "Separate with commas, spaces or lines; at most 200 addresses. For these, {ad} is empty.",
+    reaches: "This selection reaches {n} people (each address once).", showList: "show the list",
+    saveDraft: "Save draft", send: "Send", sending: "Sending…",
+    sendConfirm: "Send the announcement to {n} people? It cannot be changed once sent.",
+    deleteConfirm: "Delete this announcement? Its recipient list goes too; e-mails already sent cannot be recalled.",
+    started: "Sending started ✓", draftSaved: "Draft saved ✓", deleted: "Deleted ✓",
+    progress: "{sent} sent · {failed} failed · {pending} waiting (of {total})",
+    resendFailed: "Send again to the failed ones", resendStarted: "Sending again ✓",
+    mentor: "Mentor", mentee: "Mentee", external: "Other",
+    err_subject_required: "Write a subject.", err_body_required: "Write a message.", err_no_recipients: "This selection reaches nobody.",
+    err_bad_addresses: "Invalid addresses:", err_too_many_addresses: "At most 200 extra addresses.",
+    err_smtp_not_configured: "The e-mail server is not set up.", err_bad_reply_to: "The reply address is not a valid e-mail address.",
+    loadFailed: "Could not be loaded."
+  }
+};
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+if (!T[LANG]) LANG = "tr";
+const t = k => T[LANG][k] || T.tr[k] || k;
+
+async function api(path, options = {}) {
+  const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json" } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data.error || "Error"); e.data = data; throw e; }
+  return data;
+}
+function toast(msg, isErr) {
+  const el = $("toast"); el.textContent = msg; el.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => { el.className = "toast"; }, 2600);
+}
+const errText = e => {
+  const d = e.data || {};
+  const m = (d.code && T[LANG]["err_" + d.code]) || e.message;
+  return d.addresses ? `${m} ${d.addresses.join(", ")}` : m;
+};
+const fmt = d => d ? new Date(d).toLocaleString(LANG === "en" ? "en-GB" : "tr-TR",
+  { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "–";
+
+let SETTINGS = {}, PEOPLE = { programs: [], groups: [], mentors: [], mentees: [] }, LIST = [];
+let EDIT = null, DETAIL = null, POLL = null;
+
+function applyLang() {
+  document.documentElement.lang = LANG; document.title = t("pageTitle") + " — MentorOS";
+  $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  renderSettings(); render();
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { location.href = "/index.html"; };
+$("logoutBtn").onclick = async () => { await fetch("/company-logout", { method: "POST" }); location.href = "/login.html"; };
+
+/* ---- settings ---- */
+function renderSettings() {
+  $("smtpWarn").style.display = SETTINGS.smtpConfigured === false ? "block" : "none";
+  $("senderNote").textContent = SETTINGS.companyName ? t("senderNote").replace("{name}", SETTINGS.companyName) : "";
+}
+$("saveReplyTo").onclick = async () => {
+  try {
+    const d = await api("/announcement-settings", { method: "PUT", body: JSON.stringify({ replyTo: $("replyTo").value.trim() }) });
+    $("replyTo").value = d.replyTo; toast(t("saved"));
+  } catch (e) { toast(errText(e), true); }
+};
+
+/* ---- list ---- */
+function render() {
+  $("emptyBox").style.display = LIST.length ? "none" : "block";
+  $("rows").innerHTML = LIST.map(a => `
+    <tr>
+      <td><div class="name">${esc(a.subject || t("noSubject"))}</div></td>
+      <td><span class="badge ${a.status}">${esc(t("st_" + a.status))}</span></td>
+      <td>${a.status === "draft" ? "–" : `${a.sentCount} / ${a.total}${a.failedCount ? ` <span style="color:var(--err)">(${a.failedCount} ✗)</span>` : ""}`}</td>
+      <td style="white-space:nowrap">${esc(fmt(a.sentAt || a.updatedAt))}</td>
+      <td class="actions"><button class="sm" onclick="openItem('${esc(a.id)}')">${a.status === "draft" ? t("edit") : t("open")}</button></td>
+    </tr>`).join("");
+}
+async function loadList() {
+  try { LIST = await api("/announcements"); } catch { toast(t("loadFailed"), true); }
+  render();
+  if (LIST.some(a => a.status === "sending")) { clearTimeout(POLL); POLL = setTimeout(loadList, 3000); }
+}
+window.openItem = id => { const a = LIST.find(x => x.id === id); if (!a) return; a.status === "draft" ? openEditor(a) : openDetail(a.id); };
+
+/* ---- editor ---- */
+function selectionFromForm() {
+  const ticked = box => [...$(box).querySelectorAll("input:checked")].map(i => i.value);
+  const people = ticked("peopleList");
+  return {
+    mentors: $("s_mentors").value, mentorProgramIds: ticked("mentorPrograms"),
+    mentees: $("s_mentees").value, menteeProgramIds: ticked("menteePrograms"),
+    groupIds: ticked("groupChecks"),
+    mentorIds: people.filter(v => v.startsWith("mentor:")).map(v => v.slice(7)),
+    menteeIds: people.filter(v => v.startsWith("mentee:")).map(v => v.slice(7)),
+    extra: $("f_extra").value
+  };
+}
+function fillChecks(box, items, chosen) {
+  $(box).innerHTML = items.map(x => `<label><input type="checkbox" value="${esc(x.value)}"${chosen.includes(x.value) ? " checked" : ""}> ${esc(x.label)}</label>`).join("");
+}
+function renderScopes() {
+  $("mentorPrograms").style.display = $("s_mentors").value === "programs" ? "" : "none";
+  $("menteePrograms").style.display = $("s_mentees").value === "programs" ? "" : "none";
+}
+function renderPeople(chosen) {
+  const f = $("peopleFilter").value.trim().toLocaleLowerCase("tr");
+  const keep = chosen || [...$("peopleList").querySelectorAll("input:checked")].map(i => i.value);
+  const all = [...PEOPLE.mentors.map(m => ({ v: "mentor:" + m.id, l: `${m.fullName} · ${t("mentor")}` })),
+               ...PEOPLE.mentees.map(m => ({ v: "mentee:" + m.id, l: `${m.fullName} · ${t("mentee")}` }))];
+  $("peopleList").innerHTML = all.map(p => {
+    const hidden = f && !p.l.toLocaleLowerCase("tr").includes(f) && !keep.includes(p.v);
+    return `<label style="${hidden ? "display:none" : ""}"><input type="checkbox" value="${esc(p.v)}"${keep.includes(p.v) ? " checked" : ""}> ${esc(p.l)}</label>`;
+  }).join("");
+}
+let countTimer = null;
+function refreshCount() {
+  clearTimeout(countTimer);
+  countTimer = setTimeout(async () => {
+    try {
+      const d = await api("/announcements/preview-recipients", { method: "POST", body: JSON.stringify({ selection: selectionFromForm() }) });
+      $("countText").textContent = t("reaches").replace("{n}", d.count);
+      $("countList").innerHTML = d.recipients.map(r => `${esc(r.name || "—")} &lt;${esc(r.email)}&gt; · ${esc(t(r.type))}`).join("<br>");
+      $("edError").textContent = "";
+      EDIT_COUNT = d.count;
+    } catch (e) { $("countText").textContent = "—"; $("edError").textContent = errText(e); EDIT_COUNT = 0; }
+  }, 250);
+}
+let EDIT_COUNT = 0;
+
+function openEditor(a) {
+  EDIT = a || null;
+  $("edTitle").textContent = a ? t("editTitle") : t("newTitle");
+  $("f_subject").value = a ? a.subject : ""; $("f_body").value = a ? a.body : "";
+  const s = a ? a.selection : { mentors: "none", mentees: "none", mentorProgramIds: [], menteeProgramIds: [], groupIds: [], mentorIds: [], menteeIds: [], extra: [] };
+  $("s_mentors").value = s.mentors; $("s_mentees").value = s.mentees;
+  const progs = PEOPLE.programs.map(p => ({ value: p.id, label: p.name }));
+  [...$("s_mentors").options, ...$("s_mentees").options].forEach(o => { if (o.value === "programs") o.hidden = !progs.length; });
+  fillChecks("mentorPrograms", progs, s.mentorProgramIds);
+  fillChecks("menteePrograms", progs, s.menteeProgramIds);
+  $("groupsBlock").style.display = PEOPLE.groups.length ? "" : "none";
+  fillChecks("groupChecks", PEOPLE.groups.map(g => ({ value: g.id, label: `${g.name} (${g.memberCount})` })), s.groupIds);
+  $("peopleFilter").value = "";
+  renderPeople([...s.mentorIds.map(i => "mentor:" + i), ...s.menteeIds.map(i => "mentee:" + i)]);
+  $("f_extra").value = (s.extra || []).join(", ");
+  $("edDelete").style.display = a ? "" : "none";
+  $("edSend").disabled = SETTINGS.smtpConfigured === false;
+  $("countList").style.display = "none";
+  renderScopes(); refreshCount();
+  $("edModal").classList.add("open");
+}
+$("newBtn").onclick = () => openEditor(null);
+$("edClose").onclick = () => $("edModal").classList.remove("open");
+["s_mentors", "s_mentees"].forEach(id => $(id).onchange = () => { renderScopes(); refreshCount(); });
+["mentorPrograms", "menteePrograms", "groupChecks", "peopleList"].forEach(id => $(id).onchange = refreshCount);
+$("f_extra").oninput = refreshCount;
+$("peopleFilter").oninput = () => renderPeople();
+$("showList").onclick = e => { e.preventDefault(); const b = $("countList"); b.style.display = b.style.display === "none" ? "block" : "none"; };
+
+async function saveDraftNow() {
+  const body = JSON.stringify({ subject: $("f_subject").value, body: $("f_body").value, selection: selectionFromForm(), language: LANG });
+  const d = EDIT ? await api(`/announcements/${EDIT.id}`, { method: "PUT", body }) : await api("/announcements", { method: "POST", body });
+  EDIT = d.announcement;
+  return d.announcement;
+}
+$("edSave").onclick = async () => {
+  try { await saveDraftNow(); toast(t("draftSaved")); $("edDelete").style.display = ""; await loadList(); }
+  catch (e) { $("edError").textContent = errText(e); }
+};
+$("edSend").onclick = async () => {
+  if (!$("f_subject").value.trim()) { $("edError").textContent = t("err_subject_required"); return; }
+  if (!$("f_body").value.trim()) { $("edError").textContent = t("err_body_required"); return; }
+  if (!EDIT_COUNT) { $("edError").textContent = t("err_no_recipients"); return; }
+  if (!confirm(t("sendConfirm").replace("{n}", EDIT_COUNT))) return;
+  const btn = $("edSend"); btn.disabled = true; btn.textContent = t("sending");
+  try {
+    const a = await saveDraftNow();
+    await api(`/announcements/${a.id}/send`, { method: "POST" });
+    $("edModal").classList.remove("open"); toast(t("started"));
+    await loadList(); openDetail(a.id);
+  } catch (e) { $("edError").textContent = errText(e); }
+  finally { btn.disabled = false; btn.textContent = t("send"); }
+};
+$("edDelete").onclick = () => removeItem(EDIT && EDIT.id, "edModal");
+
+/* ---- sent announcement ---- */
+async function openDetail(id) {
+  try {
+    DETAIL = await api(`/announcements/${id}`);
+  } catch (e) { toast(errText(e), true); return; }
+  const a = DETAIL, r = a.recipients;
+  const n = s => r.filter(x => x.status === s).length;
+  const done = n("sent") + n("failed");
+  $("dtTitle").textContent = a.subject || t("noSubject");
+  $("dtMeta").textContent = `${t("st_" + a.status)} · ${fmt(a.sentAt)}`;
+  $("dtBody").textContent = a.body;
+  $("dtBar").style.width = r.length ? `${Math.round(done / r.length * 100)}%` : "0%";
+  $("dtProgress").textContent = t("progress").replace("{sent}", n("sent")).replace("{failed}", n("failed"))
+    .replace("{pending}", n("pending")).replace("{total}", r.length);
+  $("dtRows").innerHTML = r.map(x => `<tr><td>${esc(x.name || "—")}</td><td>${esc(x.email)}</td>
+    <td><span class="badge ${x.status === "sent" ? "sent" : x.status === "failed" ? "failed" : "draft"}">${esc(t("r_" + x.status))}</span></td>
+    <td class="err">${esc(x.error || "")}</td></tr>`).join("");
+  $("dtResend").style.display = n("failed") && a.status !== "sending" ? "" : "none";
+  $("dtDelete").style.display = a.status === "sending" ? "none" : "";
+  $("dtModal").classList.add("open");
+  clearTimeout(POLL);
+  if (a.status === "sending") POLL = setTimeout(() => { if ($("dtModal").classList.contains("open")) openDetail(id); loadList(); }, 2000);
+}
+$("dtClose").onclick = () => { $("dtModal").classList.remove("open"); loadList(); };
+$("dtResend").onclick = async () => {
+  try { await api(`/announcements/${DETAIL.id}/resend-failed`, { method: "POST" }); toast(t("resendStarted")); openDetail(DETAIL.id); }
+  catch (e) { toast(errText(e), true); }
+};
+$("dtDelete").onclick = () => removeItem(DETAIL && DETAIL.id, "dtModal");
+
+async function removeItem(id, modal) {
+  if (!id || !confirm(t("deleteConfirm"))) return;
+  try { await api(`/announcements/${id}`, { method: "DELETE" }); $(modal).classList.remove("open"); toast(t("deleted")); await loadList(); }
+  catch (e) { toast(errText(e), true); }
+}
+
+(async function init() {
+  applyLang();
+  try {
+    SETTINGS = await api("/announcement-settings");
+    $("replyTo").value = SETTINGS.replyTo || "";
+    PEOPLE = await api("/announcements/people");
+  } catch { toast(t("loadFailed"), true); }
+  renderSettings();
+  await loadList();
+})();
+</script>
+</body>
+</html>

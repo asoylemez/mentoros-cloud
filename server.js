@@ -74,6 +74,7 @@ app.get("/hr_dashboard.html",  staffAuth.serveStaffPage("hr_dashboard.html"));
 app.get("/mentee_matching.html", staffAuth.serveStaffPage("mentee_matching.html"));
 app.get("/programs.html",       staffAuth.serveStaffPage("programs.html"));
 app.get("/checkin_questions.html", staffAuth.serveStaffPage("checkin_questions.html"));
+app.get("/announcements.html",  staffAuth.serveStaffPage("announcements.html"));
 
 // --- 4. Super admin (tedarikci) ---
 //
@@ -140,6 +141,7 @@ app.use(require("./routes/people"));
 app.use(require("./routes/programs"));   // mentoring programmes
 app.use(require("./routes/groups"));     // mentee groups
 app.use(require("./routes/checkins"));   // check-in feedback
+app.use(require("./routes/announcements")); // announcements
 app.use(require("./routes/matching"));
 app.use(require("./routes/mentorships"));
 app.use(require("./routes/email"));
@@ -237,6 +239,9 @@ function lanAddress() {
 // 0.0.0.0 -> tum ag arayuzlerini dinle (sadece localhost degil).
 // Boylece ayni agdaki diger bilgisayarlar baglanabilir.
 app.listen(config.port, "0.0.0.0", () => {
+  // Announcements a restart interrupted carry on sending.
+  require("./lib/announcements").resumeUnfinished();
+
   const ai = settings.getAiConfigPublic();
   const lan = lanAddress();
 

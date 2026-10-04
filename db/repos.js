@@ -75,6 +75,13 @@ const companies = {
     return companies.get(id);
   },
 
+  /** The organisation's reply address for announcements ('' = none). */
+  setReplyTo(id, email) {
+    db.prepare(`UPDATE companies SET reply_to = ?, updated_at = ? WHERE company_id = ?`)
+      .run(String(email || "").trim(), now(), slugify(id));
+    return companies.get(id);
+  },
+
   /**
    * Super admin icin kayitli sifrenin acik hali.
    * null: bu ozellikten once olusturulmus (kopya yok) veya SETTINGS_SECRET
@@ -97,7 +104,7 @@ const companies = {
 
   get(companyId) {
     const row = db.prepare(
-      `SELECT company_id, login_name, name, domain, status, expires_at,
+      `SELECT company_id, login_name, name, domain, status, expires_at, reply_to,
               created_at, updated_at, (password_enc <> '') AS has_password
          FROM companies WHERE company_id = ?`
     ).get(slugify(companyId));
@@ -650,6 +657,8 @@ const mentors = {
     const mentor = mentors.get(id);
     if (!mentor) return null;
 
+    // Their rows in announcement recipient lists go too (KVKK).
+    db.prepare(`DELETE FROM announcement_recipients WHERE person_type = 'mentor' AND person_id = ?`).run(id);
     db.prepare(`DELETE FROM mentors WHERE id = ?`).run(id);
     return mentor;
   },
@@ -777,6 +786,8 @@ const mentees = {
            AND mentorship_id IN (SELECT id FROM mentorships WHERE mentee_id = ? AND company_id = ?)
       `).run(id, mentee.companyId);
       db.prepare(`DELETE FROM checkins WHERE member_id = ?`).run(id);
+      // and their rows in announcement recipient lists
+      db.prepare(`DELETE FROM announcement_recipients WHERE person_type = 'mentee' AND person_id = ?`).run(id);
 
       db.prepare(`
         UPDATE mentorships

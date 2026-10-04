@@ -183,6 +183,61 @@ function run() {
   removeApprovalFlow();
   migrateGroupMentorships();
   migrateCheckins();
+  migrateAnnouncements();
+}
+
+/**
+ * ANNOUNCEMENTS  (stage 4a: without attachments)
+ *
+ *   announcements            subject + body (plain text, {ad} = name),
+ *                            draft -> sending -> sent; `selection` keeps
+ *                            what HR ticked (who should get it)
+ *   announcement_recipients  one row per person it went to; person_id is
+ *                            the mentor / mentee id ('' for a typed-in
+ *                            address). Deleting a mentor or mentee deletes
+ *                            their rows (KVKK); the announcement stays.
+ *   companies.reply_to       the organisation's reply address for
+ *                            announcements (Reply-To)
+ */
+function migrateAnnouncements() {
+  if (!columnExists("companies", "reply_to")) {
+    db.exec(`ALTER TABLE companies ADD COLUMN reply_to TEXT NOT NULL DEFAULT ''`);
+    console.log("  migration: companies.reply_to added");
+  }
+  const has = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='announcements'`).get();
+  if (has) return;
+  db.exec(`
+    CREATE TABLE announcements (
+      id            TEXT PRIMARY KEY,
+      company_id    TEXT NOT NULL,
+      subject       TEXT NOT NULL DEFAULT '',
+      body          TEXT NOT NULL DEFAULT '',
+      status        TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sending', 'sent')),
+      selection     TEXT NOT NULL DEFAULT '{}',
+      language      TEXT NOT NULL DEFAULT 'tr',
+      sent_count    INTEGER NOT NULL DEFAULT 0,
+      failed_count  INTEGER NOT NULL DEFAULT 0,
+      created_at    TEXT NOT NULL,
+      updated_at    TEXT NOT NULL,
+      sent_at       TEXT
+    );
+    CREATE INDEX idx_announcements_company ON announcements(company_id, created_at);
+
+    CREATE TABLE announcement_recipients (
+      id               TEXT PRIMARY KEY,
+      announcement_id  TEXT NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+      person_type      TEXT NOT NULL CHECK (person_type IN ('mentor', 'mentee', 'external')),
+      person_id        TEXT NOT NULL DEFAULT '',
+      full_name        TEXT NOT NULL DEFAULT '',
+      email            TEXT NOT NULL,
+      status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),
+      error            TEXT NOT NULL DEFAULT '',
+      sent_at          TEXT
+    );
+    CREATE INDEX idx_ann_recipients ON announcement_recipients(announcement_id, status);
+    CREATE INDEX idx_ann_recipients_person ON announcement_recipients(person_id);
+  `);
+  console.log("  migration: announcement tables added");
 }
 
 /**
