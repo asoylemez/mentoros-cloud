@@ -76,6 +76,13 @@ konuşulanlar, aksiyonlar) göndermez. Not içeriği çalışma sayfasındadır.
 Çalışma sayfası bağlantısını İK dağıttığı için İK de o sayfayı
 açabilir; bu, kuruluşun kendi kullanım kuralına bırakılmıştır.
 
+**Raporlar** (Yönetim Raporu, Anket Sonuçları) yalnızca kuruluşun kendi
+verisinden ve yalnızca İK oturumunda üretilir; yapay zekâya gitmez.
+Toplantılar yalnızca tarih ve süreleriyle yer alır. Anket cevapları ekranda
+isimli görünür; PDF ve Excel dosyalarında ise kişiler "Katılımcı 1, 2…"
+olarak yer alır, eşleşme bilgisi çıkarılır ve metinlerdeki bilinen
+isimler maskelenir.
+
 Veri Türkiye'de değil, Avrupa Birliği içinde barındırılmaktadır.
 Kullanıcıların Türkiye'den erişmesi için sunucunun Türkiye'de olması
 gerekmez; gecikme yaklaşık 50 ms'dir ve kullanıcı tarafından hissedilmez.

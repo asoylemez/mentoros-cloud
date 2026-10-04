@@ -407,6 +407,7 @@ async function run(server) {
   await checkinChecks(server, { SA, B });
   await announcementChecks(server, { SA, B });
   await attachmentChecks(server, { SA, B });
+  await reportChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -1474,6 +1475,112 @@ async function attachmentChecks(server, ids) {
     await new Promise(r => setTimeout(r, 300));
     fs.rmSync(full.tmp, { recursive: true, force: true });
   }
+}
+
+// ---------------------------------------------------------------------
+// REPORTS
+// ---------------------------------------------------------------------
+
+async function reportChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n16) REPORTS\n");
+
+  check("unauthenticated /reports/management rejected", (await api(null, "GET", "/reports/management")).status === 401);
+
+  const pwR = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-r", name: "R Rapor", password: pwR });
+  const R = await login("tenant-r", pwR);
+  const post = async (url, body) => (await api(R, "POST", url, body)).json;
+  const P1 = (await post("/programs", { name: "R1", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const P2 = (await post("/programs", { name: "R2", startDate: "2026-01-01", endDate: "2026-12-31" })).program.id;
+  const mentor = async (name, pid, capacity, status) => {
+    const id = (await post("/mentors", { fullName: name, email: `${name.split(" ")[0].toLowerCase()}@r.example`, role: "Director", capacity })).id;
+    await api(R, "PUT", `/mentors/${id}/programs`, { programIds: [pid] });
+    if (status) await api(R, "PATCH", `/mentors/${id}`, { status });
+    return id;
+  };
+  const mentee = async (name, pid) => {
+    const id = (await post("/mentees", { fullName: name, email: `${name.split(" ")[0].toLowerCase()}@r.example`, role: "Analyst", developmentNeeds: "x" })).id;
+    if (pid) await api(R, "PUT", `/mentees/${id}/program`, { programId: pid });
+    return id;
+  };
+  const r1 = await mentor("Rasim Rapormentor", P1, 3), r2 = await mentor("Ruya Rapormentor", P2, 2);
+  await mentor("Remzi Rapormentor", P1, 4, "inactive");
+  const a = await mentee("Asli Raporlu", P1); await mentee("Bora Raporlu", P1);
+  const c = await mentee("Cem Raporlu", P2); await mentee("Dila Raporlu", "");
+  const msA = (await post("/mentorships", { mentorId: r1, menteeId: a })).mentorship;
+  const msC = (await post("/mentorships", { mentorId: r2, menteeId: c })).mentorship;
+  for (const [ms, date, d] of [[msA, "2026-09-01", "01:00"], [msA, "2026-09-20", "00:30"], [msC, "2026-10-01", "00:45"]]) {
+    await api(R, "POST", `/mentorships/${ms.id}/meetings`, { meetingDate: date, title: "x", durationMinutes: d });
+  }
+
+  const rep = async (kind, q = "") => (await api(R, "GET", `/reports/${kind}?lang=en${q}`)).json;
+  const val = (d, label) => (d?.summary || []).find(x => x.label === label)?.value;
+
+  let m = await rep("management");
+  check("management: head counts", val(m, "Mentors") === 3 && val(m, "Active mentors") === 2 && val(m, "Mentees") === 4 &&
+        val(m, "Matched mentees (active)") === 2, JSON.stringify(m?.summary?.slice(0, 6)));
+  check("management: matches and meetings", val(m, "Matches") === 2 && val(m, "Meetings") === 3 &&
+        val(m, "Total meeting time") === "2 h 15 min" && val(m, "Meetings without a length") === 0);
+  check("management: capacity of active mentors", val(m, "Total mentor capacity") === 5 && val(m, "Capacity in use") === 2);
+  m = await rep("management", `&programId=${P1}`);
+  check("management: programme filter", val(m, "Mentors") === 2 && val(m, "Mentees") === 2 && val(m, "Matches") === 1 && val(m, "Meetings") === 2,
+        `${val(m, "Mentors")}/${val(m, "Mentees")}/${val(m, "Matches")}/${val(m, "Meetings")}`);
+  m = await rep("management", "&programId=none");
+  check("management: \"no programme\" filter", val(m, "Mentees") === 1 && val(m, "Matches") === 0);
+  m = await rep("management", "&from=2026-09-15");
+  check("management: date filter (meetings in the range)", val(m, "Meetings") === 2, `${val(m, "Meetings")}`);
+  check("management: no meeting content in the report", !JSON.stringify(m).includes('"x"'));
+
+  // B
+  const bRep = (await api(B, "GET", "/reports/management?lang=en")).json;
+  check("B's report has none of R's people", !JSON.stringify(bRep || {}).includes("Rapormentor") && !JSON.stringify(bRep || {}).includes("Raporlu"));
+  check("B cannot filter by R's programme -> 404", (await api(B, "GET", `/reports/management?programId=${P1}`)).status === 404);
+  check("super admin has no organisation report -> 401", (await api(SA, "GET", "/reports/management")).status === 401);
+
+  // Feedback and closing survey (the e-mails fail here; the rounds and surveys are made)
+  const ci = (await api(R, "POST", `/mentorships/${msA.id}/checkin`, { target: "both", language: "en" })).json;
+  const tokenOf = url => new URL(url).searchParams.get("token");
+  const menteeLink = ci.failed.find(x => x.role === "mentee").checkinUrl;
+  const page = (await api(null, "GET", `/public/checkin/${tokenOf(menteeLink)}`)).json;
+  const ans = {};
+  for (const q of page.questions) ans[q.id] = q.type === "scale5" ? 4 : q.type === "yesno" ? (q.support ? "yes" : "no") : "Asli Raporlu thinks it goes well";
+  await api(null, "POST", `/public/checkin/${tokenOf(menteeLink)}`, { answers: ans });
+
+  const sv = await api(R, "POST", `/mentorships/${msC.id}/survey`, { role: "mentee", language: "en" });
+  const sTok = tokenOf(sv.json.surveyUrl);
+  const def = (await api(null, "GET", `/public/survey/${sTok}`)).json.definition;
+  const sa = {};
+  for (const sec of def.sections) for (const q of sec.questions) {
+    sa[q.id] = q.type === "scale5" ? 5 : q.type === "nps" ? 9 : q.type === "choice" ? (q.options?.[0]?.value || "yes") : "Cem Raporlu and Ruya Rapormentor were great";
+  }
+  await api(null, "POST", `/public/survey/${sTok}`, { answers: sa });
+
+  const sr = await rep("surveys");
+  check("survey results: feedback counts", val(sr, "Feedback rounds sent") === 2 && val(sr, "Feedback rounds answered") === 1 &&
+        val(sr, "People asking for support (latest answer)") === 1, JSON.stringify(sr?.summary?.slice(0, 5)));
+  check("survey results: closing survey counts", val(sr, "Closing surveys sent") === 1 && val(sr, "Closing surveys answered") === 1 &&
+        val(sr, "NPS (net promoter score) — Mentee") === "100");
+  const t = key => (sr?.tables || []).find(x => x.key === key);
+  const comments = JSON.stringify(t("comments")?.rows || []);
+  check("open answers are anonymous, names inside them masked",
+        comments.length > 2 && !/Raporlu|Rapormentor/.test(comments), comments.slice(0, 120));
+  const named = JSON.stringify(t("ci_detail")?.rows || []) + JSON.stringify(t("support")?.rows || []);
+  check("on screen: named person-by-person answers", /Asli Raporlu/.test(named));
+  const files = JSON.stringify(["support", "ci_detail", "cs_detail"].map(k => [t(k)?.exportColumns, t(k)?.exportRows]));
+  check("for the files: no names, no matches, participants numbered",
+        !/Raporlu|Rapormentor/.test(files) && /Participant 1/.test(files) && t("ci_detail")?.screenOnly === true);
+  const mAll = await rep("management");
+  const row = (mAll.tables.find(x => x.key === "matches")?.rows || []).find(r => r[0] === "Rasim Rapormentor");
+  check("management: \"needs support\" column", row && row[row.length - 1] === "Yes", JSON.stringify(row));
+
+  // Deleted mentee
+  await api(R, "DELETE", `/mentees/${c}`);
+  const after = await rep("management");
+  const crow = (after.tables.find(x => x.key === "matches")?.rows || []).find(r => r[0] === "Ruya Rapormentor");
+  check("a deleted mentee appears as \"(deleted mentee)\"", crow && crow[1] === "(deleted mentee)" && !JSON.stringify(after).includes("Cem Raporlu"),
+        JSON.stringify(crow));
+  check("... and their closing survey is gone from the results", val(await rep("surveys"), "Closing surveys sent") === 0);
 }
 
 main().catch(err => {
