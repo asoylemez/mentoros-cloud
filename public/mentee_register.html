@@ -588,9 +588,15 @@
   </div>
 </div>
 
+<script src="/assets/formSchema.js"></script>
+<script src="/assets/formRuntime.js"></script>
 <script>
   const params = new URLSearchParams(window.location.search);
   const INVITE = params.get("invite") || "";
+  // Preview from the HR "Registration Forms" page: no invite, nothing is
+  // saved; the editor sends its (unsaved) settings with postMessage.
+  const PREVIEW = params.get("preview") === "1";
+  MentorFormRuntime.init("mentee");
   const API_BASE_URL = window.location.origin;
   let COMPANY_ID = "";
   let COMPANY_NAME = "";
@@ -607,6 +613,21 @@
           "This link is invalid or no longer usable. Please ask your HR team for a current invitation link.";
       }
     };
+    if (PREVIEW) {
+      window.addEventListener("message", e => {
+        if (e.origin !== window.location.origin || !e.data || e.data.type !== "mentoros-form-preview") return;
+        MentorFormRuntime.setConfig(e.data.config);
+        if (e.data.lang && e.data.lang !== currentLang) setLanguage(e.data.lang); else applyTranslations();
+      });
+      const btn = document.getElementById("submitBtn");
+      if (btn) { btn.disabled = true; btn.title = "Preview"; }
+      const bar = document.createElement("div");
+      bar.textContent = (localStorage.getItem("mentorAppLang") === "en") ? "Preview - nothing is saved" : "Önizleme - hiçbir şey kaydedilmez";
+      bar.style.cssText = "position:sticky;top:0;z-index:50;background:#fff7ed;border-bottom:1px solid #fed7aa;color:#9a3412;padding:8px 14px;font-size:13px;text-align:center";
+      document.body.prepend(bar);
+      if (window.parent !== window) window.parent.postMessage({ type: "mentoros-form-preview-ready" }, window.location.origin);
+      return;
+    }
     if (!INVITE) return fail();
     try {
       const res = await fetch(`${window.location.origin}/public/invite/${INVITE}`);
@@ -615,6 +636,8 @@
       COMPANY_ID = data.companyId;
       COMPANY_NAME = data.companyName;
       if (window.MentorOSLogo) MentorOSLogo.show(data.logoUrl);
+      MentorFormRuntime.setConfig(data.formConfig);
+      MentorFormRuntime.apply(currentLang);
       renderHeaderSubtitle();
     } catch { fail(); }
   })();
@@ -890,6 +913,7 @@
     validateDevNeeds: "Please describe your development need.",
     validateGoal: "Please describe your career goal.",
     validateKvkk: "Please confirm the data-protection consent to continue.",
+    validateRequired: "Please fill in this required field:",
     optional: "(optional)"
   });
   Object.assign(translations.tr, {
@@ -942,6 +966,7 @@
     validateDevNeeds: "Lütfen gelişim ihtiyacını anlat.",
     validateGoal: "Lütfen kariyer hedefini yaz.",
     validateKvkk: "Devam etmek için KVKK onayını işaretle.",
+    validateRequired: "Lütfen bu zorunlu alanı doldur:",
     optional: "(isteğe bağlı)"
   });
 
@@ -973,6 +998,8 @@
     });
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn && !submitBtn.disabled) submitBtn.textContent = t('submit');
+    // The organisation's form settings over the default texts.
+    if (window.MentorFormRuntime) MentorFormRuntime.apply(currentLang);
   }
 
   // Alt baslik: "<Firma adi> — Mentorluk Programı". Firma adi davet
@@ -1049,10 +1076,13 @@
   function validateForm(d) {
     if (!d.fullName) return t('validateName');
     if (!d.email) return t('validateEmail');
-    if (!d.role) return t('validateRole');
-    if (d.devFunctionalAreas.length === 0 && !d.devAreasExtra) return t('validateDevArea');
-    if (!d.developmentNeeds) return t('validateDevNeeds');
-    if (!d.goals) return t('validateGoal');
+    if (!d.developmentNeeds) return t('validateDevNeeds');      // locked: AI matching needs it
+    // Fields an organisation may change: required as its settings say.
+    const miss = MentorFormRuntime.missing(d);
+    if (miss.length) {
+      const own = { role: 'validateRole', devAreas: 'validateDevArea', goals: 'validateGoal' };
+      return own[miss[0].id] ? t(own[miss[0].id]) : `${t('validateRequired')} ${miss[0].label}`;
+    }
     // Yonetici bilgisi OPSIYONEL. Ama biri girildiyse digeri de gerekli:
     // e-posta yoksa onay istenemez, isim yoksa e-postada hitap edilemez.
     if (!d.kvkkConsent) return t('validateKvkk');

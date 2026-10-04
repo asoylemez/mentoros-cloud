@@ -62,7 +62,7 @@
   button:hover:not(:disabled) { background: #f7f8fa; }
   button:disabled { opacity: .5; cursor: default; }
   button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
-  button.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  button.primary:hover:not(:disabled) { background: var(--navy); filter: brightness(1.15); }  /* keep the dark background: the generic hover made white text invisible */
   button.danger { background: #fff; border-color: var(--err); color: var(--err); }
   button.danger:hover:not(:disabled) { background: #fef2f2; }
   button.sm { padding: 6px 11px; font-size: 13px; }

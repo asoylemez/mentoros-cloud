@@ -1,5 +1,6 @@
 const express = require("express");
 const { logos } = require("../lib/logo");
+const formConfig = require("../lib/formConfig");
 
 const {
   companies, mentors, mentees, mentorships, meetings,
@@ -37,7 +38,9 @@ router.get("/public/invite/:token", wrap(async (req, res) => {
   res.json({
     companyId: company.companyId,
     companyName: company.name,
-    logoUrl: logos.url(company.companyId)
+    logoUrl: logos.url(company.companyId),
+    // The organisation's form settings (which fields, required, texts).
+    formConfig: formConfig.get(company.companyId)
   });
 }));
 
@@ -54,6 +57,11 @@ router.post("/public/invite/:token/mentors", wrap(async (req, res) => {
 
   if (!req.body.fullName || !req.body.email) {
     return res.status(400).json({ error: "Name and email are required." });
+  }
+  // Required fields as the organisation's form settings make them.
+  const missingFields = formConfig.missing(company.companyId, "mentor", req.body);
+  if (missingFields.length) {
+    return res.status(400).json({ error: "Some required fields are empty.", code: "missing_fields", fields: missingFields });
   }
 
   const mentor = mentors.create(company.companyId, req.body);
@@ -79,6 +87,11 @@ router.post("/public/invite/:token/mentees", wrap(async (req, res) => {
 
   if (!req.body.fullName || !req.body.email) {
     return res.status(400).json({ error: "Name and email are required." });
+  }
+  // Required fields as the organisation's form settings make them.
+  const missingFields = formConfig.missing(company.companyId, "mentee", req.body);
+  if (missingFields.length) {
+    return res.status(400).json({ error: "Some required fields are empty.", code: "missing_fields", fields: missingFields });
   }
 
   const mentee = mentees.create(company.companyId, req.body);

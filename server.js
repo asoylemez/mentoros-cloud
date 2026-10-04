@@ -77,6 +77,7 @@ app.get("/checkin_questions.html", staffAuth.serveStaffPage("checkin_questions.h
 app.get("/announcements.html",  staffAuth.serveStaffPage("announcements.html"));
 app.get("/reports.html",        staffAuth.serveStaffPage("reports.html"));
 app.get("/company_settings.html", staffAuth.serveStaffPage("company_settings.html"));
+app.get("/registration_forms.html", staffAuth.serveStaffPage("registration_forms.html"));
 
 // --- 4. Super admin (tedarikci) ---
 //
@@ -146,6 +147,7 @@ app.use(require("./routes/checkins"));   // check-in feedback
 app.use(require("./routes/announcements")); // announcements
 app.use(require("./routes/reports"));    // reports
 app.use(require("./routes/logo"));       // organisation logo
+app.use(require("./routes/registrationForms")); // registration form settings
 app.use(require("./routes/matching"));
 app.use(require("./routes/mentorships"));
 app.use(require("./routes/email"));

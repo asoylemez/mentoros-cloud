@@ -409,6 +409,7 @@ async function run(server) {
   await attachmentChecks(server, { SA, B });
   await reportChecks(server, { SA, B });
   await logoChecks(server, { SA, B });
+  await formChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -1680,6 +1681,90 @@ async function logoChecks(server, ids) {
   const last = (await putLogo(K, "/company-logo", PNG)).json?.logo?.url;
   await api(SA, "DELETE", "/companies/tenant-k?force=true");
   check("deleting the organisation deletes its logo", (await fetch(BASE + last)).status === 404);
+}
+
+// ---------------------------------------------------------------------
+// REGISTRATION FORM SETTINGS (stage 5a)
+// ---------------------------------------------------------------------
+
+async function formChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n18) REGISTRATION FORM SETTINGS\n");
+  const schema = require("../public/assets/formSchema.js");
+
+  // The catalogue and the forms' HTML stay in step
+  const lost = [];
+  for (const [form, file] of [["mentor", "public/register.html"], ["mentee", "public/mentee_register.html"]]) {
+    const html = fs.readFileSync(path.join(ROOT, file), "utf8");
+    for (const f of schema.FORMS[form].fields) for (const a of f.anchors) if (!html.includes(`id="${a}"`)) lost.push(`${form}.${f.id}#${a}`);
+  }
+  check("every catalogued field exists in its form", lost.length === 0, lost.join(", "));
+
+  check("unauthenticated /registration-forms rejected", (await api(null, "GET", "/registration-forms")).status === 401);
+
+  const pwF = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-form", name: "Form Ltd", password: pwF });
+  const F = await login("tenant-form", pwF);
+
+  const d0 = (await api(F, "GET", "/registration-forms")).json;
+  check("forms start as they ship", d0?.isDefault === true && !Object.keys(d0.config.mentor.fields).length);
+
+  const saved = await api(F, "PUT", "/registration-forms", { config: {
+    mentor: {
+      fields: {
+        role: { hidden: true },
+        industries: { required: true },
+        tenure: { label: { tr: "Kıdeminiz", en: "Your tenure" }, help: { tr: "Yaklaşık olarak", en: "" } },
+        fullName: { hidden: true, label: { tr: "X" } },          // locked: must be dropped
+        capacity: { required: false },                          // locked
+        nonsense: { hidden: true }                              // unknown
+      },
+      steps: { 2: { tr: "Uzmanlığınız" } }
+    },
+    mentee: { fields: { developmentNeeds: { hidden: true }, goals: { required: false } } }
+  } });
+  const c = saved.json?.config;
+  check("allowed changes are kept", saved.status === 200 && c.mentor.fields.role?.hidden === true &&
+        c.mentor.fields.industries?.required === true && c.mentor.fields.tenure?.label?.tr === "Kıdeminiz" &&
+        c.mentor.steps["2"]?.tr === "Uzmanlığınız" && c.mentee.fields.goals?.required === false);
+  check("locked and unknown fields cannot be changed",
+        !c.mentor.fields.fullName && !c.mentor.fields.capacity && !c.mentor.fields.nonsense && !c.mentee.fields.developmentNeeds);
+  check("B still has the forms as they ship", (await api(B, "GET", "/registration-forms")).json?.isDefault === true);
+
+  // The invitation hands the settings to the form
+  const inv = (await api(F, "GET", "/invite-link")).json;
+  const token = new URL(inv.inviteUrl).searchParams.get("invite");
+  const info = (await api(null, "GET", `/public/invite/${token}`)).json;
+  check("the registration form receives the settings", info?.formConfig?.mentor?.fields?.industries?.required === true);
+
+  // The server checks "required" as the settings say
+  const mentorBase = {
+    fullName: "Form Mentor", email: "fm@form.example", functionalAreas: ["Strategy"],
+    behaviouralCompetencies: ["Coaching"], capacity: 2, availability: "Available", kvkkConsent: true
+  };
+  let r = await api(null, "POST", `/public/invite/${token}/mentors`, mentorBase);
+  check("a field made required is enforced by the server", r.status === 400 && r.json?.code === "missing_fields" &&
+        r.json.fields.includes("industries") && !r.json.fields.includes("role"), JSON.stringify(r.json?.fields));
+  r = await api(null, "POST", `/public/invite/${token}/mentors`, { ...mentorBase, industries: ["Retail"] });
+  check("... and a hidden field is no longer required", r.status === 200, `HTTP ${r.status}`);
+  r = await api(null, "POST", `/public/invite/${token}/mentors`, { ...mentorBase, industries: ["Retail"], kvkkConsent: false, capacity: "" });
+  check("locked fields stay required on the server", r.status === 400 && r.json.fields.includes("kvkkConsent") && r.json.fields.includes("capacity"),
+        JSON.stringify(r.json?.fields));
+  const menteeBase = { fullName: "Form Mentee", email: "fe@form.example", role: "Analyst", devFunctionalAreas: ["Strategy"], kvkkConsent: true };
+  r = await api(null, "POST", `/public/invite/${token}/mentees`, menteeBase);
+  check("the mentee's development need stays required (locked)", r.status === 400 && r.json.fields.includes("developmentNeeds") &&
+        !r.json.fields.includes("goals"), JSON.stringify(r.json?.fields));
+  r = await api(null, "POST", `/public/invite/${token}/mentees`, { ...menteeBase, developmentNeeds: "Lead a team" });
+  check("... and an optional-made field can be left empty", r.status === 200, `HTTP ${r.status}`);
+
+  // Organisation B's forms keep the shipped rules
+  const bInv = (await api(B, "GET", "/invite-link")).json;
+  const bTok = new URL(bInv.inviteUrl).searchParams.get("invite");
+  r = await api(null, "POST", `/public/invite/${bTok}/mentors`, { ...mentorBase, email: "fb@b.example" });
+  check("B's form still requires the role", r.status === 400 && r.json.fields.includes("role"), JSON.stringify(r.json?.fields));
+
+  const reset = await api(F, "DELETE", "/registration-forms");
+  check("back to the forms as they ship", reset.json?.isDefault === true && (await api(F, "GET", "/registration-forms")).json?.isDefault === true);
 }
 
 main().catch(err => {

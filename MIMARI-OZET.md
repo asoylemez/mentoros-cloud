@@ -82,6 +82,12 @@ veritabanında saklanır. Rastgele ve her yüklemede değişen bir adresten
 (CID) olarak eklenir. Logoyu kuruluş kendi "Firma Ayarları" sayfasından,
 süper admin de yönetim panelinden değiştirebilir.
 
+**Kayıt formları** kuruluş bazında düzenlenebilir ("Kayıt Formları"
+sayfası): alan göster/gizle, zorunlu/isteğe bağlı, alan ve adım metinleri
+(TR/EN). Ad, e-posta, KVKK onayı, mentor kapasitesi ve uygunluğu ile
+mentee'nin gelişim ihtiyacı kilitlidir. Zorunlu alanlar sunucuda da
+denetlenir; kurallar tek bir dosyadadır (`public/assets/formSchema.js`).
+
 **Raporlar** (Yönetim Raporu, Anket Sonuçları) yalnızca kuruluşun kendi
 verisinden ve yalnızca İK oturumunda üretilir; yapay zekâya gitmez.
 Toplantılar yalnızca tarih ve süreleriyle yer alır. Anket cevapları ekranda

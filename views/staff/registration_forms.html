@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kayıt Formları — MentorOS</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --copper: #b5651d;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #23262d;
+    --muted: #6b7280;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --warn: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff);
+    color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text {
+    font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  select, input, textarea {
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 14px; background: #fff; color: var(--text);
+    width: 100%;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--navy);
+  }
+  select.compact { width: auto; padding: 7px 10px; font-size: 13px; }
+
+  button {
+    padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--navy); filter: brightness(1.15); }  /* keep the dark background: the generic hover made white text invisible */
+  button.danger { background: #fff; border-color: var(--err); color: var(--err); }
+  button.danger:hover:not(:disabled) { background: #fef2f2; }
+  button.sm { padding: 6px 11px; font-size: 13px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  h2 { font-size: 15px; color: var(--navy); margin-bottom: 5px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+  /* Davet */
+  .invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .invite-row input { flex: 1; min-width: 250px; background: #f9fafb; font-size: 13px; }
+
+  /* İstatistik */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 15px 17px; }
+  .stat-value { font-size: 23px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Tablo */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; padding: 11px 12px; background: #fafbfc;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .3px; white-space: nowrap;
+  }
+  td { padding: 12px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  tr:hover td { background: #fafbfc; }
+
+  .name { font-weight: 600; color: var(--navy); }
+  .email { color: var(--muted); font-size: 12px; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; background: #eef1f6; color: var(--navy); margin: 1px 2px 1px 0;
+  }
+  .badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.active   { background: #dcfce7; color: #15803d; }
+  .badge.inactive { background: #f3f4f6; color: #6b7280; }
+  .badge.full     { background: #fef3c7; color: #92400e; }
+
+  .cap-bar { width: 62px; height: 5px; background: #eceef1; border-radius: 3px; margin-top: 4px; }
+  .cap-fill { height: 100%; border-radius: 3px; background: var(--copper); }
+
+  .actions { display: flex; gap: 6px; white-space: nowrap; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+  /* Modal */
+  .modal {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(15,20,35,.55); padding: 24px;
+    overflow-y: auto;
+  }
+  .modal.open { display: block; }
+  .modal-box {
+    background: #fff; border-radius: 12px; max-width: 760px;
+    margin: 20px auto; padding: 26px 28px;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; gap: 12px;
+  }
+  .modal-close {
+    border: none; background: none; font-size: 22px; color: var(--muted);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 500;
+  }
+  textarea { min-height: 78px; resize: vertical; line-height: 1.5; }
+
+  .section-head {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--muted); font-weight: 600;
+    margin: 22px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .modal-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 13px 15px; font-size: 13px; color: #92400e;
+    line-height: 1.5; margin-bottom: 16px; display: none;
+  }
+  .warn-box.show { display: block; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff; padding: 12px 22px;
+    border-radius: 8px; font-size: 14px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+</style>
+<style>
+  /* Programme page */
+  .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .badge.planned  { background: #e0e7ff; color: #3730a3; }
+  .badge.ended    { background: #fef3c7; color: #92400e; }
+  .badge.archived { background: #f3f4f6; color: #6b7280; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  .desc { color: var(--muted); font-size: 12px; margin-top: 2px; max-width: 360px; }
+  tr.is-archived td { opacity: .65; }
+  .form-error { color: var(--err); font-size: 13px; margin-top: 4px; min-height: 18px; }
+</style>
+<style>
+  .wrap { max-width: 1320px; }
+  .tabs { display: flex; gap: 6px; margin: 4px 0 16px; }
+  .tabs button { border-radius: 999px; }
+  .tabs button.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 18px; align-items: start; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+  .step-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
+  .step-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .step-head strong { color: var(--navy); }
+  .frow { border-top: 1px solid #eef0f5; padding: 9px 0; }
+  .frow:first-of-type { border-top: 0; }
+  .fline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fname { flex: 1; min-width: 180px; font-size: 14px; color: var(--text); }
+  .fline label.inline { display: flex; align-items: center; gap: 5px; font-size: 13px; margin: 0; color: var(--text); }
+  .fline label.inline input { width: auto; }
+  .badge-lock { font-size: 11.5px; background: #f3f4f6; color: #4b5563; border-radius: 999px; padding: 2px 8px; }
+  .badge-ai { font-size: 11.5px; background: #e0e7ff; color: #3730a3; border-radius: 999px; padding: 2px 8px; }
+  .warn-ai { font-size: 12.5px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
+  .texts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .texts input { font-size: 13px; }
+  .preview { position: sticky; top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
+  .preview .ph { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .preview iframe { width: 100%; height: 78vh; border: 0; display: block; }
+  .bar { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS</div>
+        <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:2px;">Mentorluk Programı Yönetim Platformu</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact"><option value="tr">Türkçe</option><option value="en">English</option></select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <h1 data-i18n="pageTitle">Kayıt Formları</h1>
+  <div class="sub" data-i18n="pageSub">Mentor ve mentee kayıt formlarında hangi alanların görüneceğini, hangilerinin zorunlu olduğunu ve alan metinlerini belirleyin. Kilitli alanlar sistemin çalışması için gereklidir ve değiştirilemez.</div>
+
+  <div class="bar">
+    <div class="tabs">
+      <button id="tabMentor" class="on" data-i18n="tabMentor">Mentor formu</button>
+      <button id="tabMentee" data-i18n="tabMentee">Mentee formu</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="hint" id="stateNote" style="margin:0"></span>
+      <button id="resetBtn" data-i18n="reset">Varsayılana dön</button>
+      <button class="primary" id="saveBtn" data-i18n="save">Kaydet</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div id="editor"></div>
+    <div class="preview">
+      <div class="ph"><strong data-i18n="preview">Önizleme</strong><span class="hint" style="margin:0" data-i18n="previewHint">Değişiklikler kaydetmeden önce burada görünür.</span></div>
+      <iframe id="frame" title="preview"></iframe>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/assets/formSchema.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const S = window.MentorFormSchema;
+const T = {
+  tr: {
+    pageTitle: "Kayıt Formları", logout: "Çıkış",
+    pageSub: "Mentor ve mentee kayıt formlarında hangi alanların görüneceğini, hangilerinin zorunlu olduğunu ve alan metinlerini belirleyin. Kilitli alanlar sistemin çalışması için gereklidir ve değiştirilemez.",
+    tabMentor: "Mentor formu", tabMentee: "Mentee formu", reset: "Varsayılana dön", save: "Kaydet", saving: "Kaydediliyor…",
+    preview: "Önizleme", previewHint: "Değişiklikler kaydetmeden önce burada görünür.",
+    step: "Adım", stepTitle: "Adım başlığı", show: "Göster", required: "Zorunlu", editTexts: "Metinleri düzenle",
+    locked: "🔒 Kilitli", ai: "AI eşleştirmede kullanılır",
+    warnAi: "Bu alan AI eşleştirmesinin kalitesini doğrudan etkiler. Gizlerseniz eşleştirme önerileri zayıflayabilir.",
+    labelTr: "Başlık (Türkçe)", labelEn: "Başlık (İngilizce)", helpTr: "Açıklama (Türkçe)", helpEn: "Açıklama (İngilizce)",
+    helpPh: "İsteğe bağlı kısa açıklama", isDefault: "Formlar varsayılan halinde.", isCustom: "Firmanıza özel ayarlar kullanılıyor.",
+    unsaved: "Kaydedilmemiş değişiklikler var.", saved: "Kaydedildi ✓", resetDone: "Formlar varsayılana döndü ✓",
+    resetConfirm: "İki form da varsayılan haline dönsün mü? Firmanıza özel bütün form ayarları silinir.",
+    loadFailed: "Ayarlar yüklenemedi."
+  },
+  en: {
+    pageTitle: "Registration Forms", logout: "Log out",
+    pageSub: "Choose which fields the mentor and mentee registration forms show, which are required, and their texts. Locked fields are needed for the system to work and cannot be changed.",
+    tabMentor: "Mentor form", tabMentee: "Mentee form", reset: "Back to defaults", save: "Save", saving: "Saving…",
+    preview: "Preview", previewHint: "Changes show here before you save.",
+    step: "Step", stepTitle: "Step heading", show: "Show", required: "Required", editTexts: "Edit texts",
+    locked: "🔒 Locked", ai: "Used by AI matching",
+    warnAi: "This field directly affects the quality of AI matching. Hiding it may weaken the match suggestions.",
+    labelTr: "Label (Turkish)", labelEn: "Label (English)", helpTr: "Help (Turkish)", helpEn: "Help (English)",
+    helpPh: "Optional short help text", isDefault: "The forms are as they ship.", isCustom: "Your organisation's own settings are in use.",
+    unsaved: "There are unsaved changes.", saved: "Saved ✓", resetDone: "Both forms are back to defaults ✓",
+    resetConfirm: "Put both forms back to how they ship? All of your organisation's form settings are deleted.",
+    loadFailed: "The settings could not be loaded."
+  }
+};
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+if (!T[LANG]) LANG = "tr";
+const t = k => T[LANG][k] || T.tr[k] || k;
+
+let FORM = "mentor";
+let CONFIG = S.sanitize({});
+let IS_DEFAULT = true, DIRTY = false;
+const OPEN = new Set();
+
+function toast(msg, isErr) {
+  const el = $("toast"); el.textContent = msg; el.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => { el.className = "toast"; }, 2600);
+}
+function applyLang() {
+  document.documentElement.lang = LANG; document.title = t("pageTitle") + " — MentorOS";
+  $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  render(); loadFrame();
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { location.href = "/index.html"; };
+$("logoutBtn").onclick = async () => { await fetch("/company-logout", { method: "POST" }); location.href = "/login.html"; };
+
+const cfgOf = id => (CONFIG[FORM].fields[id] = CONFIG[FORM].fields[id] || {});
+function tidy() { CONFIG = S.sanitize(CONFIG); }
+
+function render() {
+  const eff = S.effective(FORM, CONFIG);
+  const def = S.FORMS[FORM];
+  $("stateNote").textContent = (IS_DEFAULT ? t("isDefault") : t("isCustom")) + (DIRTY ? " " + t("unsaved") : "");
+  let html = "";
+  for (const n of Object.keys(def.steps)) {
+    const st = CONFIG[FORM].steps[n] || {};
+    html += `<div class="step-box">
+      <div class="step-head"><strong>${esc(t("step"))} ${n}</strong></div>
+      <div class="texts">
+        <input maxlength="120" placeholder="${esc(def.steps[n].tr)}" value="${esc(st.tr || "")}" oninput="setStep(${n},'tr',this.value)" aria-label="${esc(t("stepTitle"))} TR">
+        <input maxlength="120" placeholder="${esc(def.steps[n].en)}" value="${esc(st.en || "")}" oninput="setStep(${n},'en',this.value)" aria-label="${esc(t("stepTitle"))} EN">
+      </div>`;
+    for (const f of eff.fields.filter(x => String(x.step) === n)) {
+      const c = CONFIG[FORM].fields[f.id] || {};
+      const name = S.labelOf(f, LANG);
+      html += `<div class="frow">
+        <div class="fline">
+          <span class="fname">${esc(name)}</span>
+          ${f.ai ? `<span class="badge-ai" title="${esc(t("ai"))}">AI</span>` : ""}
+          ${f.locked ? `<span class="badge-lock">${esc(t("locked"))}</span>` : `
+            <label class="inline"><input type="checkbox"${f.hidden ? "" : " checked"} onchange="setShow('${f.id}', this.checked)"> ${esc(t("show"))}</label>
+            <label class="inline"><input type="checkbox"${f.required ? " checked" : ""}${f.hidden || !f.requirable ? " disabled" : ""} onchange="setReq('${f.id}', this.checked)"> ${esc(t("required"))}</label>
+            <button class="sm" onclick="toggleTexts('${f.id}')">${esc(t("editTexts"))}</button>`}
+        </div>
+        ${f.hidden && f.aiCritical ? `<div class="warn-ai">⚠ ${esc(t("warnAi"))}</div>` : ""}
+        ${!f.locked && OPEN.has(f.id) ? `<div class="texts">
+          <input maxlength="200" placeholder="${esc(f.label.tr)}" value="${esc((c.label || {}).tr || "")}" oninput="setText('${f.id}','label','tr',this.value)" aria-label="${esc(t("labelTr"))}">
+          <input maxlength="200" placeholder="${esc(f.label.en)}" value="${esc((c.label || {}).en || "")}" oninput="setText('${f.id}','label','en',this.value)" aria-label="${esc(t("labelEn"))}">
+          <input maxlength="400" placeholder="${esc(t("helpTr"))} — ${esc(t("helpPh"))}" value="${esc((c.help || {}).tr || "")}" oninput="setText('${f.id}','help','tr',this.value)">
+          <input maxlength="400" placeholder="${esc(t("helpEn"))} — ${esc(t("helpPh"))}" value="${esc((c.help || {}).en || "")}" oninput="setText('${f.id}','help','en',this.value)">
+        </div>` : ""}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  $("editor").innerHTML = html;
+}
+
+function changed(rerender = true) {
+  DIRTY = true;
+  if (rerender) render(); else $("stateNote").textContent = (IS_DEFAULT ? t("isDefault") : t("isCustom")) + " " + t("unsaved");
+  pushPreview();
+}
+window.setShow = (id, on) => { const c = cfgOf(id); if (on) delete c.hidden; else c.hidden = true; changed(); };
+window.setReq = (id, on) => { cfgOf(id).required = on; changed(); };
+window.toggleTexts = id => { OPEN.has(id) ? OPEN.delete(id) : OPEN.add(id); render(); };
+window.setText = (id, kind, lang, value) => {
+  const c = cfgOf(id); c[kind] = c[kind] || {}; c[kind][lang] = value;
+  changed(false);
+};
+window.setStep = (n, lang, value) => {
+  const s = (CONFIG[FORM].steps[n] = CONFIG[FORM].steps[n] || {}); s[lang] = value;
+  changed(false);
+};
+
+/* ---- preview: the real form, fed the unsaved settings ---- */
+let FRAME_READY = false;
+function loadFrame() {
+  FRAME_READY = false;
+  $("frame").src = (FORM === "mentor" ? "/register.html" : "/mentee_register.html") + "?preview=1";
+}
+function pushPreview() {
+  if (!FRAME_READY) return;
+  $("frame").contentWindow.postMessage({ type: "mentoros-form-preview", config: S.sanitize(CONFIG), lang: LANG }, location.origin);
+}
+window.addEventListener("message", e => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== "mentoros-form-preview-ready") return;
+  FRAME_READY = true; pushPreview();
+});
+
+function setTab(form) {
+  FORM = form;
+  $("tabMentor").classList.toggle("on", form === "mentor");
+  $("tabMentee").classList.toggle("on", form === "mentee");
+  OPEN.clear(); render(); loadFrame();
+}
+$("tabMentor").onclick = () => setTab("mentor");
+$("tabMentee").onclick = () => setTab("mentee");
+
+$("saveBtn").onclick = async () => {
+  const btn = $("saveBtn"); btn.disabled = true; btn.textContent = t("saving");
+  try {
+    const res = await fetch("/registration-forms", { method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config: S.sanitize(CONFIG) }) });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || res.status);
+    CONFIG = d.config; IS_DEFAULT = false; DIRTY = false; render(); pushPreview(); toast(t("saved"));
+  } catch (e) { toast(e.message, true); }
+  finally { btn.disabled = false; btn.textContent = t("save"); }
+};
+$("resetBtn").onclick = async () => {
+  if (!confirm(t("resetConfirm"))) return;
+  try {
+    const d = await (await fetch("/registration-forms", { method: "DELETE" })).json();
+    CONFIG = d.config; IS_DEFAULT = true; DIRTY = false; OPEN.clear(); render(); pushPreview(); toast(t("resetDone"));
+  } catch (e) { toast(e.message, true); }
+};
+window.addEventListener("beforeunload", e => { if (DIRTY) { e.preventDefault(); e.returnValue = ""; } });
+
+(async function init() {
+  try {
+    const res = await fetch("/registration-forms");
+    if (res.status === 401) { location.href = "/login.html"; return; }
+    const d = await res.json();
+    CONFIG = d.config; IS_DEFAULT = d.isDefault;
+  } catch { toast(t("loadFailed"), true); }
+  applyLang();
+})();
+</script>
+<script src="/assets/company-logo.js" data-staff></script>
+</body>
+</html>

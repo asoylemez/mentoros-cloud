@@ -63,7 +63,8 @@ async function main() {
     "/mentors", "/mentees", "/mentorships",
     "/matching-candidates", "/email/status", "/invite-link",
     "/email/history/x", "/meeting-tracking", "/programs", "/mentee-groups", "/checkin-questions",
-    "/announcements", "/announcement-settings", "/reports/management", "/reports/surveys", "/my-company"
+    "/announcements", "/announcement-settings", "/reports/management", "/reports/surveys", "/my-company",
+    "/registration-forms"
   ];
   for (const ep of staffApis) {
     const r = await get(ep);
@@ -82,7 +83,7 @@ async function main() {
     "/index.html", "/hr_dashboard.html", "/mentor_registry.html",
     "/mentee_registry.html", "/mentee_matching.html", "/super_admin.html",
     "/programs.html", "/checkin_questions.html", "/announcements.html",
-    "/reports.html", "/company_settings.html"
+    "/reports.html", "/company_settings.html", "/registration_forms.html"
   ];
   for (const p of pages) {
     const r = await get(p);
@@ -115,7 +116,8 @@ async function main() {
 
       const C = { Cookie: cookie };
       for (const ep of ["/mentors", "/mentees", "/mentorships", "/programs", "/mentee-groups", "/checkin-questions", "/announcements",
-                        "/reports/management", "/reports/surveys", "/my-company"]) {
+                        "/reports/management", "/reports/surveys", "/my-company",
+                        "/registration-forms"]) {
         const r = await get(ep, C);
         check(`own list ${ep}`, r.status === 200, `HTTP ${r.status}`);
       }
