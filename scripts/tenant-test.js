@@ -410,6 +410,7 @@ async function run(server) {
   await reportChecks(server, { SA, B });
   await logoChecks(server, { SA, B });
   await formChecks(server, { SA, B });
+  await eventChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -1828,6 +1829,155 @@ async function formChecks(server, ids) {
 
   const reset = await api(F, "DELETE", "/registration-forms");
   check("back to the forms as they ship", reset.json?.isDefault === true && (await api(F, "GET", "/registration-forms")).json?.isDefault === true);
+}
+
+// ---------------------------------------------------------------------
+// EVENTS (stage 6a) - with the local SMTP sink
+// ---------------------------------------------------------------------
+
+async function eventChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n19) EVENTS\n");
+  check("unauthenticated /events rejected", (await api(null, "GET", "/events")).status === 401);
+
+  const pwV = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-v", name: "V Events", password: pwV });
+  const V = await login("tenant-v", pwV);
+  const post = async (url, body) => (await api(V, "POST", url, body)).json;
+
+  check("an unknown time zone is refused", (await api(V, "PUT", "/company-timezone", { timezone: "Mars/Base" })).status === 400);
+  await api(V, "PUT", "/company-timezone", { timezone: "Europe/London" });
+  const m1 = (await post("/mentors", { fullName: "Vedat", email: "vedat@v.example", role: "Director", capacity: 2 })).id;
+
+  check("an event needs a title", (await api(V, "POST", "/events", { eventDate: "2030-07-10", startTime: "10:00" })).json?.code === "title_required");
+  check("an online link must be http(s)", (await api(V, "POST", "/events", { title: "x", eventDate: "2030-07-10", startTime: "10:00", onlineUrl: "javascript:alert(1)" })).json?.code === "bad_url");
+  const created = await api(V, "POST", "/events", { title: "Liderlik Atölyesi", eventDate: "2030-07-10", startTime: "10:00", durationMinutes: 90,
+                                                    location: "Toplantı salonu", language: "en" });
+  const ev = created.json?.event;
+  check("a new event starts in the organisation's time zone", created.status === 200 && ev?.timezone === "Europe/London" &&
+        ev?.startUtc === "2030-07-10T09:00:00.000Z", `${ev?.timezone} ${ev?.startUtc}`);
+
+  for (const [m, u, body] of [["GET", `/events/${ev.id}`], ["PUT", `/events/${ev.id}`, { title: "B" }],
+                             ["POST", `/events/${ev.id}/participants`, { selection: { extra: ["b@b.example"] } }],
+                             ["POST", `/events/${ev.id}/invite`], ["DELETE", `/events/${ev.id}`]]) {
+    const r = await api(B, m, u, body);
+    check(`B: ${m} ${u.replace(/[0-9a-f]{24}/, ":id")} -> 404`, r.status === 404, `HTTP ${r.status}`);
+  }
+
+  let r = await api(V, "POST", `/events/${ev.id}/participants`, { selection: { mentorIds: [m1], extra: ["dis@x.example"] } });
+  const again = await api(V, "POST", `/events/${ev.id}/participants`, { selection: { mentorIds: [m1] } });
+  check("participants are added once per address", r.json?.added === 2 && again.json?.added === 0 && again.json?.alreadyIn === 1);
+
+  const sink = await startSink();
+  const waitIdle = async id => {
+    for (let i = 0; i < 60; i++) {
+      const d = (await api(V, "GET", `/events/${id}`)).json;
+      if (!d.participants.some(p => p.pendingMail)) return d;
+      await new Promise(res => setTimeout(res, 250));
+    }
+    return (await api(V, "GET", `/events/${id}`)).json;
+  };
+  try {
+    const tok = (await api(null, "POST", "/admin/login", { password: server.superPassword })).json?.token;
+    await fetch(BASE + "/admin/smtp-config", { method: "PUT", headers: { "Content-Type": "application/json", "x-admin-token": tok },
+      body: JSON.stringify({ host: "127.0.0.1", port: sink.port, secure: false, fromName: "MentorOS Test", fromEmail: "noreply@test.example" }) });
+
+    r = await api(V, "POST", `/events/${ev.id}/invite`);
+    let d = await waitIdle(ev.id);
+    const inv = sink.messages.filter(m => /Invitation:[ _]Liderlik/.test(qp(m.raw)));
+    const raw = inv[0] ? qp(inv[0].raw) : "";
+    check("invitations go out with a calendar invitation", r.status === 202 && inv.length === 2 &&
+          /METHOD:REQUEST/.test(raw) && /DTSTART:20300710T090000Z/.test(raw) && new RegExp(`UID:${ev.id}@mentoros`).test(raw.replace(/\n /g, "")),
+          `${inv.length} mail(s)`);
+    check("the e-mail names the event's time zone", /10:00 [^0-9]{1,6}11:30 \(London, GMT\+1\)/.test(raw));
+    check("everyone is marked invited", d.participants.every(p => p.invitedAt && p.mailStatus === "sent"));
+    check("nobody left to invite -> 400", (await api(V, "POST", `/events/${ev.id}/invite`)).json?.code === "nobody_to_invite");
+
+    // The participant's page
+    const pV = d.participants.find(p => p.email === "vedat@v.example");
+    const token = new URL(pV.answerUrl).searchParams.get("token");
+    const pub = (await api(null, "GET", `/public/event/${token}`)).json;
+    check("the answer page shows the event, not the other participants",
+          pub?.event?.title === "Liderlik Atölyesi" && !JSON.stringify(pub).includes("dis@x.example"));
+    r = await api(null, "POST", `/public/event/${token}`, { response: "accepted", note: "Geleceğim" });
+    d = (await api(V, "GET", `/events/${ev.id}`)).json;
+    check("an answer is saved", r.status === 200 && d.participants.find(p => p.id === pV.id)?.response === "accepted");
+
+    // Change the place only: answers stay
+    let before = sink.messages.length;
+    r = await api(V, "PUT", `/events/${ev.id}`, { location: "Büyük salon" });
+    d = await waitIdle(ev.id);
+    const upd = sink.messages.slice(before).map(m => qp(m.raw));
+    check("a changed place sends an update; answers stay", r.json?.notified === 2 && !r.json?.responsesReset &&
+          upd.length === 2 && upd.every(x => /Updated:[ _]Liderlik/.test(x) && /SEQUENCE:1/.test(x)) &&
+          d.participants.find(p => p.id === pV.id)?.response === "accepted");
+
+    // Change the time: answers back to waiting, calendars updated
+    before = sink.messages.length;
+    r = await api(V, "PUT", `/events/${ev.id}`, { startTime: "15:00" });
+    d = await waitIdle(ev.id);
+    const upd2 = sink.messages.slice(before).map(m => qp(m.raw));
+    check("a changed time resets the answers and updates the calendars", r.json?.responsesReset === true &&
+          d.participants.every(p => p.response === "pending") && upd2.length === 2 &&
+          upd2.every(x => /SEQUENCE:2/.test(x) && /DTSTART:20300710T140000Z/.test(x) && /please tell us again/.test(x)));
+
+    // Reminder and removal
+    before = sink.messages.length;
+    await api(null, "POST", `/public/event/${token}`, { response: "declined" });
+    r = await api(V, "POST", `/events/${ev.id}/remind`);
+    d = await waitIdle(ev.id);
+    check("a reminder goes only to those who have not answered", r.json?.queued === 1 &&
+          sink.messages.slice(before).length === 1 && sink.messages.slice(before)[0].rcpt[0] === "dis@x.example");
+    before = sink.messages.length;
+    const ext = d.participants.find(p => p.email === "dis@x.example");
+    r = await api(V, "DELETE", `/events/${ev.id}/participants/${ext.id}`);
+    const rem = sink.messages.slice(before).map(m => qp(m.raw));
+    check("removing an invited person sends a calendar cancellation", r.json?.notified === true &&
+          rem.length === 1 && /METHOD:CANCEL/.test(rem[0]));
+
+    // Attendance only after the start
+    check("attendance before the start -> 409",
+          (await api(V, "PATCH", `/events/${ev.id}/participants/${pV.id}/attendance`, { attendance: "attended" })).json?.code === "not_started");
+    const past = (await post("/events", { title: "Geçmiş eğitim", eventDate: "2020-03-01", startTime: "09:00", timezone: "Europe/Istanbul" })).event;
+    await api(V, "POST", `/events/${past.id}/participants`, { selection: { mentorIds: [m1] } });
+    const pp = (await api(V, "GET", `/events/${past.id}`)).json.participants[0];
+    r = await api(V, "PATCH", `/events/${past.id}/participants/${pp.id}/attendance`, { attendance: "attended" });
+    check("after the start HR records attendance", r.status === 200 &&
+          (await api(V, "GET", `/events/${past.id}`)).json.participants[0].attendance === "attended");
+    check("no invitations for an event that has started -> 409", (await api(V, "POST", `/events/${past.id}/invite`)).json?.code === "started");
+
+    // Cancel and delete
+    check("an event people were invited to must be cancelled before deleting -> 409",
+          (await api(V, "DELETE", `/events/${ev.id}`)).json?.code === "cancel_first");
+    before = sink.messages.length;
+    r = await api(V, "POST", `/events/${ev.id}/cancel`, { reason: "Salon kapalı" });
+    await waitIdle(ev.id);
+    const can = sink.messages.slice(before).map(m => qp(m.raw));
+    check("cancelling sends calendar cancellations", r.json?.notified === 1 && can.length === 1 &&
+          /METHOD:CANCEL/.test(can[0]) && /Cancelled:[ _]Liderlik/.test(can[0]) && /Salon kapal/.test(can[0]));
+    check("a cancelled event cannot be changed or answered",
+          (await api(V, "PUT", `/events/${ev.id}`, { title: "x" })).status === 409 &&
+          (await api(null, "POST", `/public/event/${token}`, { response: "accepted" })).status === 409);
+    check("a cancelled event can be deleted", (await api(V, "DELETE", `/events/${ev.id}`)).status === 200);
+  } finally {
+    sink.close();
+  }
+
+  // KVKK
+  const db = openDb(server.dbPath);
+  try {
+    const keep = (await post("/events", { title: "KVKK", eventDate: "2030-01-01", startTime: "10:00" })).event;
+    await api(V, "POST", `/events/${keep.id}/participants`, { selection: { mentorIds: [m1] } });
+    await api(V, "DELETE", `/mentors/${m1}?force=true`);
+    check("deleting a mentor removes them from events",
+          db.prepare(`SELECT COUNT(*) n FROM event_participants WHERE person_id = ?`).get(m1).n === 0);
+    await api(SA, "DELETE", "/companies/tenant-v?force=true");
+    check("deleting the organisation deletes its events",
+          db.prepare(`SELECT COUNT(*) n FROM events WHERE company_id = 'tenant-v'`).get().n === 0 &&
+          db.prepare(`SELECT COUNT(*) n FROM event_participants WHERE company_id = 'tenant-v'`).get().n === 0);
+  } finally {
+    db.close();
+  }
 }
 
 main().catch(err => {

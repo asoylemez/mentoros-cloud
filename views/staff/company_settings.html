@@ -235,10 +235,20 @@
     </div>
     <div class="hint" data-i18n="logoHint">PNG veya JPG, en fazla 500 KB. En iyi sonuç için yatay ve şeffaf arka planlı bir PNG kullanın (örneğin 400×120 piksel). Logo her yerde aynı yükseklikte gösterilir.</div>
   </div>
+
+  <div class="card">
+    <h2 data-i18n="tzTitle">Varsayılan saat dilimi</h2>
+    <div class="card-sub" data-i18n="tzSub">Yeni bir etkinlik bu saat dilimiyle başlar; etkinlikte yine değiştirilebilir.</div>
+    <div class="row-inline">
+      <select id="tz" style="max-width:340px"></select>
+      <button id="saveTz" data-i18n="saveTz">Kaydet</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<script src="/assets/timezones.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -251,7 +261,9 @@ const T = {
     onLight: "Açık zeminde", onDark: "E-posta başlığında", noLogo: "Henüz logo yok",
     saved: "Logo kaydedildi ✓", removed: "Logo kaldırıldı ✓", removeConfirm: "Logo kaldırılsın mı?",
     err_logo_bad_type: "Logo PNG veya JPG olmalı (SVG kabul edilmez).", err_logo_too_big: "Logo en fazla 500 KB olabilir.",
-    err_empty_file: "Dosya boş.", failed: "İşlem yapılamadı.", company: "Kuruluş"
+    err_empty_file: "Dosya boş.", failed: "İşlem yapılamadı.", company: "Kuruluş",
+    tzTitle: "Varsayılan saat dilimi", tzSub: "Yeni bir etkinlik bu saat dilimiyle başlar; etkinlikte yine değiştirilebilir.",
+    saveTz: "Kaydet", tzSaved: "Saat dilimi kaydedildi ✓"
   },
   en: {
     pageTitle: "Organisation Settings", logout: "Log out", logoTitle: "Logo",
@@ -261,7 +273,9 @@ const T = {
     onLight: "On a light background", onDark: "In the e-mail header", noLogo: "No logo yet",
     saved: "Logo saved ✓", removed: "Logo removed ✓", removeConfirm: "Remove the logo?",
     err_logo_bad_type: "The logo must be a PNG or JPG image (SVG is not accepted).", err_logo_too_big: "The logo can be at most 500 KB.",
-    err_empty_file: "The file is empty.", failed: "That did not work.", company: "Organisation"
+    err_empty_file: "The file is empty.", failed: "That did not work.", company: "Organisation",
+    tzTitle: "Default time zone", tzSub: "A new event starts with this time zone; it can still be changed per event.",
+    saveTz: "Save", tzSaved: "Time zone saved ✓"
   }
 };
 let LANG = localStorage.getItem("mentorAppLang") || "tr";
@@ -292,6 +306,7 @@ function render() {
        <div class="on-dark"><img src="${esc(url)}" alt="" style="background:#fff;padding:4px 6px;border-radius:6px"><span class="lbl">${esc(t("onDark"))}</span></div>`
     : `<div class="on-light"><span class="lbl">${esc(t("noLogo"))}</span></div>`;
   $("pickLabel").textContent = url ? t("change") : t("upload");
+  $("tz").innerHTML = MentorTimeZones.options(LANG, ME.defaultTimezone || "Europe/Istanbul");
   $("removeBtn").style.display = url ? "" : "none";
   if (window.MentorOSLogo) MentorOSLogo.show(url || "");
 }
@@ -312,6 +327,13 @@ $("file").onchange = async () => {
   const d = await res.json().catch(() => ({}));
   if (!res.ok) { toast((d.code && T[LANG]["err_" + d.code]) || (res.status === 413 ? t("err_logo_too_big") : d.error || t("failed")), true); return; }
   ME.logo = d.logo; render(); toast(t("saved"));
+};
+$("saveTz").onclick = async () => {
+  const res = await fetch("/company-timezone", { method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ timezone: $("tz").value }) });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) { toast(d.error || t("failed"), true); return; }
+  ME.defaultTimezone = d.timezone; toast(t("tzSaved"));
 };
 $("removeBtn").onclick = async () => {
   if (!confirm(t("removeConfirm"))) return;

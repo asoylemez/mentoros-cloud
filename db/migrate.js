@@ -186,6 +186,80 @@ function run() {
   migrateAnnouncements();
   migrateAnnouncementAttachments();
   migrateCompanyLogos();
+  migrateEvents();
+}
+
+/**
+ * EVENTS  (stage 6a) - see lib/events.js.
+ *   companies.default_timezone   the time zone a new event starts with
+ *   events                       one row per event, in its own time zone
+ *   event_participants           one row per person (unique address per
+ *                                event); token = their answer page;
+ *                                pending_mail = the mail it waits for
+ * Deleting a mentor / mentee deletes their participant rows (KVKK).
+ */
+function migrateEvents() {
+  if (!columnExists("companies", "default_timezone")) {
+    db.exec(`ALTER TABLE companies ADD COLUMN default_timezone TEXT NOT NULL DEFAULT 'Europe/Istanbul'`);
+    console.log("  migration: companies.default_timezone added");
+  }
+  const has = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='events'`).get();
+  if (has) return;
+  db.exec(`
+    CREATE TABLE events (
+      id                TEXT PRIMARY KEY,
+      company_id        TEXT NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
+      title             TEXT NOT NULL,
+      event_type        TEXT NOT NULL DEFAULT 'group_mentoring',
+      description       TEXT NOT NULL DEFAULT '',
+      event_date        TEXT NOT NULL,
+      start_time        TEXT NOT NULL,
+      duration_minutes  INTEGER NOT NULL DEFAULT 60,
+      timezone          TEXT NOT NULL DEFAULT 'Europe/Istanbul',
+      location          TEXT NOT NULL DEFAULT '',
+      online_url        TEXT NOT NULL DEFAULT '',
+      language          TEXT NOT NULL DEFAULT 'tr',
+      program_id        TEXT NOT NULL DEFAULT '',
+      status            TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'cancelled')),
+      cancel_reason     TEXT NOT NULL DEFAULT '',
+      cancelled_at      TEXT NOT NULL DEFAULT '',
+      ics_uid           TEXT NOT NULL,
+      ics_sequence      INTEGER NOT NULL DEFAULT 0,
+      invite_message    TEXT NOT NULL DEFAULT '',
+      reminder_message  TEXT NOT NULL DEFAULT '',
+      created_at        TEXT NOT NULL,
+      updated_at        TEXT NOT NULL
+    );
+    CREATE INDEX idx_events_company ON events(company_id, event_date);
+
+    CREATE TABLE event_participants (
+      id                TEXT PRIMARY KEY,
+      event_id          TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+      company_id        TEXT NOT NULL,
+      person_type       TEXT NOT NULL CHECK (person_type IN ('mentor', 'mentee', 'external')),
+      person_id         TEXT NOT NULL DEFAULT '',
+      full_name         TEXT NOT NULL DEFAULT '',
+      email             TEXT NOT NULL,
+      token             TEXT NOT NULL UNIQUE,
+      response          TEXT NOT NULL DEFAULT 'pending' CHECK (response IN ('pending', 'accepted', 'declined')),
+      response_note     TEXT NOT NULL DEFAULT '',
+      responded_at      TEXT NOT NULL DEFAULT '',
+      attendance        TEXT NOT NULL DEFAULT '' CHECK (attendance IN ('', 'attended', 'absent')),
+      invited_at        TEXT NOT NULL DEFAULT '',
+      reminder_count    INTEGER NOT NULL DEFAULT 0,
+      last_reminded_at  TEXT NOT NULL DEFAULT '',
+      pending_mail      TEXT NOT NULL DEFAULT '',
+      mail_status       TEXT NOT NULL DEFAULT '',
+      mail_error        TEXT NOT NULL DEFAULT '',
+      last_mail_kind    TEXT NOT NULL DEFAULT '',
+      last_mail_at      TEXT NOT NULL DEFAULT '',
+      created_at        TEXT NOT NULL
+    );
+    CREATE INDEX idx_evp_event ON event_participants(event_id);
+    CREATE INDEX idx_evp_person ON event_participants(person_id);
+    CREATE UNIQUE INDEX idx_evp_event_email ON event_participants(event_id, email COLLATE NOCASE);
+  `);
+  console.log("  migration: event tables added");
 }
 
 /**

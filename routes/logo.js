@@ -35,7 +35,8 @@ router.get("/my-company", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
   if (!companyId) return;
   const c = companies.get(companyId) || {};
-  res.json({ companyId, name: c.name || "", logo: logos.info(companyId), maxBytes: logos.MAX_BYTES });
+  res.json({ companyId, name: c.name || "", logo: logos.info(companyId), maxBytes: logos.MAX_BYTES,
+             defaultTimezone: c.defaultTimezone || "Europe/Istanbul" });
 }));
 
 function saveLogo(res, companyId, body, by) {

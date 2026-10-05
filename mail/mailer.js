@@ -750,7 +750,7 @@ function withCompanyLogo(html, companyId, attachments) {
  * organisation's name as sender name and its own reply address, so that
  * replies reach HR instead of the platform's no-reply mailbox.
  */
-async function send({ to, subject, html, companyId, kind, refId, fromName, replyTo, attachments }) {
+async function send({ to, subject, html, companyId, kind, refId, fromName, replyTo, attachments, icalEvent }) {
   if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
     const error = new Error(`Gecersiz e-posta adresi: ${to || "(bos)"}`);
     log({ companyId, kind, recipient: to || "", subject, refId, ok: false, error: error.message });
@@ -771,7 +771,10 @@ async function send({ to, subject, html, companyId, kind, refId, fromName, reply
       subject,
       html,
       ...(replyTo ? { replyTo } : {}),
-      ...(files.length ? { attachments: files } : {})
+      ...(files.length ? { attachments: files } : {}),
+      // calendar invitation (text/calendar part): Outlook / Gmail offer
+      // "add to calendar" and update or remove the entry later
+      ...(icalEvent ? { icalEvent } : {})
     });
 
     log({ companyId, kind, recipient: to, subject, refId, ok: true });
@@ -902,6 +905,111 @@ async function sendAnnouncement({ to, name, subject, body, companyName, replyTo,
     fromName: companyName ? `${companyName} - MentorOS` : "",
     replyTo: replyTo || undefined,
     attachments
+  });
+}
+
+/** The platform's sending address (organiser of calendar invitations without a reply address). */
+function fromAddress() {
+  return getConfig().fromEmail || "";
+}
+
+/**
+ * EVENT MAILS  (stage 6a): invite, reminder, update, cancel, removed.
+ * Every mail carries the calendar file; the time is written in the
+ * event's own time zone with its name ("14:00 – 15:30 (Istanbul, GMT+3)").
+ */
+const EVENT_TEXT = {
+  tr: {
+    subject: { invite: "Davet: {t}", reminder: "Hatırlatma: {t}", update: "Güncellendi: {t}", cancel: "İptal: {t}", removed: "Katılımcı listesinden çıkarıldınız: {t}" },
+    title: { invite: "Etkinlik daveti", reminder: "Etkinlik hatırlatması", update: "Etkinlik güncellendi", cancel: "Etkinlik iptal edildi", removed: "Etkinlik listesinden çıkarıldınız" },
+    hello: "Merhaba {ad},",
+    intro: {
+      invite: "Sizi aşağıdaki etkinliğe davet ediyoruz.",
+      reminder: "Aşağıdaki etkinliğe katılıp katılamayacağınızı henüz bildirmediniz.",
+      update: "Aşağıdaki etkinliğin bilgileri değişti. Takviminizdeki kayıt da güncellenecek.",
+      cancel: "Aşağıdaki etkinlik iptal edildi. Takviminizdeki kayıt kaldırılacak.",
+      removed: "Artık aşağıdaki etkinliğin katılımcıları arasında değilsiniz. Takviminizdeki kayıt kaldırılacak."
+    },
+    reanswer: "Tarih veya saat değiştiği için lütfen katılım durumunuzu yeniden bildirin.",
+    reason: "İptal nedeni",
+    date: "Tarih", time: "Saat", duration: "Süre", place: "Yer", online: "Online bağlantı", about: "Açıklama",
+    minutes: "dk", button: "Katılım durumunu bildir",
+    calendar: "E-postadaki takvim davetiyle etkinliği takviminize ekleyebilirsiniz; saat takviminizde kendi yerel saatinize göre görünür."
+  },
+  en: {
+    subject: { invite: "Invitation: {t}", reminder: "Reminder: {t}", update: "Updated: {t}", cancel: "Cancelled: {t}", removed: "Removed from the participants: {t}" },
+    title: { invite: "Event invitation", reminder: "Event reminder", update: "Event updated", cancel: "Event cancelled", removed: "Removed from the event" },
+    hello: "Hello {ad},",
+    intro: {
+      invite: "You are invited to the event below.",
+      reminder: "You have not told us yet whether you can attend the event below.",
+      update: "The details of the event below have changed. The entry in your calendar will be updated too.",
+      cancel: "The event below has been cancelled. It will be removed from your calendar.",
+      removed: "You are no longer among the participants of the event below. It will be removed from your calendar."
+    },
+    reanswer: "The date or time has changed, so please tell us again whether you can attend.",
+    reason: "Reason",
+    date: "Date", time: "Time", duration: "Duration", place: "Place", online: "Online link", about: "About",
+    minutes: "min", button: "Answer the invitation",
+    calendar: "Add the event to your calendar with the invitation in this e-mail; your calendar shows it in your own local time."
+  }
+};
+
+/** "Europe/Istanbul" -> "Istanbul"/"İstanbul" */
+function zoneCity(tz, lang) {
+  const city = String(tz || "").split("/").pop().replace(/_/g, " ");
+  return lang === "tr" && city === "Istanbul" ? "İstanbul" : city;
+}
+
+async function sendEventMail({ kind, event, participant, company, url, ics }) {
+  const { startEnd, gmtLabel } = require("../lib/events");
+  const lang = event.language === "en" ? "en" : "tr";
+  const t = EVENT_TEXT[lang];
+  const { start, end } = startEnd(event);
+  const tz = event.timezone;
+  const fmt = (d, o) => d.toLocaleString(lang === "en" ? "en-GB" : "tr-TR", { timeZone: tz, ...o });
+  const date = fmt(start, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const time = `${fmt(start, { hour: "2-digit", minute: "2-digit" })} – ${fmt(end, { hour: "2-digit", minute: "2-digit" })} (${zoneCity(tz, lang)}, ${gmtLabel(tz, start)})`;
+
+  const own = kind === "invite" ? event.inviteMessage : kind === "reminder" ? event.reminderMessage : "";
+  const name = escapeHtml(participant.fullName || "");
+  const greeting = name ? t.hello.replace("{ad}", name) : t.hello.replace(" {ad}", "");
+  const intro = own
+    ? escapeHtml(personalise(own, participant.fullName || "")).replace(/\n/g, "<br>")
+    : `${greeting}<br><br>${t.intro[kind]}`;
+  const rows = [
+    [t.date, escapeHtml(date)],
+    [t.time, escapeHtml(time)],
+    event.location ? [t.place, escapeHtml(event.location)] : null,
+    event.onlineUrl ? [t.online, `<a href="${escapeHtml(event.onlineUrl)}">${escapeHtml(event.onlineUrl)}</a>`] : null,
+    event.description ? [t.about, escapeHtml(event.description).replace(/\n/g, "<br>")] : null,
+    kind === "cancel" && event.cancelReason ? [t.reason, escapeHtml(event.cancelReason)] : null
+  ].filter(Boolean);
+
+  const body =
+    intro +
+    (kind === "update" && participant.response === "pending" ? `<br><br><b>${t.reanswer}</b>` : "") +
+    `<br><br><b style="font-size:16px;color:#1a2b5e">${escapeHtml(event.title)}</b>` +
+    `<table style="margin-top:10px;border-collapse:collapse;font-size:14px">` +
+    rows.map(([k, v]) => `<tr><td style="padding:4px 14px 4px 0;color:#6b7280;vertical-align:top;white-space:nowrap">${k}</td><td style="padding:4px 0">${v}</td></tr>`).join("") +
+    `</table>` +
+    (["invite", "reminder", "update"].includes(kind) ? `<p style="color:#6b7280;font-size:12.5px;margin-top:14px">${t.calendar}</p>` : "");
+
+  return send({
+    to: participant.email,
+    subject: t.subject[kind].replace("{t}", event.title).replace(/[\r\n]+/g, " "),
+    html: layout({
+      title: t.title[kind], body,
+      button: ["invite", "reminder", "update"].includes(kind) ? t.button : "",
+      url: ["invite", "reminder", "update"].includes(kind) ? url : "",
+      lang
+    }),
+    companyId: event.companyId,
+    kind: "event",
+    refId: event.id,
+    fromName: company && company.name ? `${company.name} - MentorOS` : "",
+    replyTo: (company && company.replyTo) || undefined,
+    icalEvent: { method: ["cancel", "removed"].includes(kind) ? "CANCEL" : "REQUEST", filename: "event.ics", content: ics }
   });
 }
 
@@ -1040,6 +1148,8 @@ module.exports = {
   sendCheckin,
   sendAnnouncement,
   personalise,
+  sendEventMail,
+  fromAddress,
   history,
   diagnose
 };

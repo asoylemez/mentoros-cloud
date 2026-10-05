@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Etkinlikler — MentorOS</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --copper: #b5651d;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #23262d;
+    --muted: #6b7280;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --warn: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 22px 70px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff);
+    color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text {
+    font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  select, input, textarea {
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 14px; background: #fff; color: var(--text);
+    width: 100%;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--navy);
+  }
+  select.compact { width: auto; padding: 7px 10px; font-size: 13px; }
+
+  button {
+    padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--navy); filter: brightness(1.15); }  /* keep the dark background: the generic hover made white text invisible */
+  button.danger { background: #fff; border-color: var(--err); color: var(--err); }
+  button.danger:hover:not(:disabled) { background: #fef2f2; }
+  button.sm { padding: 6px 11px; font-size: 13px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  h2 { font-size: 15px; color: var(--navy); margin-bottom: 5px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+  /* Davet */
+  .invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .invite-row input { flex: 1; min-width: 250px; background: #f9fafb; font-size: 13px; }
+
+  /* İstatistik */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 15px 17px; }
+  .stat-value { font-size: 23px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Tablo */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; padding: 11px 12px; background: #fafbfc;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .3px; white-space: nowrap;
+  }
+  td { padding: 12px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  tr:hover td { background: #fafbfc; }
+
+  .name { font-weight: 600; color: var(--navy); }
+  .email { color: var(--muted); font-size: 12px; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; background: #eef1f6; color: var(--navy); margin: 1px 2px 1px 0;
+  }
+  .badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.active   { background: #dcfce7; color: #15803d; }
+  .badge.inactive { background: #f3f4f6; color: #6b7280; }
+  .badge.full     { background: #fef3c7; color: #92400e; }
+
+  .cap-bar { width: 62px; height: 5px; background: #eceef1; border-radius: 3px; margin-top: 4px; }
+  .cap-fill { height: 100%; border-radius: 3px; background: var(--copper); }
+
+  .actions { display: flex; gap: 6px; white-space: nowrap; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+  /* Modal */
+  .modal {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(15,20,35,.55); padding: 24px;
+    overflow-y: auto;
+  }
+  .modal.open { display: block; }
+  .modal-box {
+    background: #fff; border-radius: 12px; max-width: 760px;
+    margin: 20px auto; padding: 26px 28px;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; gap: 12px;
+  }
+  .modal-close {
+    border: none; background: none; font-size: 22px; color: var(--muted);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 500;
+  }
+  textarea { min-height: 78px; resize: vertical; line-height: 1.5; }
+
+  .section-head {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--muted); font-weight: 600;
+    margin: 22px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .modal-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 13px 15px; font-size: 13px; color: #92400e;
+    line-height: 1.5; margin-bottom: 16px; display: none;
+  }
+  .warn-box.show { display: block; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff; padding: 12px 22px;
+    border-radius: 8px; font-size: 14px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+</style>
+<style>
+  /* Programme page */
+  .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .badge.planned  { background: #e0e7ff; color: #3730a3; }
+  .badge.ended    { background: #fef3c7; color: #92400e; }
+  .badge.archived { background: #f3f4f6; color: #6b7280; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  .desc { color: var(--muted); font-size: 12px; margin-top: 2px; max-width: 360px; }
+  tr.is-archived td { opacity: .65; }
+  .form-error { color: var(--err); font-size: 13px; margin-top: 4px; min-height: 18px; }
+</style>
+<style>
+  .badge.draft   { background: #f3f4f6; color: #4b5563; }
+  .badge.sending { background: #e0e7ff; color: #3730a3; }
+  .badge.sent    { background: #dcfce7; color: #166534; }
+  .rcp-block { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .rcp-block h4 { margin: 0 0 8px; font-size: 13.5px; color: var(--navy); }
+  .row-inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row-inline select { width: auto; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+  .checks label { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--text); margin: 0; }
+  .checks input { width: auto; }
+  .pick-list { max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
+  .pick-list label { display: flex; gap: 8px; align-items: center; font-size: 13.5px; padding: 2px 0; color: var(--text); margin: 0; }
+  .pick-list input { width: auto; }
+  .count-box { background: #f1f5ff; border: 1px solid #dbe2f3; border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: 10px 0; }
+  .progress { height: 8px; background: #eef0f4; border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .progress > div { height: 100%; background: var(--navy); }
+  .body-preview { white-space: pre-wrap; background: #fafbfd; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 14px; max-height: 220px; overflow-y: auto; }
+  .warn-line { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 14px; }
+  td.err { color: var(--err); font-size: 12px; }
+  .badge.failed  { background: #fee2e2; color: #b91c1c; }
+</style>
+<style>
+  .badge.scheduled { background: #e0e7ff; color: #3730a3; }
+  .badge.cancelled { background: #fee2e2; color: #b91c1c; }
+  .badge.past { background: #f3f4f6; color: #4b5563; }
+  .r-pending { color: #92400e; } .r-accepted { color: #15803d; font-weight: 600; } .r-declined { color: #b91c1c; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 760px) { .grid3 { grid-template-columns: 1fr; } }
+  .ev-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+  .ev-meta { font-size: 13.5px; color: #4b5563; line-height: 1.6; }
+  td select.att { width: auto; font-size: 12.5px; padding: 4px 6px; }
+  .section-gap { margin-top: 26px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS</div>
+        <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:2px;">Mentorluk Programı Yönetim Platformu</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact"><option value="tr">Türkçe</option><option value="en">English</option></select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+    <div>
+      <h1 data-i18n="pageTitle">Etkinlikler</h1>
+      <div class="sub" data-i18n="pageSub">Grup mentorluğu, koçluk, eğitim ve online oturumlar. Katılımcılara takvim davetiyle e-posta gider; yanıtlarını kendi bağlantılarıyla verirler.</div>
+    </div>
+    <button class="primary" id="newBtn" data-i18n="newEvent">+ Yeni etkinlik</button>
+  </div>
+
+  <div class="warn-line" id="smtpWarn" style="display:none" data-i18n="smtpMissing">E-posta sunucusu ayarlanmamış; davet gönderilemez.</div>
+
+  <div class="card">
+    <h2 data-i18n="upcoming">Yaklaşan etkinlikler</h2>
+    <div class="table-wrap"><table><thead><tr>
+      <th data-i18n="thTitle">Etkinlik</th><th data-i18n="thWhen">Tarih ve saat</th>
+      <th data-i18n="thPeople">Katılımcılar</th><th data-i18n="thStatus">Durum</th><th></th></tr></thead>
+      <tbody id="upRows"></tbody></table></div>
+    <div class="empty" id="upEmpty" style="display:none" data-i18n="noUpcoming">Yaklaşan etkinlik yok.</div>
+  </div>
+
+  <div class="card section-gap">
+    <h2 data-i18n="past">Geçmiş ve iptal edilen etkinlikler</h2>
+    <div class="table-wrap"><table><thead><tr>
+      <th data-i18n="thTitle">Etkinlik</th><th data-i18n="thWhen">Tarih ve saat</th>
+      <th data-i18n="thPeople">Katılımcılar</th><th data-i18n="thStatus">Durum</th><th></th></tr></thead>
+      <tbody id="pastRows"></tbody></table></div>
+    <div class="empty" id="pastEmpty" style="display:none" data-i18n="noPast">Henüz geçmiş etkinlik yok.</div>
+  </div>
+</div>
+
+<!-- ============ EVENT FORM ============ -->
+<div class="modal" id="edModal">
+  <div class="modal-box" style="max-width:760px">
+    <div class="modal-head"><div><h2 id="edTitle">—</h2></div><button class="modal-close" id="edClose">&times;</button></div>
+    <div class="grid2">
+      <div class="field"><label for="f_title" data-i18n="fTitle">Başlık *</label><input id="f_title" maxlength="200"></div>
+      <div class="field"><label for="f_type" data-i18n="fType">Tür</label><select id="f_type"></select></div>
+    </div>
+    <div class="grid3">
+      <div class="field"><label for="f_date" data-i18n="fDate">Tarih *</label><input id="f_date" type="date"></div>
+      <div class="field"><label for="f_time" data-i18n="fTime">Başlangıç saati *</label><input id="f_time" type="time"></div>
+      <div class="field"><label for="f_dur" data-i18n="fDuration">Süre (dakika) *</label><input id="f_dur" type="number" min="5" max="720" step="5"></div>
+    </div>
+    <div class="field"><label for="f_tz" data-i18n="fTz">Saat dilimi *</label><select id="f_tz"></select>
+      <div class="hint" data-i18n="tzHint">E-postada saat bu dilimle yazılır; takvim daveti her katılımcıya kendi yerel saatinde görünür.</div></div>
+    <div class="grid2">
+      <div class="field"><label for="f_loc" data-i18n="fLocation">Yer</label><input id="f_loc" maxlength="300"></div>
+      <div class="field"><label for="f_url" data-i18n="fUrl">Online bağlantı</label><input id="f_url" maxlength="1000" placeholder="https://"></div>
+    </div>
+    <div class="field"><label for="f_desc" data-i18n="fDesc">Açıklama</label><textarea id="f_desc" maxlength="4000" style="min-height:90px"></textarea></div>
+    <div class="grid2">
+      <div class="field"><label for="f_lang" data-i18n="fLang">E-posta dili</label>
+        <select id="f_lang"><option value="tr">Türkçe</option><option value="en">English</option></select></div>
+      <div class="field" id="progField"><label for="f_prog" data-i18n="fProgram">Program</label><select id="f_prog"></select></div>
+    </div>
+    <div class="field"><label for="f_inv" data-i18n="fInvite">Davet metni (isteğe bağlı)</label><textarea id="f_inv" maxlength="2000" style="min-height:60px"></textarea></div>
+    <div class="field"><label for="f_rem" data-i18n="fReminder">Hatırlatma metni (isteğe bağlı)</label><textarea id="f_rem" maxlength="2000" style="min-height:60px"></textarea>
+      <div class="hint" data-i18n="msgHint">Boş bırakırsanız hazır metin kullanılır. {ad} yazılan yere katılımcının adı gelir.</div></div>
+    <div class="form-error" id="edError" role="alert" style="color:var(--err);font-size:13px;min-height:18px;white-space:pre-line"></div>
+    <div class="modal-foot"><span></span>
+      <div style="display:flex;gap:8px"><button id="edCancel" data-i18n="close">Vazgeç</button><button class="primary" id="edSave" data-i18n="save">Kaydet</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EVENT DETAIL ============ -->
+<div class="modal" id="dtModal">
+  <div class="modal-box" style="max-width:980px">
+    <div class="modal-head"><div><h2 id="dtTitle">—</h2><div class="ev-meta" id="dtMeta"></div></div>
+      <button class="modal-close" id="dtClose">&times;</button></div>
+    <div class="ev-actions" id="dtActions"></div>
+    <div class="hint" id="dtInfo" style="margin:0 0 8px"></div>
+    <div class="table-wrap" style="max-height:420px;overflow-y:auto">
+      <table><thead><tr>
+        <th data-i18n="thName">Ad</th><th data-i18n="thInvite">Davet</th><th data-i18n="thAnswer">Yanıt</th>
+        <th data-i18n="thAttendance">Katılım</th><th></th></tr></thead>
+        <tbody id="dtRows"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADD PARTICIPANTS ============ -->
+<div class="modal" id="pkModal">
+  <div class="modal-box" style="max-width:720px">
+    <div class="modal-head"><div><h2 data-i18n="addPeople">Katılımcı ekle</h2></div><button class="modal-close" id="pkClose">&times;</button></div>
+    <div class="rcp-block"><h4 data-i18n="mentorsTitle">Mentorlar</h4>
+      <select id="s_mentors"><option value="none" data-i18n="scopeNone">Hiçbiri</option><option value="all" data-i18n="scopeAllMentors">Bütün aktif mentorlar</option>
+        <option value="programs" data-i18n="scopePrograms">Seçili programlardakiler</option></select>
+      <div class="checks" id="mentorPrograms"></div></div>
+    <div class="rcp-block"><h4 data-i18n="menteesTitle">Mentee'ler</h4>
+      <select id="s_mentees"><option value="none" data-i18n="scopeNone">Hiçbiri</option><option value="all" data-i18n="scopeAllMentees">Bütün aktif mentee'ler</option>
+        <option value="programs" data-i18n="scopePrograms">Seçili programlardakiler</option></select>
+      <div class="checks" id="menteePrograms"></div></div>
+    <div class="rcp-block" id="groupsBlock"><h4 data-i18n="groupsTitle">Mentee grupları</h4><div class="checks" id="groupChecks"></div></div>
+    <div class="rcp-block"><h4 data-i18n="peopleTitle">Tek tek kişiler</h4>
+      <input id="peopleFilter" data-i18n-ph="peopleFilter" placeholder="Ada göre süz…"><div class="pick-list" id="peopleList"></div></div>
+    <div class="rcp-block"><h4 data-i18n="extraTitle">Diğer e-posta adresleri</h4>
+      <textarea id="f_extra" style="min-height:56px" placeholder="adres@ornek.com"></textarea></div>
+    <div class="count-box"><span id="countText">—</span></div>
+    <div class="form-error" id="pkError" role="alert" style="color:var(--err);font-size:13px;min-height:18px"></div>
+    <div class="modal-foot"><span></span><button class="primary" id="pkAdd" data-i18n="addToList">Listeye ekle</button></div>
+  </div>
+</div>
+
+<!-- ============ CANCEL ============ -->
+<div class="modal" id="cnModal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-head"><div><h2 data-i18n="cancelTitle">Etkinliği iptal et</h2></div><button class="modal-close" id="cnClose">&times;</button></div>
+    <div class="field"><label for="cn_reason" data-i18n="cancelReason">İptal nedeni (isteğe bağlı, e-postada yazar)</label><textarea id="cn_reason" maxlength="500"></textarea></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" id="cn_notify" checked style="width:auto"> <span data-i18n="cancelNotify">Davet edilenlere iptal e-postası gönder</span></label>
+    <div class="modal-foot"><span></span><button class="danger" id="cnGo" data-i18n="cancelGo">İptal et</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/assets/timezones.js"></script>
+<script src="/assets/report-print.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const T = {
+  tr: {
+    pageTitle: "Etkinlikler", logout: "Çıkış", newEvent: "+ Yeni etkinlik",
+    pageSub: "Grup mentorluğu, koçluk, eğitim ve online oturumlar. Katılımcılara takvim davetiyle e-posta gider; yanıtlarını kendi bağlantılarıyla verirler.",
+    smtpMissing: "E-posta sunucusu ayarlanmamış; davet gönderilemez.",
+    upcoming: "Yaklaşan etkinlikler", past: "Geçmiş ve iptal edilen etkinlikler", noUpcoming: "Yaklaşan etkinlik yok.", noPast: "Henüz geçmiş etkinlik yok.",
+    thTitle: "Etkinlik", thWhen: "Tarih ve saat", thPeople: "Katılımcılar", thStatus: "Durum", thName: "Ad", thInvite: "Davet",
+    thAnswer: "Yanıt", thAttendance: "Katılım", open: "Aç",
+    type_group_mentoring: "Grup mentorluğu", type_group_coaching: "Grup koçluğu", type_training: "Eğitim", type_online: "Online oturum", type_other: "Diğer",
+    st_scheduled: "Planlandı", st_cancelled: "İptal edildi", st_past: "Gerçekleşti",
+    newTitle: "Yeni etkinlik", editTitle: "Etkinliği düzenle", fTitle: "Başlık *", fType: "Tür", fDate: "Tarih *", fTime: "Başlangıç saati *",
+    fDuration: "Süre (dakika) *", fTz: "Saat dilimi *", tzHint: "E-postada saat bu dilimle yazılır; takvim daveti her katılımcıya kendi yerel saatinde görünür.",
+    fLocation: "Yer", fUrl: "Online bağlantı", fDesc: "Açıklama", fLang: "E-posta dili", fProgram: "Program", noProgram: "— Programsız —",
+    fInvite: "Davet metni (isteğe bağlı)", fReminder: "Hatırlatma metni (isteğe bağlı)", msgHint: "Boş bırakırsanız hazır metin kullanılır. {ad} yazılan yere katılımcının adı gelir.",
+    close: "Vazgeç", save: "Kaydet", saved: "Kaydedildi ✓",
+    timeChangeConfirm: "Tarih veya saat değişti. Davet edilen {n} kişinin yanıtı \"yanıt bekleniyor\"a dönecek ve hepsine güncelleme e-postası gidecek. Devam edilsin mi?",
+    updateConfirm: "Davet edilen {n} kişiye güncelleme e-postası gidecek (yanıtları korunur). Devam edilsin mi?",
+    updatedSent: "Güncelleme {n} kişiye gönderiliyor ✓",
+    edit: "Düzenle", addPeople: "Katılımcı ekle", invite: "Davet gönder ({n})", remind: "Hatırlat ({n})", cancel: "İptal et", del: "Sil", pdf: "Katılım listesi (PDF)",
+    inviteStarted: "Davetler gönderiliyor ✓", remindStarted: "Hatırlatmalar gönderiliyor ✓", cancelled: "Etkinlik iptal edildi ✓", deleted: "Silindi ✓",
+    deleteConfirm: "Etkinlik ve katılımcı listesi kalıcı olarak silinsin mi?",
+    removeConfirm: "{name} listeden çıkarılsın mı?", removeConfirmInvited: "{name} listeden çıkarılsın mı? Davet edildiği için etkinliği takviminden silen kısa bir bildirim alacak.",
+    inv_none: "Davet edilmedi", inv_queued: "Gönderiliyor…", inv_sent: "Davet edildi", inv_failed: "Gönderilemedi",
+    resp_pending: "Yanıt bekleniyor", resp_accepted: "Katılacak", resp_declined: "Katılamayacak",
+    att_: "—", att_attended: "Katıldı", att_absent: "Katılmadı", attAfter: "Etkinlik başlayınca işaretlenebilir",
+    copyLink: "Yanıt bağlantısını kopyala", copied: "Kopyalandı ✓", remove: "Çıkar",
+    sumLine: "{t} kişi · {a} katılacak · {d} katılamayacak · {att} katıldı",
+    sending: "{n} e-posta gönderiliyor…", reminders: "hatırlatma",
+    mentorsTitle: "Mentorlar", menteesTitle: "Mentee'ler", scopeNone: "Hiçbiri", scopeAllMentors: "Bütün aktif mentorlar",
+    scopeAllMentees: "Bütün aktif mentee'ler", scopePrograms: "Seçili programlardakiler", groupsTitle: "Mentee grupları",
+    peopleTitle: "Tek tek kişiler", peopleFilter: "Ada göre süz…", extraTitle: "Diğer e-posta adresleri",
+    reaches: "Bu seçim {n} kişiye ulaşıyor.", addToList: "Listeye ekle", addedN: "{n} kişi eklendi ✓ (davet için \"Davet gönder\"e basın)",
+    mentor: "Mentor", mentee: "Mentee", external: "Diğer",
+    cancelTitle: "Etkinliği iptal et", cancelReason: "İptal nedeni (isteğe bağlı, e-postada yazar)", cancelNotify: "Davet edilenlere iptal e-postası gönder", cancelGo: "İptal et",
+    reason: "İptal nedeni", place: "Yer", online: "Online", minutes: "dk",
+    pdfTitle: "Katılım listesi", pdfCols: ["Ad", "E-posta", "Tür", "Yanıt", "Not", "Katılım"],
+    err_title_required: "Etkinliğe bir başlık verin.", err_bad_date: "Geçerli bir tarih girin.", err_bad_time: "Geçerli bir başlangıç saati girin.",
+    err_bad_duration: "Süre 5 dakika ile 12 saat arasında olmalı.", err_bad_url: "Online bağlantı http:// veya https:// ile başlamalı.",
+    err_bad_timezone: "Saat dilimi tanınmadı.", err_cancel_first: "Davet gönderilmiş bir etkinliği silmeden önce iptal edin; böylece katılımcıların takvimleri güncellenir.",
+    err_nobody_to_invite: "Listedeki herkes zaten davet edildi.", err_nobody_to_remind: "Davet edilen herkes yanıt verdi.",
+    err_smtp_not_configured: "E-posta sunucusu ayarlanmamış.", err_started: "Etkinlik başladı.", err_bad_addresses: "Geçersiz adresler:",
+    loadFailed: "Yüklenemedi."
+  },
+  en: {
+    pageTitle: "Events", logout: "Log out", newEvent: "+ New event",
+    pageSub: "Group mentoring, coaching, trainings and online sessions. Participants get an e-mail with a calendar invitation and answer with their own link.",
+    smtpMissing: "The e-mail server is not set up, so invitations cannot be sent.",
+    upcoming: "Upcoming events", past: "Past and cancelled events", noUpcoming: "No upcoming events.", noPast: "No past events yet.",
+    thTitle: "Event", thWhen: "Date and time", thPeople: "Participants", thStatus: "Status", thName: "Name", thInvite: "Invitation",
+    thAnswer: "Answer", thAttendance: "Attendance", open: "Open",
+    type_group_mentoring: "Group mentoring", type_group_coaching: "Group coaching", type_training: "Training", type_online: "Online session", type_other: "Other",
+    st_scheduled: "Scheduled", st_cancelled: "Cancelled", st_past: "Held",
+    newTitle: "New event", editTitle: "Edit event", fTitle: "Title *", fType: "Type", fDate: "Date *", fTime: "Start time *",
+    fDuration: "Duration (minutes) *", fTz: "Time zone *", tzHint: "The e-mail writes the time in this zone; the calendar invitation shows each participant their own local time.",
+    fLocation: "Place", fUrl: "Online link", fDesc: "Description", fLang: "E-mail language", fProgram: "Programme", noProgram: "— No programme —",
+    fInvite: "Invitation text (optional)", fReminder: "Reminder text (optional)", msgHint: "Leave empty to use the built-in text. {ad} becomes the participant's name.",
+    close: "Cancel", save: "Save", saved: "Saved ✓",
+    timeChangeConfirm: "The date or time changed. The answers of the {n} invited people go back to \"waiting\" and they all get an update. Continue?",
+    updateConfirm: "The {n} invited people get an update (their answers stay). Continue?",
+    updatedSent: "Update going to {n} people ✓",
+    edit: "Edit", addPeople: "Add participants", invite: "Send invitations ({n})", remind: "Remind ({n})", cancel: "Cancel event", del: "Delete", pdf: "Attendance list (PDF)",
+    inviteStarted: "Invitations are being sent ✓", remindStarted: "Reminders are being sent ✓", cancelled: "Event cancelled ✓", deleted: "Deleted ✓",
+    deleteConfirm: "Delete the event and its participant list for good?",
+    removeConfirm: "Remove {name} from the list?", removeConfirmInvited: "Remove {name} from the list? As they were invited, they get a short notice that removes the event from their calendar.",
+    inv_none: "Not invited", inv_queued: "Sending…", inv_sent: "Invited", inv_failed: "Not sent",
+    resp_pending: "Waiting", resp_accepted: "Attending", resp_declined: "Not attending",
+    att_: "—", att_attended: "Attended", att_absent: "Absent", attAfter: "Can be recorded once the event has started",
+    copyLink: "Copy answer link", copied: "Copied ✓", remove: "Remove",
+    sumLine: "{t} people · {a} attending · {d} not attending · {att} attended",
+    sending: "{n} e-mails being sent…", reminders: "reminders",
+    mentorsTitle: "Mentors", menteesTitle: "Mentees", scopeNone: "None", scopeAllMentors: "All active mentors",
+    scopeAllMentees: "All active mentees", scopePrograms: "Those in the chosen programmes", groupsTitle: "Mentee groups",
+    peopleTitle: "Individual people", peopleFilter: "Filter by name…", extraTitle: "Other e-mail addresses",
+    reaches: "This selection reaches {n} people.", addToList: "Add to the list", addedN: "{n} added ✓ (press \"Send invitations\" to invite them)",
+    mentor: "Mentor", mentee: "Mentee", external: "Other",
+    cancelTitle: "Cancel the event", cancelReason: "Reason (optional, written in the e-mail)", cancelNotify: "Send a cancellation to the invited people", cancelGo: "Cancel event",
+    reason: "Reason", place: "Place", online: "Online", minutes: "min",
+    pdfTitle: "Attendance list", pdfCols: ["Name", "E-mail", "Type", "Answer", "Note", "Attendance"],
+    err_title_required: "Give the event a title.", err_bad_date: "Give a valid date.", err_bad_time: "Give a valid start time.",
+    err_bad_duration: "The duration must be between 5 minutes and 12 hours.", err_bad_url: "The online link must start with http:// or https://.",
+    err_bad_timezone: "Unknown time zone.", err_cancel_first: "Cancel an event people were invited to before deleting it, so their calendars are updated.",
+    err_nobody_to_invite: "Everyone on the list has already been invited.", err_nobody_to_remind: "Everyone invited has answered.",
+    err_smtp_not_configured: "The e-mail server is not set up.", err_started: "The event has started.", err_bad_addresses: "Invalid addresses:",
+    loadFailed: "Could not be loaded."
+  }
+};
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+if (!T[LANG]) LANG = "tr";
+const t = k => T[LANG][k] ?? T.tr[k] ?? k;
+const TYPES = ["group_mentoring", "group_coaching", "training", "online", "other"];
+
+async function api(path, options = {}) {
+  const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json" } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data.error || "Error"); e.data = data; throw e; }
+  return data;
+}
+function toast(msg, isErr) { const el = $("toast"); el.textContent = msg; el.className = "toast show" + (isErr ? " err" : ""); setTimeout(() => { el.className = "toast"; }, 2800); }
+const errText = e => { const d = e.data || {}; const m = (d.code && T[LANG]["err_" + d.code]) || e.message; return d.addresses ? `${m} ${d.addresses.join(", ")}` : m; };
+
+/** "Cumartesi, 10 Ekim 2026 · 14:00–15:30 (GMT+3) İstanbul" in the EVENT's time zone */
+function whenText(ev) {
+  const s = new Date(ev.startUtc), e = new Date(ev.endUtc), loc = LANG === "en" ? "en-GB" : "tr-TR";
+  const d = s.toLocaleDateString(loc, { timeZone: ev.timezone, weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const hm = x => x.toLocaleTimeString(loc, { timeZone: ev.timezone, hour: "2-digit", minute: "2-digit" });
+  return `${d} · ${hm(s)}–${hm(e)} ${MentorTimeZones.label(ev.timezone, LANG, s)}`;
+}
+
+let DATA = { events: [], defaultTimezone: "Europe/Istanbul" }, PROGRAMS = [], PEOPLE = { programs: [], groups: [], mentors: [], mentees: [] };
+let EDIT = null, DETAIL = null, POLL = null;
+
+function applyLang() {
+  document.documentElement.lang = LANG; document.title = t("pageTitle") + " — MentorOS"; $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  render();
+  if (DETAIL && $("dtModal").classList.contains("open")) renderDetail();
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { location.href = "/index.html"; };
+$("logoutBtn").onclick = async () => { await fetch("/company-logout", { method: "POST" }); location.href = "/login.html"; };
+
+function statusOf(ev) { return ev.status === "cancelled" ? "cancelled" : ev.started ? "past" : "scheduled"; }
+function row(ev) {
+  const st = statusOf(ev);
+  return `<tr>
+    <td><div class="name">${esc(ev.title)}</div><div class="email">${esc(t("type_" + ev.eventType))}</div></td>
+    <td style="font-size:13px">${esc(whenText(ev))}</td>
+    <td style="font-size:13px">${esc(t("sumLine").replace("{t}", ev.total).replace("{a}", ev.accepted).replace("{d}", ev.declined).replace("{att}", ev.attended))}
+      ${ev.sending ? `<div class="hint" style="margin:2px 0 0">${esc(t("sending").replace("{n}", ev.sending))}</div>` : ""}</td>
+    <td><span class="badge ${st}">${esc(t("st_" + st))}</span></td>
+    <td class="actions"><button class="sm" onclick="openDetail('${esc(ev.id)}')">${esc(t("open"))}</button></td></tr>`;
+}
+function render() {
+  $("smtpWarn").style.display = DATA.smtpConfigured === false ? "block" : "none";
+  const up = DATA.events.filter(e => statusOf(e) === "scheduled").sort((a, b) => a.startUtc.localeCompare(b.startUtc));
+  const past = DATA.events.filter(e => statusOf(e) !== "scheduled");
+  $("upRows").innerHTML = up.map(row).join(""); $("upEmpty").style.display = up.length ? "none" : "block";
+  $("pastRows").innerHTML = past.map(row).join(""); $("pastEmpty").style.display = past.length ? "none" : "block";
+}
+async function load() {
+  try { DATA = await api("/events"); } catch { toast(t("loadFailed"), true); }
+  render();
+  clearTimeout(POLL);
+  if (DATA.events.some(e => e.sending)) POLL = setTimeout(async () => { await load(); if (DETAIL && $("dtModal").classList.contains("open")) openDetail(DETAIL.id); }, 2500);
+}
+
+/* ---- event form ---- */
+function openEditor(ev) {
+  EDIT = ev || null;
+  $("edTitle").textContent = ev ? t("editTitle") : t("newTitle");
+  $("f_type").innerHTML = TYPES.map(x => `<option value="${x}">${esc(t("type_" + x))}</option>`).join("");
+  $("f_title").value = ev ? ev.title : ""; $("f_type").value = ev ? ev.eventType : "group_mentoring";
+  $("f_date").value = ev ? ev.eventDate : ""; $("f_time").value = ev ? ev.startTime : "10:00";
+  $("f_dur").value = ev ? ev.durationMinutes : 60;
+  $("f_tz").innerHTML = MentorTimeZones.options(LANG, ev ? ev.timezone : DATA.defaultTimezone);
+  $("f_loc").value = ev ? ev.location : ""; $("f_url").value = ev ? ev.onlineUrl : ""; $("f_desc").value = ev ? ev.description : "";
+  $("f_lang").value = ev ? ev.language : LANG;
+  $("progField").style.display = PROGRAMS.length ? "" : "none";
+  $("f_prog").innerHTML = `<option value="">${esc(t("noProgram"))}</option>` + PROGRAMS.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+  $("f_prog").value = ev ? (ev.programId || "") : "";
+  $("f_inv").value = ev ? ev.inviteMessage : ""; $("f_rem").value = ev ? ev.reminderMessage : "";
+  $("edError").textContent = "";
+  $("edModal").classList.add("open");
+}
+$("newBtn").onclick = () => openEditor(null);
+$("edClose").onclick = $("edCancel").onclick = () => {
+  $("edModal").classList.remove("open");
+  if (EDIT) openDetail(EDIT.id);          // back to the event it came from
+};
+$("edSave").onclick = async () => {
+  const body = { title: $("f_title").value, eventType: $("f_type").value, eventDate: $("f_date").value, startTime: $("f_time").value,
+    durationMinutes: Number($("f_dur").value), timezone: $("f_tz").value, location: $("f_loc").value, onlineUrl: $("f_url").value,
+    description: $("f_desc").value, language: $("f_lang").value, programId: $("f_prog").value,
+    inviteMessage: $("f_inv").value, reminderMessage: $("f_rem").value };
+  if (EDIT && EDIT.invitedCount) {
+    const timeChanged = ["eventDate", "startTime", "durationMinutes", "timezone"].some(k => String(body[k]) !== String(EDIT[k]));
+    const shown = timeChanged || ["title", "eventType", "location", "onlineUrl", "description"].some(k => String(body[k]).trim() !== String(EDIT[k]));
+    if (shown && !confirm(t(timeChanged ? "timeChangeConfirm" : "updateConfirm").replace("{n}", EDIT.invitedCount))) return;
+  }
+  try {
+    const d = EDIT ? await api(`/events/${EDIT.id}`, { method: "PUT", body: JSON.stringify(body) })
+                   : await api("/events", { method: "POST", body: JSON.stringify(body) });
+    $("edModal").classList.remove("open");
+    toast(d.notified ? t("updatedSent").replace("{n}", d.notified) : t("saved"));
+    await load(); openDetail(d.event.id);
+  } catch (e) { $("edError").textContent = errText(e); }
+};
+
+/* ---- event detail ---- */
+async function openDetail(id) {
+  try { DETAIL = await api(`/events/${id}`); } catch (e) { toast(errText(e), true); return; }
+  DETAIL.invitedCount = DETAIL.participants.filter(p => p.invitedAt).length;
+  renderDetail(); $("dtModal").classList.add("open");
+}
+window.openDetail = openDetail;
+function renderDetail() {
+  const ev = DETAIL, st = statusOf(ev), ps = ev.participants;
+  const notInvited = ps.filter(p => !p.invitedAt && !p.pendingMail).length;
+  const pending = ps.filter(p => p.invitedAt && p.response === "pending").length;
+  $("dtTitle").textContent = ev.title;
+  $("dtMeta").innerHTML = [
+    `<span class="badge ${st}">${esc(t("st_" + st))}</span> ${esc(t("type_" + ev.eventType))}`,
+    esc(whenText(ev)),
+    ev.location ? `${esc(t("place"))}: ${esc(ev.location)}` : "",
+    ev.onlineUrl ? `${esc(t("online"))}: <a href="${esc(ev.onlineUrl)}" target="_blank" rel="noopener">${esc(ev.onlineUrl)}</a>` : "",
+    ev.status === "cancelled" && ev.cancelReason ? `${esc(t("reason"))}: ${esc(ev.cancelReason)}` : ""
+  ].filter(Boolean).join("<br>");
+  const live = ev.status === "scheduled" && !ev.started;
+  $("dtActions").innerHTML = [
+    ev.status === "scheduled" ? `<button onclick="editCurrent()">${esc(t("edit"))}</button>` : "",
+    live ? `<button onclick="openPicker()">${esc(t("addPeople"))}</button>` : "",
+    live ? `<button class="primary" ${notInvited && DATA.smtpConfigured !== false ? "" : "disabled"} onclick="sendMail('invite')">${esc(t("invite").replace("{n}", notInvited))}</button>` : "",
+    live ? `<button ${pending && DATA.smtpConfigured !== false ? "" : "disabled"} onclick="sendMail('remind')">${esc(t("remind").replace("{n}", pending))}</button>` : "",
+    ps.length ? `<button onclick="attendancePdf()">${esc(t("pdf"))}</button>` : "",
+    ev.status === "scheduled" && !ev.started ? `<button class="danger" onclick="openCancel()">${esc(t("cancel"))}</button>` : "",
+    `<button class="danger" onclick="deleteEvent()">${esc(t("del"))}</button>`
+  ].filter(Boolean).join("");
+  const sending = ps.filter(p => p.pendingMail).length;
+  $("dtInfo").textContent = (sending ? t("sending").replace("{n}", sending) + " " : "") +
+    t("sumLine").replace("{t}", ps.length).replace("{a}", ps.filter(p => p.response === "accepted").length)
+      .replace("{d}", ps.filter(p => p.response === "declined").length).replace("{att}", ps.filter(p => p.attendance === "attended").length);
+  $("dtRows").innerHTML = ps.map(p => {
+    const inv = p.pendingMail ? "queued" : p.mailStatus === "failed" && !p.invitedAt ? "failed" : p.invitedAt ? "sent" : "none";
+    return `<tr>
+      <td><div class="name">${esc(p.fullName || "—")}</div><div class="email">${esc(p.email)} · ${esc(t(p.personType))}</div></td>
+      <td style="font-size:13px">${esc(t("inv_" + inv))}${p.reminderCount ? ` · ${p.reminderCount} ${esc(t("reminders"))}` : ""}
+        ${p.mailStatus === "failed" ? `<div class="hint" style="margin:0;color:var(--err)">${esc(p.mailError)}</div>` : ""}</td>
+      <td style="font-size:13px"><span class="r-${p.response}">${esc(t("resp_" + p.response))}</span>${p.responseNote ? `<div class="hint" style="margin:0">“${esc(p.responseNote)}”</div>` : ""}</td>
+      <td>${ev.started && ev.status === "scheduled"
+        ? `<select class="att" onchange="setAttendance('${esc(p.id)}', this.value)">${["", "attended", "absent"].map(v => `<option value="${v}"${p.attendance === v ? " selected" : ""}>${esc(t("att_" + v))}</option>`).join("")}</select>`
+        : `<span class="hint" style="margin:0" title="${esc(t("attAfter"))}">${esc(t("att_" + p.attendance))}</span>`}</td>
+      <td class="actions" style="white-space:nowrap">
+        <button class="sm" onclick="copyLink('${esc(p.answerUrl)}')">${esc(t("copyLink"))}</button>
+        ${live ? `<button class="sm danger" onclick="removeParticipant('${esc(p.id)}')">${esc(t("remove"))}</button>` : ""}</td></tr>`;
+  }).join("");
+}
+$("dtClose").onclick = () => { $("dtModal").classList.remove("open"); load(); };
+// The detail window would cover the form: close it, the form reopens it.
+window.editCurrent = () => { $("dtModal").classList.remove("open"); openEditor(DETAIL); };
+window.copyLink = async url => { try { await navigator.clipboard.writeText(url); toast(t("copied")); } catch { prompt("", url); } };
+window.sendMail = async kind => {
+  try { await api(`/events/${DETAIL.id}/${kind}`, { method: "POST" }); toast(t(kind === "invite" ? "inviteStarted" : "remindStarted")); await load(); openDetail(DETAIL.id); }
+  catch (e) { toast(errText(e), true); }
+};
+window.setAttendance = async (pid, value) => {
+  try { await api(`/events/${DETAIL.id}/participants/${pid}/attendance`, { method: "PATCH", body: JSON.stringify({ attendance: value }) });
+        const p = DETAIL.participants.find(x => x.id === pid); if (p) p.attendance = value; renderDetail(); }
+  catch (e) { toast(errText(e), true); }
+};
+window.removeParticipant = async pid => {
+  const p = DETAIL.participants.find(x => x.id === pid);
+  if (!p || !confirm(t(p.invitedAt ? "removeConfirmInvited" : "removeConfirm").replace("{name}", p.fullName || p.email))) return;
+  try { await api(`/events/${DETAIL.id}/participants/${pid}`, { method: "DELETE" }); await openDetail(DETAIL.id); load(); }
+  catch (e) { toast(errText(e), true); }
+};
+window.deleteEvent = async () => {
+  if (!confirm(t("deleteConfirm"))) return;
+  try { await api(`/events/${DETAIL.id}`, { method: "DELETE" }); $("dtModal").classList.remove("open"); toast(t("deleted")); load(); }
+  catch (e) { toast(errText(e), true); }
+};
+window.openCancel = () => { $("cn_reason").value = ""; $("cn_notify").checked = true; $("cnModal").classList.add("open"); };
+$("cnClose").onclick = () => $("cnModal").classList.remove("open");
+$("cnGo").onclick = async () => {
+  try { await api(`/events/${DETAIL.id}/cancel`, { method: "POST", body: JSON.stringify({ reason: $("cn_reason").value, notify: $("cn_notify").checked }) });
+        $("cnModal").classList.remove("open"); toast(t("cancelled")); await load(); openDetail(DETAIL.id); }
+  catch (e) { toast(errText(e), true); }
+};
+window.attendancePdf = () => {
+  const ev = DETAIL;
+  MentorOSPrint.printReport({
+    landscape: true, lang: LANG, title: `${t("pdfTitle")} — ${ev.title}`, subtitle: whenText(ev),
+    sections: [{ table: { columns: t("pdfCols"), rows: ev.participants.map(p => [p.fullName || "", p.email, t(p.personType),
+      t("resp_" + p.response), p.responseNote || "", t("att_" + p.attendance)]) } }],
+    footer: `MentorOS - ${t("pdfTitle")}`
+  });
+};
+
+/* ---- add participants (same picker as announcements) ---- */
+function selectionFromForm() {
+  const ticked = box => [...$(box).querySelectorAll("input:checked")].map(i => i.value);
+  const people = ticked("peopleList");
+  return { mentors: $("s_mentors").value, mentorProgramIds: ticked("mentorPrograms"), mentees: $("s_mentees").value,
+    menteeProgramIds: ticked("menteePrograms"), groupIds: ticked("groupChecks"),
+    mentorIds: people.filter(v => v.startsWith("mentor:")).map(v => v.slice(7)),
+    menteeIds: people.filter(v => v.startsWith("mentee:")).map(v => v.slice(7)), extra: $("f_extra").value };
+}
+function fillChecks(box, items) { $(box).innerHTML = items.map(x => `<label><input type="checkbox" value="${esc(x.value)}"> ${esc(x.label)}</label>`).join(""); }
+function renderScopes() {
+  $("mentorPrograms").style.display = $("s_mentors").value === "programs" ? "" : "none";
+  $("menteePrograms").style.display = $("s_mentees").value === "programs" ? "" : "none";
+}
+function renderPeople() {
+  const f = $("peopleFilter").value.trim().toLocaleLowerCase("tr");
+  const keep = [...$("peopleList").querySelectorAll("input:checked")].map(i => i.value);
+  const all = [...PEOPLE.mentors.map(m => ({ v: "mentor:" + m.id, l: `${m.fullName} · ${t("mentor")}` })),
+               ...PEOPLE.mentees.map(m => ({ v: "mentee:" + m.id, l: `${m.fullName} · ${t("mentee")}` }))];
+  $("peopleList").innerHTML = all.map(p => {
+    const hidden = f && !p.l.toLocaleLowerCase("tr").includes(f) && !keep.includes(p.v);
+    return `<label style="${hidden ? "display:none" : ""}"><input type="checkbox" value="${esc(p.v)}"${keep.includes(p.v) ? " checked" : ""}> ${esc(p.l)}</label>`;
+  }).join("");
+}
+let countTimer = null, PICK_COUNT = 0;
+function refreshCount() {
+  clearTimeout(countTimer);
+  countTimer = setTimeout(async () => {
+    try {
+      const d = await api("/announcements/preview-recipients", { method: "POST", body: JSON.stringify({ selection: selectionFromForm() }) });
+      $("countText").textContent = t("reaches").replace("{n}", d.count); $("pkError").textContent = ""; PICK_COUNT = d.count;
+    } catch (e) { $("countText").textContent = "—"; $("pkError").textContent = errText(e); PICK_COUNT = 0; }
+  }, 250);
+}
+window.openPicker = async () => {
+  try { PEOPLE = await api("/announcements/people"); } catch { /* keep the last list */ }
+  $("s_mentors").value = "none"; $("s_mentees").value = "none"; $("f_extra").value = ""; $("peopleFilter").value = "";
+  const progs = PEOPLE.programs.map(p => ({ value: p.id, label: p.name }));
+  [...$("s_mentors").options, ...$("s_mentees").options].forEach(o => { if (o.value === "programs") o.hidden = !progs.length; });
+  fillChecks("mentorPrograms", progs); fillChecks("menteePrograms", progs);
+  $("groupsBlock").style.display = PEOPLE.groups.length ? "" : "none";
+  fillChecks("groupChecks", PEOPLE.groups.map(g => ({ value: g.id, label: `${g.name} (${g.memberCount})` })));
+  $("peopleList").innerHTML = ""; renderPeople(); renderScopes(); refreshCount();
+  $("pkModal").classList.add("open");
+};
+$("pkClose").onclick = () => $("pkModal").classList.remove("open");
+["s_mentors", "s_mentees"].forEach(id => $(id).onchange = () => { renderScopes(); refreshCount(); });
+["mentorPrograms", "menteePrograms", "groupChecks", "peopleList"].forEach(id => $(id).onchange = refreshCount);
+$("f_extra").oninput = refreshCount;
+$("peopleFilter").oninput = renderPeople;
+$("pkAdd").onclick = async () => {
+  try {
+    const d = await api(`/events/${DETAIL.id}/participants`, { method: "POST", body: JSON.stringify({ selection: selectionFromForm() }) });
+    $("pkModal").classList.remove("open"); toast(t("addedN").replace("{n}", d.added)); await openDetail(DETAIL.id); load();
+  } catch (e) { $("pkError").textContent = errText(e); }
+};
+
+(async function init() {
+  applyLang();
+  try { PROGRAMS = (await api("/programs")).filter(p => !p.archived); } catch { PROGRAMS = []; }
+  await load();
+})();
+</script>
+<script src="/assets/company-logo.js" data-staff></script>
+</body>
+</html>

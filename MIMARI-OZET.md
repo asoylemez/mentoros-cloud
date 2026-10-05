@@ -92,6 +92,14 @@ kaydedilir. Ad, e-posta, KVKK onayı, mentor kapasitesi ve uygunluğu ile
 mentee'nin gelişim ihtiyacı kilitlidir. Zorunlu alanlar sunucuda da
 denetlenir; kurallar tek bir dosyadadır (`public/assets/formSchema.js`).
 
+**Etkinlikler** (grup mentorluğu, eğitim, online oturum): katılımcılara
+takvim davetli (.ics) e-posta gider; yanıtlarını kendi bağlantılarıyla
+verirler. Her etkinliğin kendi saat dilimi vardır (kuruluşun varsayılan
+dilimiyle başlar); takvim dosyası saati UTC olarak taşır, böylece her
+katılımcının takvimi kendi yerel saatini gösterir. Davetten sonra
+değişiklik güncelleme olarak gider; tarih veya saat değişirse yanıtlar
+sıfırlanır. Etkinlik başladıktan sonra İK gerçek katılımı işaretler.
+
 **Raporlar** (Yönetim Raporu, Anket Sonuçları) yalnızca kuruluşun kendi
 verisinden ve yalnızca İK oturumunda üretilir; yapay zekâya gitmez.
 Toplantılar yalnızca tarih ve süreleriyle yer alır. Anket cevapları ekranda

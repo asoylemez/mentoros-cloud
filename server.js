@@ -78,6 +78,7 @@ app.get("/announcements.html",  staffAuth.serveStaffPage("announcements.html"));
 app.get("/reports.html",        staffAuth.serveStaffPage("reports.html"));
 app.get("/company_settings.html", staffAuth.serveStaffPage("company_settings.html"));
 app.get("/registration_forms.html", staffAuth.serveStaffPage("registration_forms.html"));
+app.get("/events.html",         staffAuth.serveStaffPage("events.html"));
 
 // --- 4. Super admin (tedarikci) ---
 //
@@ -148,6 +149,7 @@ app.use(require("./routes/announcements")); // announcements
 app.use(require("./routes/reports"));    // reports
 app.use(require("./routes/logo"));       // organisation logo
 app.use(require("./routes/registrationForms")); // registration form settings
+app.use(require("./routes/events"));     // events
 app.use(require("./routes/matching"));
 app.use(require("./routes/mentorships"));
 app.use(require("./routes/email"));
@@ -252,6 +254,7 @@ function lanAddress() {
 app.listen(config.port, "0.0.0.0", () => {
   // Announcements a restart interrupted carry on sending.
   require("./lib/announcements").resumeUnfinished();
+  require("./lib/events").resumeUnfinished();         // event mails, too
 
   const ai = settings.getAiConfigPublic();
   const lan = lanAddress();

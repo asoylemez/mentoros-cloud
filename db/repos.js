@@ -75,6 +75,12 @@ const companies = {
     return companies.get(id);
   },
 
+  /** The time zone a new event starts with (IANA name). */
+  setDefaultTimezone(id, tz) {
+    db.prepare(`UPDATE companies SET default_timezone = ?, updated_at = ? WHERE company_id = ?`).run(tz, now(), slugify(id));
+    return companies.get(id);
+  },
+
   /** The organisation's reply address for announcements ('' = none). */
   setReplyTo(id, email) {
     db.prepare(`UPDATE companies SET reply_to = ?, updated_at = ? WHERE company_id = ?`)
@@ -104,7 +110,7 @@ const companies = {
 
   get(companyId) {
     const row = db.prepare(
-      `SELECT company_id, login_name, name, domain, status, expires_at, reply_to,
+      `SELECT company_id, login_name, name, domain, status, expires_at, reply_to, default_timezone,
               created_at, updated_at, (password_enc <> '') AS has_password
          FROM companies WHERE company_id = ?`
     ).get(slugify(companyId));
@@ -668,6 +674,7 @@ const mentors = {
 
     // Their rows in announcement recipient lists go too (KVKK).
     db.prepare(`DELETE FROM announcement_recipients WHERE person_type = 'mentor' AND person_id = ?`).run(id);
+    db.prepare(`DELETE FROM event_participants WHERE person_type = 'mentor' AND person_id = ?`).run(id);
     db.prepare(`DELETE FROM mentors WHERE id = ?`).run(id);
     return mentor;
   },
@@ -797,6 +804,7 @@ const mentees = {
       db.prepare(`DELETE FROM checkins WHERE member_id = ?`).run(id);
       // and their rows in announcement recipient lists
       db.prepare(`DELETE FROM announcement_recipients WHERE person_type = 'mentee' AND person_id = ?`).run(id);
+      db.prepare(`DELETE FROM event_participants WHERE person_type = 'mentee' AND person_id = ?`).run(id);
 
       db.prepare(`
         UPDATE mentorships
