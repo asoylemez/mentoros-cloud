@@ -464,6 +464,68 @@
       user-select: none;
     }
 
+    /* ---------- Mentor availability calendar ---------- */
+
+    .av-summary { color: #374151; font-size: 13px; margin-top: 8px; }
+    .av-tabs { display: flex; gap: 6px; margin: 14px 0 12px; border-bottom: 1px solid #e5e7eb; }
+    .av-tab {
+      background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0;
+      padding: 8px 12px; color: #6b7280; font-weight: 600; width: auto; cursor: pointer;
+    }
+    .av-tab.active { color: #1a2b5e; border-bottom-color: #1a2b5e; }
+    .av-month { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .av-month strong { color: #1a2b5e; font-size: 15px; }
+    .av-nav {
+      width: 34px; height: 34px; padding: 0; border-radius: 8px; border: 1px solid #d1d5db;
+      background: #fff; color: #1a2b5e; font-size: 16px; cursor: pointer;
+    }
+    .av-nav:disabled { opacity: .35; cursor: default; }
+    .av-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .av-wd { font-size: 11.5px; color: #6b7280; text-align: center; padding: 2px 0 4px; font-weight: 600; }
+    .av-day {
+      aspect-ratio: 1 / 1; min-height: 38px; border: 1px solid #e5e7eb; border-radius: 8px;
+      background: #fff; padding: 4px; cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; font-size: 13px; color: #111827; width: auto;
+    }
+    .av-day:hover:not(:disabled) { border-color: #1a2b5e; }
+    .av-day:disabled { color: #c4c8d0; background: #fafafa; cursor: default; }
+    .av-day.blank { visibility: hidden; }
+    .av-day.has { background: #e7f4ec; border-color: #b7dfc5; color: #1f5f39; font-weight: 700; }
+    .av-day.sel { outline: 2px solid #1a2b5e; outline-offset: 1px; }
+    .av-day.today { box-shadow: inset 0 -3px 0 #b5651d; }
+    .av-count { font-size: 10px; font-weight: 600; line-height: 1; margin-top: 2px; }
+    .av-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin-top: 8px; }
+    .av-slot {
+      border: 1px solid #d1d5db; border-radius: 8px; background: #fff; padding: 8px 4px;
+      font-size: 12.5px; cursor: pointer; color: #374151; width: auto; font-variant-numeric: tabular-nums;
+    }
+    .av-slot:hover:not(:disabled) { border-color: #1a2b5e; }
+    .av-slot.on { background: #1a2b5e; border-color: #1a2b5e; color: #fff; font-weight: 600; }
+    .av-slot.weekly { background: #2f7d4f; border-color: #2f7d4f; color: #fff; font-weight: 600; cursor: default; }
+    .av-dayhead { margin-top: 16px; font-weight: 700; color: #1a2b5e; font-size: 14px; }
+    .av-note { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.5; }
+    .av-week { overflow-x: auto; }
+    .av-week table { border-collapse: separate; border-spacing: 4px; min-width: 640px; }
+    .av-week th { font-size: 11.5px; color: #6b7280; font-weight: 600; text-align: center; padding: 2px; }
+    .av-week th.day { text-align: left; padding-right: 8px; white-space: nowrap; color: #374151; }
+    .av-week td button {
+      width: 42px; height: 30px; padding: 0; border: 1px solid #d1d5db; border-radius: 6px;
+      background: #fff; cursor: pointer;
+    }
+    /* weekly marks use the "every week" colour of the legend */
+    .av-week td button.on { background: #2f7d4f; border-color: #2f7d4f; }
+    .av-week td button:hover { border-color: #1a2b5e; }
+    .av-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+    .av-actions button { width: auto; }
+    .av-dirty { color: #96601d; font-size: 12.5px; }
+    .av-msg { font-size: 12.5px; }
+    .av-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #6b7280; margin-top: 10px; }
+    .av-legend span::before {
+      content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px;
+      margin-right: 5px; vertical-align: -1px; border: 1px solid #2f7d4f; background: #2f7d4f;
+    }
+    .av-legend span.l-date::before { background: #1a2b5e; border-color: #1a2b5e; }
+
     .guide-toggle {
       font-size: 22px;
       font-weight: 700;
@@ -724,6 +786,36 @@
             </div>
           </section>
 
+          <section class="card" id="availCard">
+            <div class="guide-header" onclick="toggleAvail()" role="button" tabindex="0"
+                 aria-controls="availBody" aria-expanded="false" id="availHead"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAvail()}">
+              <h2 data-i18n="availTitle" style="margin:0">Mentor Availability</h2>
+              <span class="guide-toggle" id="availToggle">+</span>
+            </div>
+            <p class="guide-intro" data-i18n="availIntro">
+              The mentor marks the days and times that suit them for a meeting. Times are Istanbul time.
+            </p>
+            <div class="av-summary" id="availSummary"></div>
+
+            <div id="availBody" hidden>
+              <div class="av-tabs" role="tablist">
+                <button type="button" class="av-tab active" data-avtab="calendar" onclick="setAvailTab('calendar')" data-i18n="availTabCalendar">Calendar</button>
+                <button type="button" class="av-tab" data-avtab="weekly" onclick="setAvailTab('weekly')" data-i18n="availTabWeekly">Weekly repeat</button>
+              </div>
+              <div id="availContent"></div>
+              <div class="av-legend">
+                <span data-i18n="availLegendWeekly">Every week</span>
+                <span class="l-date" data-i18n="availLegendDate">This date only</span>
+              </div>
+              <div class="av-actions">
+                <button type="button" id="availSave" class="btn-primary" onclick="saveAvailability()" data-i18n="availSave">Save availability</button>
+                <span class="av-dirty" id="availDirty"></span>
+                <span class="av-msg" id="availMsg"></span>
+              </div>
+            </div>
+          </section>
+
           <!-- Announcements sent to EVERYONE in this workspace (an
                announcement to one side only stays in e-mail). -->
           <section class="card" id="announcementsCard" hidden>
@@ -968,6 +1060,25 @@
         saving: "Saving...",
         meetingHistory: "Meeting History",
         announcements: "Announcements",
+        availTitle: "Mentor Availability",
+        availIntro: "The mentor marks the days and times that suit them for a meeting. Times are Istanbul time.",
+        availTabCalendar: "Calendar",
+        availTabWeekly: "Weekly repeat",
+        availLegendWeekly: "Every week",
+        availLegendDate: "This date only",
+        availSave: "Save availability",
+        availSaving: "Saving...",
+        availSaved: "Availability saved.",
+        availSaveFailed: "Availability could not be saved.",
+        availUnsaved: "Unsaved changes",
+        availNone: "The mentor has not marked any availability yet.",
+        availSummary: "Available on {d} upcoming day(s) in the next 4 weeks · last updated {u}",
+        availPickDay: "Choose a day in the calendar to mark its times.",
+        availWeeklyNote: "Times in green come from the weekly repeat; change them on the Weekly repeat tab.",
+        availWeeklyHelp: "Mark the times that suit the mentor every week.",
+        availPrev: "Previous month",
+        availNext: "Next month",
+        availLeave: "Unsaved availability changes will be lost.",
         copyWorkspaceLink: "Copy Workspace Link",
         workspaceId: "Workspace ID",
         workspaceLinkCopied: "Workspace link copied.",
@@ -1064,6 +1175,25 @@
         saving: "Kaydediliyor...",
         meetingHistory: "Toplantı Geçmişi",
         announcements: "Duyurular",
+        availTitle: "Mentorun Uygun Olduğu Zamanlar",
+        availIntro: "Mentor, toplantı için uygun olduğu günleri ve saatleri işaretler. Saatler İstanbul saatidir.",
+        availTabCalendar: "Takvim",
+        availTabWeekly: "Haftalık tekrar",
+        availLegendWeekly: "Her hafta",
+        availLegendDate: "Yalnızca bu tarih",
+        availSave: "Uygunluğu kaydet",
+        availSaving: "Kaydediliyor...",
+        availSaved: "Uygunluk kaydedildi.",
+        availSaveFailed: "Uygunluk kaydedilemedi.",
+        availUnsaved: "Kaydedilmemiş değişiklikler var",
+        availNone: "Mentor henüz uygun zaman işaretlemedi.",
+        availSummary: "Önümüzdeki 4 haftada {d} gün uygun · son güncelleme {u}",
+        availPickDay: "Saatlerini işaretlemek için takvimden bir gün seçin.",
+        availWeeklyNote: "Yeşil saatler haftalık tekrardan gelir; Haftalık tekrar sekmesinden değiştirin.",
+        availWeeklyHelp: "Mentorun her hafta uygun olduğu saatleri işaretleyin.",
+        availPrev: "Önceki ay",
+        availNext: "Sonraki ay",
+        availLeave: "Kaydedilmemiş uygunluk değişiklikleri kaybolacak.",
         copyWorkspaceLink: "Çalışma Alanı Linkini Kopyala",
         workspaceId: "Çalışma Alanı ID",
         workspaceLinkCopied: "Çalışma alanı linki kopyalandı.",
@@ -1133,6 +1263,9 @@
       // [data-i18n] taşıyan elemanları çevirir; rehber metinleri guides.js'ten
       // geldiği için burada ayrıca yenilenmesi gerekir.
       renderGuide();
+      // calendar texts follow the language (at start-up the calendar code
+      // further down is not initialised yet; setAvailability draws it then)
+      try { renderAvailability(); } catch { /* drawn by setAvailability */ }
 
       if (mentorshipData) {
         renderWorkspace(mentorshipData);
@@ -1429,6 +1562,7 @@
         }
 
         mentorshipData = await response.json();
+        setAvailability(mentorshipData.mentorAvailability);   // the mentor's free hours
 
         // Firma kodu artik linkte tasinmiyor; iliski verisinden okunur.
         COMPANY_ID = mentorshipData.companyId || COMPANY_ID;
@@ -1785,6 +1919,204 @@
     }
 
     applyLanguage();
+    /* ==================================================================
+       MENTOR AVAILABILITY  (stored on the mentor; lib/meetingSlots.js)
+
+       One-hour slots from 08:00 to 20:00 (start hours 8..19), Istanbul
+       time. A day is available through the weekly repeat OR a mark on
+       that date. Nobody books a slot here - it only shows availability.
+       ================================================================== */
+
+    const AV_HOURS = Array.from({ length: 12 }, (_, i) => 8 + i);
+    let AV = { weekly: {}, dates: {} };
+    let AV_SAVED = JSON.stringify({ weekly: [], dates: [] });
+    let AV_UPDATED = null;
+    let avTab = "calendar";
+    let avMonth = null;              // "YYYY-MM"
+    let avSelected = null;           // "YYYY-MM-DD"
+
+    const pad2 = n => String(n).padStart(2, "0");
+    const avToday = () => new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+    const avIsoWeekday = ds => ((new Date(ds + "T00:00:00Z").getUTCDay() + 6) % 7) + 1;
+    const avLocale = () => (currentLanguage === "tr" ? "tr-TR" : "en-GB");
+    const avSlotLabel = h => `${pad2(h)}:00–${pad2(h + 1)}:00`;
+    // Key order must not matter: marking days in a different order is not a change.
+    const avSorted = obj => Object.keys(obj).sort().map(k => [k, obj[k]]);
+    const avCanonical = () => JSON.stringify({ weekly: avSorted(AV.weekly), dates: avSorted(AV.dates) });
+    const avDirty = () => avCanonical() !== AV_SAVED;
+
+    function avHoursFor(ds) {
+      const weekly = AV.weekly[avIsoWeekday(ds)] || [];
+      const dated = AV.dates[ds] || [];
+      return { weekly, dated, all: [...new Set([...weekly, ...dated])] };
+    }
+
+    function setAvailability(data) {
+      AV = { weekly: {}, dates: {} };
+      for (const [k, v] of Object.entries((data && data.weekly) || {})) AV.weekly[k] = [...v];
+      for (const [k, v] of Object.entries((data && data.dates) || {})) AV.dates[k] = [...v];
+      AV_SAVED = avCanonical();
+      AV_UPDATED = (data && data.updatedAt) || null;
+      if (!avMonth) avMonth = avToday().slice(0, 7);
+      renderAvailability();
+    }
+
+    function renderAvailSummary() {
+      const el = document.getElementById("availSummary");
+      if (!el) return;
+      const today = avToday();
+      let days = 0;
+      for (let i = 0; i < 28; i++) {
+        const ds = new Date(Date.parse(today + "T00:00:00Z") + i * 86400000).toISOString().slice(0, 10);
+        if (avHoursFor(ds).all.length) days++;
+      }
+      if (!days) { el.textContent = t("availNone"); return; }
+      const when = AV_UPDATED
+        ? new Date(AV_UPDATED).toLocaleDateString(avLocale(), { day: "numeric", month: "short", year: "numeric" })
+        : "—";
+      el.textContent = t("availSummary").replace("{d}", days).replace("{u}", when);
+    }
+
+    function renderAvailability() {
+      renderAvailSummary();
+      const box = document.getElementById("availContent");
+      if (!box || document.getElementById("availBody").hidden) return;
+      document.querySelectorAll(".av-tab").forEach(b => b.classList.toggle("active", b.dataset.avtab === avTab));
+      box.innerHTML = avTab === "weekly" ? avWeeklyHtml() : avCalendarHtml();
+      document.getElementById("availDirty").textContent = avDirty() ? t("availUnsaved") : "";
+    }
+
+    function avCalendarHtml() {
+      const today = avToday();
+      const [y, m] = avMonth.split("-").map(Number);
+      const first = `${y}-${pad2(m)}-01`;
+      const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const lead = avIsoWeekday(first) - 1;
+      const title = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(avLocale(), { month: "long", year: "numeric", timeZone: "UTC" });
+      const canPrev = avMonth > today.slice(0, 7);
+
+      const wd = Array.from({ length: 7 }, (_, i) =>
+        new Date(Date.UTC(2024, 0, 1 + i)).toLocaleDateString(avLocale(), { weekday: "short", timeZone: "UTC" }));
+
+      let cells = wd.map(d => `<div class="av-wd">${escapeHtml(d)}</div>`).join("");
+      for (let i = 0; i < lead; i++) cells += `<button type="button" class="av-day blank" tabindex="-1" aria-hidden="true"></button>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${y}-${pad2(m)}-${pad2(d)}`;
+        const past = ds < today;
+        const n = past ? 0 : avHoursFor(ds).all.length;
+        const cls = ["av-day", n ? "has" : "", ds === avSelected ? "sel" : "", ds === today ? "today" : ""].join(" ");
+        cells += `<button type="button" class="${cls}" ${past ? "disabled" : ""} onclick="avPick('${ds}')"
+                    aria-pressed="${ds === avSelected}" aria-label="${escapeHtml(new Date(ds + "T00:00:00Z").toLocaleDateString(avLocale(), { day: "numeric", month: "long", weekday: "long", timeZone: "UTC" }))}${n ? " – " + n : ""}">
+                    ${d}${n ? `<span class="av-count">${n}</span>` : ""}</button>`;
+      }
+
+      let day = `<div class="av-note">${escapeHtml(t("availPickDay"))}</div>`;
+      if (avSelected) {
+        const h = avHoursFor(avSelected);
+        const head = new Date(avSelected + "T00:00:00Z").toLocaleDateString(avLocale(), { day: "numeric", month: "long", year: "numeric", weekday: "long", timeZone: "UTC" });
+        day = `<div class="av-dayhead">${escapeHtml(head)}</div><div class="av-slots">` +
+          AV_HOURS.map(hr => {
+            const weekly = h.weekly.includes(hr);
+            const on = h.dated.includes(hr);
+            return `<button type="button" class="av-slot ${weekly ? "weekly" : on ? "on" : ""}"
+                      ${weekly ? `disabled title="${escapeHtml(t("availLegendWeekly"))}"` : `onclick="avToggleDate(${hr})"`}
+                      aria-pressed="${weekly || on}">${avSlotLabel(hr)}</button>`;
+          }).join("") + `</div>` +
+          (h.weekly.length ? `<div class="av-note">${escapeHtml(t("availWeeklyNote"))}</div>` : "");
+      }
+
+      return `<div class="av-month">
+          <button type="button" class="av-nav" onclick="avShift(-1)" ${canPrev ? "" : "disabled"} aria-label="${escapeHtml(t("availPrev"))}">‹</button>
+          <strong>${escapeHtml(title)}</strong>
+          <button type="button" class="av-nav" onclick="avShift(1)" aria-label="${escapeHtml(t("availNext"))}">›</button>
+        </div>
+        <div class="av-grid">${cells}</div>${day}`;
+    }
+
+    function avWeeklyHtml() {
+      const head = AV_HOURS.map(h => `<th>${pad2(h)}</th>`).join("");
+      let rows = "";
+      for (let d = 1; d <= 7; d++) {
+        const name = new Date(Date.UTC(2024, 0, d)).toLocaleDateString(avLocale(), { weekday: "long", timeZone: "UTC" });
+        const set = AV.weekly[d] || [];
+        rows += `<tr><th class="day">${escapeHtml(name)}</th>` + AV_HOURS.map(h =>
+          `<td><button type="button" class="${set.includes(h) ? "on" : ""}" onclick="avToggleWeekly(${d},${h})"
+                aria-pressed="${set.includes(h)}" aria-label="${escapeHtml(name)} ${avSlotLabel(h)}"
+                title="${avSlotLabel(h)}"></button></td>`).join("") + `</tr>`;
+      }
+      return `<div class="av-note" style="margin:0 0 8px">${escapeHtml(t("availWeeklyHelp"))}</div>
+        <div class="av-week"><table><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+
+    function toggleAvail() {
+      const body = document.getElementById("availBody");
+      body.hidden = !body.hidden;
+      document.getElementById("availToggle").textContent = body.hidden ? "+" : "\u2212";
+      document.getElementById("availHead").setAttribute("aria-expanded", String(!body.hidden));
+      renderAvailability();
+    }
+
+    function setAvailTab(tab) { avTab = tab; renderAvailability(); }
+
+    function avShift(delta) {
+      const [y, m] = avMonth.split("-").map(Number);
+      const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+      const next = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`;
+      if (next < avToday().slice(0, 7)) return;
+      avMonth = next;
+      renderAvailability();
+    }
+
+    function avPick(ds) { avSelected = ds; renderAvailability(); }
+
+    function avToggleDate(h) {
+      if (!avSelected) return;
+      const set = new Set(AV.dates[avSelected] || []);
+      set.has(h) ? set.delete(h) : set.add(h);
+      if (set.size) AV.dates[avSelected] = [...set].sort((a, b) => a - b);
+      else delete AV.dates[avSelected];
+      renderAvailability();
+    }
+
+    function avToggleWeekly(day, h) {
+      const set = new Set(AV.weekly[day] || []);
+      set.has(h) ? set.delete(h) : set.add(h);
+      if (set.size) AV.weekly[day] = [...set].sort((a, b) => a - b);
+      else delete AV.weekly[day];
+      renderAvailability();
+    }
+
+    async function saveAvailability() {
+      const btn = document.getElementById("availSave");
+      const msg = document.getElementById("availMsg");
+      btn.disabled = true;
+      btn.textContent = t("availSaving");
+      msg.textContent = "";
+      try {
+        const res = await fetch(`${API_BASE_URL}/public/workspace/${mentorshipId}/availability?token=${ACCESS_TOKEN}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(AV)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.status);
+        setAvailability(data.mentorAvailability);
+        if (mentorshipData) mentorshipData.mentorAvailability = data.mentorAvailability;
+        msg.style.color = "#2f7d4f";
+        msg.textContent = t("availSaved");
+      } catch {
+        msg.style.color = "#9b2c2c";
+        msg.textContent = t("availSaveFailed");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = t("availSave");
+      }
+    }
+
+    window.addEventListener("beforeunload", e => {
+      if (avDirty()) { e.preventDefault(); e.returnValue = t("availLeave"); }
+    });
+
     loadWorkspace();
     loadAnnouncements();
 

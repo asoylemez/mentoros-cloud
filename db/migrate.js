@@ -187,6 +187,17 @@ function run() {
   migrateAnnouncementAttachments();
   migrateCompanyLogos();
   migrateEvents();
+  migrateMeetingSlots();
+}
+
+/**
+ * MENTOR MEETING AVAILABILITY (from v28; lib/meetingSlots.js): stored on
+ * the MENTOR, so every workspace of this mentor shows the same calendar.
+ */
+function migrateMeetingSlots() {
+  if (columnExists("mentors", "meeting_slots")) return;
+  db.exec(`ALTER TABLE mentors ADD COLUMN meeting_slots TEXT NOT NULL DEFAULT ''`);
+  console.log("  migration: mentors.meeting_slots added");
 }
 
 /**

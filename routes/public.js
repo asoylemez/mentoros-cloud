@@ -133,7 +133,22 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
   // Group: members by name only - the workspace link is shared by the
   // whole group, so it does not carry the members' e-mail addresses.
   safe.members = (full.members || []).map(m => ({ fullName: m.fullName, role: m.role }));
+  // The mentor's availability calendar (stored on the mentor).
+  safe.mentorAvailability = mentors.getMeetingSlots(full.mentorId) || { weekly: {}, dates: {}, updatedAt: null };
   res.json(safe);
+}));
+
+/**
+ * The mentor's meeting availability (weekly slots + specific dates).
+ * Stored on the mentor, so every workspace of this mentor shows it.
+ * Anyone holding this workspace link may edit it (as in v28).
+ */
+router.put("/public/workspace/:id/availability", requireWorkspaceToken, wrap(async (req, res) => {
+  const saved = mentors.setMeetingSlots(req.mentorship.mentorId, req.body || {});
+  if (!saved) {
+    return res.status(404).json({ error: "The mentor of this workspace was not found.", code: "no_mentor" });
+  }
+  res.json({ success: true, mentorAvailability: saved });
 }));
 
 /** AI ile hedef uret. Isimler AI'a GITMEZ (bkz. ai/devplan.js). */

@@ -540,6 +540,18 @@ const mentors = {
     return mentors.get(id);
   },
 
+  /** The mentor's meeting availability (weekly + specific dates), or null. */
+  getMeetingSlots(id) {
+    const row = db.prepare(`SELECT meeting_slots FROM mentors WHERE id = ?`).get(id);
+    return row ? require("../lib/meetingSlots").parse(row.meeting_slots) : null;
+  },
+
+  setMeetingSlots(id, input) {
+    const value = require("../lib/meetingSlots").serialize(input);
+    const r = db.prepare(`UPDATE mentors SET meeting_slots = ? WHERE id = ?`).run(value, id);
+    return r.changes ? mentors.getMeetingSlots(id) : null;
+  },
+
   get(id) {
     return hydrateMentor(
       db.prepare(`SELECT * FROM mentors WHERE id = ?`).get(id)

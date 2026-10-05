@@ -411,6 +411,7 @@ async function run(server) {
   await logoChecks(server, { SA, B });
   await formChecks(server, { SA, B });
   await eventChecks(server, { SA, B });
+  await availabilityChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -1977,6 +1978,45 @@ async function eventChecks(server, ids) {
           db.prepare(`SELECT COUNT(*) n FROM event_participants WHERE company_id = 'tenant-v'`).get().n === 0);
   } finally {
     db.close();
+  }
+}
+
+// ---------------------------------------------------------------------
+// MENTOR AVAILABILITY IN THE WORKSPACE (from v28)
+// ---------------------------------------------------------------------
+
+async function availabilityChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n20) MENTOR AVAILABILITY\n");
+  const pwW = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-w", name: "W", password: pwW });
+  const W = await login("tenant-w", pwW);
+  const post = async (url, body) => (await api(W, "POST", url, body)).json;
+  const m = (await post("/mentors", { fullName: "Wmentor", email: "wm@w.example", role: "Director", capacity: 3 })).id;
+  const e1 = (await post("/mentees", { fullName: "Wone", email: "w1@w.example", role: "Analyst", developmentNeeds: "x" })).id;
+  const e2 = (await post("/mentees", { fullName: "Wtwo", email: "w2@w.example", role: "Analyst", developmentNeeds: "x" })).id;
+  const ms1 = (await post("/mentorships", { mentorId: m, menteeId: e1, closingDate: END_DATE })).mentorship;
+  const ms2 = (await post("/mentorships", { mentorId: m, menteeId: e2, closingDate: END_DATE })).mentorship;
+  const ws = ms => { const u = new URL(ms.workspaceUrl); return [u.searchParams.get("id"), u.searchParams.get("token")]; };
+  const [id1, t1] = ws(ms1), [id2, t2] = ws(ms2);
+
+  const future = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
+  const r = await api(null, "PUT", `/public/workspace/${id1}/availability?token=${t1}`,
+    { weekly: { 1: [9, 10, 99], 9: [10] }, dates: { [future]: [14, 7], "2020-01-01": [9] } });
+  const a = r.json?.mentorAvailability;
+  check("availability is saved from the workspace (invalid hours, days and past dates dropped)",
+        r.status === 200 && JSON.stringify(a?.weekly) === '{"1":[9,10]}' && JSON.stringify(a?.dates) === `{"${future}":[14]}`,
+        JSON.stringify(a));
+  const other = (await api(null, "GET", `/public/workspace/${id2}?token=${t2}`)).json;
+  check("it is stored on the mentor: the mentor's other workspace shows it",
+        JSON.stringify(other?.mentorAvailability?.weekly) === '{"1":[9,10]}');
+  check("a wrong token cannot change it -> 403",
+        (await api(null, "PUT", `/public/workspace/${id1}/availability?token=wrong`, { weekly: {} })).status === 403);
+  const bMs = ((await api(B, "GET", "/mentorships")).json || [])[0];
+  if (bMs) {
+    const [bid] = ws(bMs);
+    check("another workspace's token cannot change it -> 403",
+          (await api(null, "PUT", `/public/workspace/${bid}/availability?token=${t1}`, { weekly: {} })).status === 403);
   }
 }
 
