@@ -1142,12 +1142,18 @@ function startSink() {
     const messages = [];
     const srv = net.createServer(sock => {
       let data = false, buf = "", msg = "", rcpt = [];
+      // The mail client may drop the connection abruptly (on Windows this
+      // arrives as ECONNRESET, e.g. after a refused recipient). That is
+      // normal for this test server; without a handler Node would stop the
+      // whole test with "Unhandled 'error' event".
+      sock.on("error", () => {});
       sock.write("220 sink ESMTP\r\n");
       sock.on("data", chunk => {
         buf += chunk.toString("utf8");
         let i;
         while ((i = buf.indexOf("\r\n")) >= 0) {
           const line = buf.slice(0, i); buf = buf.slice(i + 2);
+          if (sock.destroyed) return;
           if (data) {
             if (line === ".") { data = false; messages.push({ rcpt, raw: msg }); msg = ""; rcpt = []; sock.write("250 OK\r\n"); }
             else msg += line + "\n";
@@ -1167,6 +1173,7 @@ function startSink() {
         }
       });
     });
+    srv.on("error", () => {});
     srv.listen(0, "127.0.0.1", () => resolve({ port: srv.address().port, messages, close: () => srv.close() }));
   });
 }
@@ -1797,6 +1804,27 @@ async function formChecks(server, ids) {
   check("a registration with an own option keeps that value", r.status === 200 && stored?.functionalAreas?.[0] === "Logistics",
         `HTTP ${r.status} ${JSON.stringify(stored?.functionalAreas)}`);
   check("B's forms have no options changed", !Object.keys((await api(B, "GET", "/registration-forms")).json?.config?.options || {}).length);
+
+  // ---- Option names on HR screens: every fixed choice of the forms is known ----
+  const sandbox = { window: {} };
+  new Function("window", fs.readFileSync(path.join(ROOT, "public/assets/optionLabels.js"), "utf8"))(sandbox.window);
+  const VOCAB = sandbox.window.MentorOptionLabels.VOCAB;
+  const unknown = [];
+  for (const file of ["public/register.html", "public/mentee_register.html"]) {
+    const html = fs.readFileSync(path.join(ROOT, file), "utf8");
+    // the form itself, without the page's language picker (en / tr)
+    const body = html.slice(0, html.indexOf("<script")).replace(/<select id="languageSelect"[\s\S]*?<\/select>/, "");
+    for (const m of body.matchAll(/(?:data-value|<option[^>]*value)="([^"]+)"/g)) {
+      const v = m[1].replace(/&amp;/g, "&");
+      if (!VOCAB[v]) unknown.push(v);
+    }
+  }
+  check("every fixed choice of the forms has a name for HR screens", unknown.length === 0, unknown.join(", "));
+  const differ = [];
+  for (const def of Object.values(schema.LISTS)) for (const o of def.builtins) {
+    if (!VOCAB[o.value] || (VOCAB[o.value].tr !== o.tr && o.value !== "No preference")) differ.push(o.value);
+  }
+  check("the two catalogues agree on the Turkish names", differ.length === 0, differ.join(", "));
 
   const reset = await api(F, "DELETE", "/registration-forms");
   check("back to the forms as they ship", reset.json?.isDefault === true && (await api(F, "GET", "/registration-forms")).json?.isDefault === true);

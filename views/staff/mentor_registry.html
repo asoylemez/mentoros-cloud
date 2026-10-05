@@ -463,6 +463,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/assets/optionLabels.js"></script>
 <script>
 /* ==================================================================
    Bu sayfa PERSONEL sayfasidir: /views/staff icinde durur ve sadece
@@ -924,7 +925,7 @@ function render() {
         </td>
         <td>${programCell(m)}</td>
         <td>
-          ${expertise.map(e => `<span class="tag">${esc(e)}</span>`).join("") || "–"}
+          ${expertise.map(e => `<span class="tag">${esc(MentorOptionLabels.label(e, LANG))}</span>`).join("") || "–"}
         </td>
         <td>
           ${used} / ${cap}
@@ -956,6 +957,8 @@ const ARRAY_FIELDS = [
   "menteeLevels", "formats", "languages",
   "motivations"
 ];
+/** Text boxes that hold a fixed choice (shown translated, saved as the value). */
+const VOCAB_FIELDS = ["tenure", "availability"];
 const TEXT_FIELDS = [
   "fullName", "email", "role", "band", "tenure",
   "careerBio", "mentorProfile", "additionalCompetencies",
@@ -974,8 +977,10 @@ window.openMentor = function (id) {
     `${m.email || ""} · ${t("registered")}: ` +
     (m.createdAt ? new Date(m.createdAt).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "–");
 
-  TEXT_FIELDS.forEach(f => { $("f_" + f).value = m[f] || ""; });
-  ARRAY_FIELDS.forEach(f => { $("f_" + f).value = (m[f] || []).join(", "); });
+  // Choices are stored with their English values; the boxes show them in
+  // the screen's language and turn them back on save (optionLabels.js).
+  TEXT_FIELDS.forEach(f => { $("f_" + f).value = VOCAB_FIELDS.includes(f) ? MentorOptionLabels.label(m[f] || "", LANG) : (m[f] || ""); });
+  ARRAY_FIELDS.forEach(f => { $("f_" + f).value = MentorOptionLabels.labels(m[f] || [], LANG).join(", "); });
 
   $("f_capacity").value = m.capacity ?? 1;
   $("f_status").value = m.status || "active";
@@ -1030,8 +1035,8 @@ $("mSave").onclick = async () => {
       capacity: Number($("f_capacity").value) || 0,
       status: $("f_status").value
     };
-    TEXT_FIELDS.forEach(f => { body[f] = $("f_" + f).value; });
-    ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value); });
+    TEXT_FIELDS.forEach(f => { const v = $("f_" + f).value; body[f] = VOCAB_FIELDS.includes(f) ? MentorOptionLabels.toValue(v, LANG) : v; });
+    ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value).map(v => MentorOptionLabels.toValue(v, LANG)); });
 
     await api(`/mentors/${EDITING.id}`, {
       method: "PATCH",
@@ -1111,6 +1116,7 @@ $("logoutBtn").onclick = async () => {
   await checkSmtp();
   await loadInvite(false);
   await loadPrograms();
+  await MentorOptionLabels.load();
   await loadMentors();
 })();
 </script>

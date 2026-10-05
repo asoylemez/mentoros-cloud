@@ -663,7 +663,8 @@
     <div id="results"></div>
   </div>
 
-  <script>
+  <script src="/assets/optionLabels.js"></script>
+<script>
     const urlParams = new URLSearchParams(window.location.search);
 
     
@@ -1057,6 +1058,7 @@
     document.addEventListener("DOMContentLoaded", async () => {
       applyTranslations();
       await loadPrograms();
+      await MentorOptionLabels.load();   // the organisation's own option names
       loadCandidates();     // kayitli mentee + aktif mentor listeleri
     });
 
@@ -1291,6 +1293,10 @@
       return cardSection(title, `<div class="text">${escapeHtml(text)}</div>`);
     }
 
+    /* Stored choices are English values; show them in the screen's language. */
+    const optLabel = v => (window.MentorOptionLabels ? MentorOptionLabels.label(v || "", currentLanguage) : (v || ""));
+    const optLabels = list => (Array.isArray(list) ? list : []).map(optLabel);
+
     function tagSection(title, list, extra) {
       const items = (Array.isArray(list) ? list : []).filter(Boolean).slice();
       const more = String(extra || "").trim();
@@ -1298,7 +1304,7 @@
       if (!items.length) return "";
       return cardSection(
         title,
-        `<div class="tags">${items.map(s => `<span class="tag">${escapeHtml(s)}</span>`).join("")}</div>`
+        `<div class="tags">${items.map(s => `<span class="tag">${escapeHtml(optLabel(s))}</span>`).join("")}</div>`
       );
     }
 
@@ -1315,7 +1321,7 @@
         mentee.role,
         mentee.department,
         mentee.band,
-        mentee.tenure
+        optLabel(mentee.tenure)
       ].filter(Boolean).join(" • ");
 
       // Gelisim bilgisi hic girilmemisse kartla oyalanma, dogrudan soyle.
@@ -1330,9 +1336,9 @@
             tagSection(t("preferredMentorProfileLabel"), mentee.preferredMentorProfile),
             cardSection(t("languagesFormatAvailability"), `
               <div class="text">
-                ${escapeHtml(t("languages"))}: ${escapeHtml((mentee.languages || []).join(", ") || "-")}<br>
-                ${escapeHtml(t("formats"))}: ${escapeHtml((mentee.formats || []).join(", ") || "-")}<br>
-                ${escapeHtml(t("monthlyHours"))}: ${escapeHtml(mentee.hoursPerMonth || "-")}
+                ${escapeHtml(t("languages"))}: ${escapeHtml(optLabels(mentee.languages).join(", ") || "-")}<br>
+                ${escapeHtml(t("formats"))}: ${escapeHtml(optLabels(mentee.formats).join(", ") || "-")}<br>
+                ${escapeHtml(t("monthlyHours"))}: ${escapeHtml(optLabel(mentee.hoursPerMonth) || "-")}
               </div>`),
             textSection(t("menteeNote"), mentee.message)
           ].join("")
@@ -1713,23 +1719,23 @@ function renderResults(mentors) {
             <div class="section">
               <div class="section-title">${escapeHtml(t("competencies"))}</div>
               <div class="tags">
-                ${(mentor.skills || []).map(s => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
+                ${(mentor.skills || []).map(s => `<span class="tag">${escapeHtml(optLabel(s))}</span>`).join("")}
               </div>
             </div>
 
             <div class="section">
               <div class="section-title">${escapeHtml(t("functionalAreas"))}</div>
               <div class="tags">
-                ${(mentor.functionalAreas || []).map(s => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
+                ${(mentor.functionalAreas || []).map(s => `<span class="tag">${escapeHtml(optLabel(s))}</span>`).join("")}
               </div>
             </div>
 
             <div class="section">
               <div class="section-title">${escapeHtml(t("languagesFormatAvailability"))}</div>
               <div class="text">
-                ${escapeHtml(t("languages"))}: ${escapeHtml((mentor.languages || []).join(", ") || "-")}<br>
-                ${escapeHtml(t("formats"))}: ${escapeHtml((mentor.formats || []).join(", ") || "-")}<br>
-                ${escapeHtml(t("availability"))}: ${escapeHtml(mentor.availability || "-")}<br>
+                ${escapeHtml(t("languages"))}: ${escapeHtml(optLabels(mentor.languages).join(", ") || "-")}<br>
+                ${escapeHtml(t("formats"))}: ${escapeHtml(optLabels(mentor.formats).join(", ") || "-")}<br>
+                ${escapeHtml(t("availability"))}: ${escapeHtml(optLabel(mentor.availability) || "-")}<br>
                 ${escapeHtml(t("capacity"))}: ${escapeHtml(mentor.capacity || "-")} ${escapeHtml(t("menteesUnit"))}
               </div>
             </div>

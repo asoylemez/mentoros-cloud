@@ -434,6 +434,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/assets/optionLabels.js"></script>
 <script>
 const API_KEY = "mentor-demo-key-2026";
 const COMPANY_ID = "default";
@@ -731,7 +732,7 @@ function render() {
         <td><div class="name">${esc(m.fullName)}</div><div class="email">${esc(m.email)}</div></td>
         <td>${esc(m.role || "–")}${m.department ? `<div class="email">${esc(m.department)}</div>` : ""}</td>
         <td>${programCell(m)}</td>
-        <td>${areas.map(e => `<span class="tag">${esc(e)}</span>`).join("") || "–"}</td>
+        <td>${areas.map(e => `<span class="tag">${esc(MentorOptionLabels.label(e, LANG))}</span>`).join("") || "–"}</td>
         <td><span class="badge ${badge}">${label}</span></td>
         <td style="color:var(--muted);font-size:13px">${date}</td>
         <td class="actions"><button class="sm" onclick="openMentee('${m.id}')">${t("view")}</button></td>
@@ -745,6 +746,8 @@ $("refreshBtn").onclick = async () => { await loadPrograms(); await loadMentees(
 
 /* ---- Duzenleme ---- */
 let EDITING = null;
+/** Text boxes that hold a fixed choice (shown translated, saved as the value). */
+const VOCAB_FIELDS = ["tenure", "hoursPerMonth"];
 const TEXT_FIELDS = ["fullName","email","role","department","band","tenure",
   "devAreasExtra","developmentNeeds","challenge","compExtra","goals","expectations",
   "hoursPerMonth","message"];
@@ -757,8 +760,10 @@ window.openMentee = function (id) {
   $("mTitle").textContent = m.fullName || "—";
   $("mMeta").textContent = `${m.email || ""} · ${t("registered")}: ` +
     (m.createdAt ? new Date(m.createdAt).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "–");
-  TEXT_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = m[f] || ""; });
-  ARRAY_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = (m[f] || []).join(", "); });
+  // Choices are stored with their English values; the boxes show them in
+  // the screen's language and turn them back on save (optionLabels.js).
+  TEXT_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = VOCAB_FIELDS.includes(f) ? MentorOptionLabels.label(m[f] || "", LANG) : (m[f] || ""); });
+  ARRAY_FIELDS.forEach(f => { const el = $("f_" + f); if (el) el.value = MentorOptionLabels.labels(m[f] || [], LANG).join(", "); });
   $("f_status").value = m.status || "active";
 
   // Programme: every programme that is not archived, plus the mentee's
@@ -788,8 +793,8 @@ $("mSave").onclick = async () => {
   const btn = $("mSave"); btn.disabled = true; btn.textContent = t("saving");
   try {
     const body = { status: $("f_status").value };
-    TEXT_FIELDS.forEach(f => { body[f] = $("f_" + f).value; });
-    ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value); });
+    TEXT_FIELDS.forEach(f => { const v = $("f_" + f).value; body[f] = VOCAB_FIELDS.includes(f) ? MentorOptionLabels.toValue(v, LANG) : v; });
+    ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value).map(v => MentorOptionLabels.toValue(v, LANG)); });
     await api(`/mentees/${EDITING.id}`, { method: "PATCH", body: JSON.stringify(body) });
 
     // Programme is saved separately; the server warns first (409) when the
@@ -983,6 +988,7 @@ $("logoutBtn").onclick = async () => {
   await loadInvite(false);
   await checkSmtp();
   await loadPrograms();
+  await MentorOptionLabels.load();
   await loadMentees();
   await loadGroups();
 })();
