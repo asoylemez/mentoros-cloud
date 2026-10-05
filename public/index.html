@@ -95,11 +95,16 @@
       margin: 0 auto;
     }
 
+    /* Four cards a row; every card as tall as its row, the "Open"
+       buttons all on the same line at the bottom. */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 1rem;
+      align-items: stretch;
     }
+    @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px)  { .grid { grid-template-columns: 1fr; } }
 
     .card {
       background: var(--card);
@@ -108,7 +113,13 @@
       padding: 1.5rem;
       transition: 0.2s;
       cursor: pointer;
+      display: flex;
+      flex-direction: column;
     }
+    .card button { margin-top: auto; align-self: flex-start; }
+    .crumb { margin: 0 0 14px; font-size: 14px; }
+    .crumb a { color: var(--navy); text-decoration: none; font-weight: 600; cursor: pointer; }
+    .crumb span { color: var(--muted); }
 
     .card:hover {
       transform: translateY(-4px);
@@ -205,108 +216,12 @@
       </p>
     </div>
 
-    <div class="grid">
-
-      <!-- Programmes -->
-      <div class="card" onclick="goTo('programs.html')">
-        <div class="card-title" data-i18n="programsTitle">Programmes</div>
-        <div class="card-desc" data-i18n="programsDesc">
-          Create mentoring programmes with start and end dates; place mentors and mentees into them.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Feedback questions (check-in) -->
-      <div class="card" onclick="goTo('checkin_questions.html')">
-        <div class="card-title" data-i18n="checkinTitle">Feedback Questions</div>
-        <div class="card-desc" data-i18n="checkinDesc">
-          The questions of the mid-programme feedback sent to mentors and mentees.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Events -->
-      <div class="card" onclick="goTo('events.html')">
-        <div class="card-title" data-i18n="eventsTitle">Events</div>
-        <div class="card-desc" data-i18n="eventsDesc">
-          Group sessions and trainings with calendar invitations and attendance.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Announcements -->
-      <div class="card" onclick="goTo('announcements.html')">
-        <div class="card-title" data-i18n="announcementsTitle">Announcements</div>
-        <div class="card-desc" data-i18n="announcementsDesc">
-          Send announcements by e-mail to mentors, mentees and groups.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Registration forms -->
-      <div class="card" onclick="goTo('registration_forms.html')">
-        <div class="card-title" data-i18n="formsTitle">Registration Forms</div>
-        <div class="card-desc" data-i18n="formsDesc">
-          Which fields the mentor and mentee forms show, which are required, and their texts.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Organisation settings (logo) -->
-      <div class="card" onclick="goTo('company_settings.html')">
-        <div class="card-title" data-i18n="companySettingsTitle">Organisation Settings</div>
-        <div class="card-desc" data-i18n="companySettingsDesc">
-          Your organisation's logo on screens, e-mails and reports.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Reports -->
-      <div class="card" onclick="goTo('reports.html')">
-        <div class="card-title" data-i18n="reportsTitle">Reports</div>
-        <div class="card-desc" data-i18n="reportsDesc">
-          Management report and survey results, as PDF or Excel.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Mentor Registration -->
-      <div class="card" onclick="goTo('mentor_registry.html')">
-        <div class="card-title" data-i18n="mentorRegistrationTitle">Mentor Registry</div>
-        <div class="card-desc" data-i18n="mentorRegistrationDesc">
-          View registered mentors, edit their profiles, and share the invitation link.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Mentee Registry -->
-      <div class="card" onclick="goTo('mentee_registry.html')">
-        <div class="card-title" data-i18n="menteeRegistrationTitle">Mentee Registry</div>
-        <div class="card-desc" data-i18n="menteeRegistrationDesc">
-          View registered mentees, edit their profiles, and share the invitation link.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- Mentee Matching -->
-      <div class="card" onclick="goTo('mentee_matching.html')">
-        <div class="card-title" data-i18n="menteeMatchingTitle">Mentee Matching</div>
-        <div class="card-desc" data-i18n="menteeMatchingDesc">
-          Find the most suitable mentors based on development needs and goals.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
-      <!-- HR Dashboard -->
-      <div class="card" onclick="goTo('hr_dashboard.html')">
-        <div class="card-title" data-i18n="hrDashboardTitle">HR Dashboard</div>
-        <div class="card-desc" data-i18n="hrDashboardDesc">
-          Monitor mentorship relationships, track activity, and manage the program.
-        </div>
-        <button data-i18n="openButton">Open</button>
-      </div>
-
+    <div class="crumb" id="crumb" hidden>
+      <a onclick="goTo('index.html')" data-i18n="homeLink">← Home</a> <span>/</span> <span data-i18n="adminTitle">Admin</span>
     </div>
+
+    <!-- Cards are listed in CARDS / ADMIN_CARDS below (order = screen order). -->
+    <div class="grid" id="grid"></div>
 
     <div class="footer" data-i18n="footerText">
       Built with AI • Mentorship Platform MVP
@@ -330,10 +245,13 @@
         mentorRegistrationDesc: "View registered mentors, edit their profiles, and share the invitation link.",
         menteeRegistrationTitle: "Mentee Registry",
         menteeRegistrationDesc: "View registered mentees, edit their profiles, and share the invitation link.",
-        menteeMatchingTitle: "Mentee Matching",
+        menteeMatchingTitle: "Mentee–Mentor Matching",
+        adminTitle: "Admin",
+        adminDesc: "Programmes, feedback questions, registration forms and organisation settings.",
+        homeLink: "← Home",
         menteeMatchingDesc: "Find the most suitable mentors based on development needs and goals.",
         hrDashboardTitle: "HR Dashboard",
-        hrDashboardDesc: "Monitor mentorship relationships, track activity, and manage the program.",
+        hrDashboardDesc: "Follow mentorships, meetings, feedback and the progress of the programme.",
         programsTitle: "Programmes",
         checkinTitle: "Feedback Questions",
         announcementsTitle: "Announcements",
@@ -359,10 +277,13 @@
         mentorRegistrationDesc: "Kayıtlı mentorları görüntüleyin, profillerini düzenleyin ve davet bağlantısını paylaşın.",
         menteeRegistrationTitle: "Mentee Kayıtları",
         menteeRegistrationDesc: "Kayıtlı mentee'leri görüntüleyin, profillerini düzenleyin ve davet bağlantısını paylaşın.",
-        menteeMatchingTitle: "Mentee Eşleştirme",
+        menteeMatchingTitle: "Mentee-Mentor Eşleştirme",
+        adminTitle: "Admin",
+        adminDesc: "Programlar, geri bildirim soruları, kayıt formları ve firma ayarları.",
+        homeLink: "← Ana sayfa",
         menteeMatchingDesc: "Gelişim ihtiyaçları ve hedeflere göre en uygun mentorları bulun.",
         hrDashboardTitle: "HR Dashboard",
-        hrDashboardDesc: "Mentorluk ilişkilerini, onayları, aktiviteleri ve program sürecini takip edin.",
+        hrDashboardDesc: "Mentorluk ilişkilerini, toplantıları, geri bildirimleri ve program sürecini takip edin.",
         programsTitle: "Programlar",
         checkinTitle: "Geri Bildirim Soruları",
         announcementsTitle: "Duyurular",
@@ -402,6 +323,39 @@
         const key = el.getAttribute("data-i18n");
         if (t[key]) el.textContent = t[key];
       });
+      renderCards();
+    }
+
+    // Home: first row the daily work, second row reports and communication,
+    // then "Admin" for the settings that are changed now and then.
+    const CARDS = [
+      ["mentor_registry.html", "mentorRegistrationTitle", "mentorRegistrationDesc"],
+      ["mentee_registry.html", "menteeRegistrationTitle", "menteeRegistrationDesc"],
+      ["mentee_matching.html", "menteeMatchingTitle", "menteeMatchingDesc"],
+      ["hr_dashboard.html", "hrDashboardTitle", "hrDashboardDesc"],
+      ["reports.html", "reportsTitle", "reportsDesc"],
+      ["announcements.html", "announcementsTitle", "announcementsDesc"],
+      ["events.html", "eventsTitle", "eventsDesc"],
+      ["index.html?section=admin", "adminTitle", "adminDesc"]
+    ];
+    const ADMIN_CARDS = [
+      ["programs.html", "programsTitle", "programsDesc"],
+      ["checkin_questions.html", "checkinTitle", "checkinDesc"],
+      ["registration_forms.html", "formsTitle", "formsDesc"],
+      ["company_settings.html", "companySettingsTitle", "companySettingsDesc"]
+    ];
+    const ADMIN = urlParams.get("section") === "admin";
+
+    function renderCards() {
+      const t = translations[currentLanguage] || translations.en;
+      const esc = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      document.getElementById("crumb").hidden = !ADMIN;
+      document.getElementById("grid").innerHTML = (ADMIN ? ADMIN_CARDS : CARDS).map(([page, title, desc]) => `
+        <div class="card" onclick="goTo('${page}')">
+          <div class="card-title">${esc(t[title])}</div>
+          <div class="card-desc">${esc(t[desc])}</div>
+          <button>${esc(t.openButton)}</button>
+        </div>`).join("");
     }
 
     function goTo(page) {
