@@ -215,6 +215,15 @@
   .preview .ph { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
   .preview iframe { width: 100%; height: 78vh; border: 0; display: block; }
   .bar { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .opts { margin-top: 8px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; background: #fafbfd; }
+  .opts h4 { margin: 0 0 6px; font-size: 13px; color: var(--navy); }
+  .opts .note { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+  .opts .builtins { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 8px; }
+  .opts .builtins label { display: flex; gap: 5px; align-items: center; font-size: 13px; margin: 0; color: var(--text); }
+  .opts .builtins input { width: auto; }
+  .opts .crow { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-bottom: 6px; }
+  .opts .crow input { font-size: 13px; }
+  .opts .dup { color: #b42318; font-size: 12px; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -279,7 +288,12 @@ const T = {
     helpPh: "İsteğe bağlı kısa açıklama", isDefault: "Formlar varsayılan halinde.", isCustom: "Firmanıza özel ayarlar kullanılıyor.",
     unsaved: "Kaydedilmemiş değişiklikler var.", saved: "Kaydedildi ✓", resetDone: "Formlar varsayılana döndü ✓",
     resetConfirm: "İki form da varsayılan haline dönsün mü? Firmanıza özel bütün form ayarları silinir.",
-    loadFailed: "Ayarlar yüklenemedi."
+    loadFailed: "Ayarlar yüklenemedi.",
+    options: "Seçenekler", addOption: "+ Seçenek ekle", remove: "Kaldır",
+    optTr: "Seçenek (Türkçe)", optEn: "Seçenek (İngilizce)",
+    sharedNote: "Bu liste mentor ve mentee formunda ortaktır: burada yaptığınız değişiklik iki formda da görünür (AI eşleştirmesi iki tarafı bu listeyle karşılaştırır).",
+    renameNote: "Eklediğiniz bir seçeneğin adını sonradan değiştirmek yeni bir seçenek eklemek gibidir: daha önce o seçeneği seçmiş kişilerin kaydında eski ad kalır. Gizlenen hazır seçenekler yalnızca yeni kayıtlarda görünmez.",
+    dupNote: "Hazır bir seçenekle ya da başka bir seçenekle aynı ada sahip seçenekler kaydedilmez."
   },
   en: {
     pageTitle: "Registration Forms", logout: "Log out",
@@ -293,7 +307,12 @@ const T = {
     helpPh: "Optional short help text", isDefault: "The forms are as they ship.", isCustom: "Your organisation's own settings are in use.",
     unsaved: "There are unsaved changes.", saved: "Saved ✓", resetDone: "Both forms are back to defaults ✓",
     resetConfirm: "Put both forms back to how they ship? All of your organisation's form settings are deleted.",
-    loadFailed: "The settings could not be loaded."
+    loadFailed: "The settings could not be loaded.",
+    options: "Options", addOption: "+ Add option", remove: "Remove",
+    optTr: "Option (Turkish)", optEn: "Option (English)",
+    sharedNote: "This list is shared by the mentor and mentee forms: a change here shows on both (AI matching compares both sides with this list).",
+    renameNote: "Renaming an option you added later works like adding a new one: people who chose it before keep the old name in their record. Hidden built-in options only disappear for new registrations.",
+    dupNote: "Options with the same name as a built-in or another option are not saved."
   }
 };
 let LANG = localStorage.getItem("mentorAppLang") || "tr";
@@ -304,6 +323,47 @@ let FORM = "mentor";
 let CONFIG = S.sanitize({});
 let IS_DEFAULT = true, DIRTY = false;
 const OPEN = new Set();
+const OPEN_OPTS = new Set();
+
+/* ---- option lists (5b) ---- */
+const listsFor = fieldId => S.listsOf(FORM, CONFIG).filter(l => l.place.field === fieldId);
+const optCfg = lid => {
+  CONFIG.options = CONFIG.options || {};
+  return (CONFIG.options[lid] = CONFIG.options[lid] || { hidden: [], custom: [] });
+};
+const optName = o => (LANG === "en" ? (o.en || o.tr) : (o.tr || o.en)) || o.value;
+function optionsPanel(list) {
+  const c = optCfg(list.id);
+  const kept = (S.sanitize({ options: { [list.id]: c } }).options[list.id] || { custom: [] }).custom.length;
+  const typed = c.custom.filter(o => (o.tr || "").trim() || (o.en || "").trim()).length;
+  return `<div class="opts">
+    <h4>${esc(list.title[LANG] || list.title.tr)}</h4>
+    ${list.shared ? `<div class="note">🔗 ${esc(t("sharedNote"))}</div>` : ""}
+    <div class="builtins">${list.builtins.map(o => `<label><input type="checkbox"${c.hidden.includes(o.value) ? "" : " checked"}
+        onchange="setBuiltin('${list.id}', ${JSON.stringify(o.value).replace(/"/g, "&quot;")}, this.checked)"> ${esc(optName(o))}</label>`).join("")}</div>
+    ${c.custom.map((o, i) => `<div class="crow">
+        <input maxlength="60" placeholder="${esc(t("optTr"))}" value="${esc(o.tr || "")}" oninput="setCustom('${list.id}', ${i}, 'tr', this.value)">
+        <input maxlength="60" placeholder="${esc(t("optEn"))}" value="${esc(o.en || "")}" oninput="setCustom('${list.id}', ${i}, 'en', this.value)">
+        <button class="sm danger" onclick="removeCustom('${list.id}', ${i})">${esc(t("remove"))}</button></div>`).join("")}
+    ${typed > kept ? `<div class="dup">${esc(t("dupNote"))}</div>` : ""}
+    ${c.custom.length < 20 ? `<button class="sm" onclick="addCustom('${list.id}')">${esc(t("addOption"))}</button>` : ""}
+    <div class="note" style="margin-top:6px">${esc(t("renameNote"))}</div>
+  </div>`;
+}
+window.toggleOpts = id => { OPEN_OPTS.has(id) ? OPEN_OPTS.delete(id) : OPEN_OPTS.add(id); render(); };
+window.setBuiltin = (lid, value, on) => {
+  const c = optCfg(lid);
+  c.hidden = on ? c.hidden.filter(v => v !== value) : [...new Set([...c.hidden, value])];
+  changed();
+};
+window.addCustom = lid => { optCfg(lid).custom.push({ tr: "", en: "" }); changed(); };
+window.removeCustom = (lid, i) => { optCfg(lid).custom.splice(i, 1); changed(); };
+let optTimer = null;
+window.setCustom = (lid, i, lang, value) => {
+  optCfg(lid).custom[i][lang] = value;
+  changed(false);
+  clearTimeout(optTimer); optTimer = setTimeout(render, 600);   // refresh the duplicate note, keep typing smooth
+};
 
 function toast(msg, isErr) {
   const el = $("toast"); el.textContent = msg; el.className = "toast show" + (isErr ? " err" : "");
@@ -345,7 +405,8 @@ function render() {
           ${f.locked ? `<span class="badge-lock">${esc(t("locked"))}</span>` : `
             <label class="inline"><input type="checkbox"${f.hidden ? "" : " checked"} onchange="setShow('${f.id}', this.checked)"> ${esc(t("show"))}</label>
             <label class="inline"><input type="checkbox"${f.required ? " checked" : ""}${f.hidden || !f.requirable ? " disabled" : ""} onchange="setReq('${f.id}', this.checked)"> ${esc(t("required"))}</label>
-            <button class="sm" onclick="toggleTexts('${f.id}')">${esc(t("editTexts"))}</button>`}
+            <button class="sm" onclick="toggleTexts('${f.id}')">${esc(t("editTexts"))}</button>
+            ${listsFor(f.id).length ? `<button class="sm" onclick="toggleOpts('${f.id}')">${esc(t("options"))}</button>` : ""}`}
         </div>
         ${f.hidden && f.aiCritical ? `<div class="warn-ai">⚠ ${esc(t("warnAi"))}</div>` : ""}
         ${!f.locked && OPEN.has(f.id) ? `<div class="texts">
@@ -354,6 +415,7 @@ function render() {
           <input maxlength="400" placeholder="${esc(t("helpTr"))} — ${esc(t("helpPh"))}" value="${esc((c.help || {}).tr || "")}" oninput="setText('${f.id}','help','tr',this.value)">
           <input maxlength="400" placeholder="${esc(t("helpEn"))} — ${esc(t("helpPh"))}" value="${esc((c.help || {}).en || "")}" oninput="setText('${f.id}','help','en',this.value)">
         </div>` : ""}
+        ${!f.locked && OPEN_OPTS.has(f.id) ? listsFor(f.id).map(optionsPanel).join("") : ""}
       </div>`;
     }
     html += `</div>`;
@@ -397,7 +459,7 @@ function setTab(form) {
   FORM = form;
   $("tabMentor").classList.toggle("on", form === "mentor");
   $("tabMentee").classList.toggle("on", form === "mentee");
-  OPEN.clear(); render(); loadFrame();
+  OPEN.clear(); OPEN_OPTS.clear(); render(); loadFrame();
 }
 $("tabMentor").onclick = () => setTab("mentor");
 $("tabMentee").onclick = () => setTab("mentee");

@@ -89,6 +89,8 @@
       }
     }
 
+    applyOptions();
+
     // "Select or add at least one competency" note follows the field.
     const comp = eff.fields.find(f => f.id === "competencies");
     const note = document.querySelector('[data-i18n="compReqNote"]');
@@ -98,6 +100,44 @@
     for (const [n, pair] of Object.entries(eff.steps || {})) {
       const el = document.querySelector(`#step${n} .section-title`);
       if (el && pick(pair)) el.textContent = pick(pair);
+    }
+  }
+
+  /**
+   * Option lists (5b): hide the built-in options the organisation hid and
+   * add its own ones, as copies of a built-in chip (same look, same click
+   * handler). Own chips are updated in place, so a language change keeps
+   * what the person has already ticked.
+   */
+  function applyOptions() {
+    for (const list of S().listsOf(FORM, CONFIG)) {
+      const box = document.getElementById(list.place.container);
+      if (!box) continue;
+      const hidden = new Set(list.hidden);
+      const builtins = [...box.querySelectorAll("[data-value]:not([data-custom-option])")];
+      for (const el of builtins) {
+        const hide = hidden.has(el.getAttribute("data-value"));
+        el.style.display = hide ? "none" : "";
+        if (hide) el.classList.remove("selected");
+      }
+      const template = builtins[0];
+      const wanted = new Set(list.custom.map(o => o.value));
+      box.querySelectorAll("[data-custom-option]").forEach(el => {
+        if (!wanted.has(el.getAttribute("data-value"))) el.remove();
+      });
+      for (const o of list.custom) {
+        let el = [...box.querySelectorAll("[data-custom-option]")].find(x => x.getAttribute("data-value") === o.value);
+        if (!el && template) {
+          el = template.cloneNode(true);
+          el.removeAttribute("data-i18n");            // the form's translation must not overwrite it
+          el.classList.remove("selected");
+          el.style.display = "";
+          el.setAttribute("data-value", o.value);
+          el.setAttribute("data-custom-option", "");
+          box.appendChild(el);
+        }
+        if (el) el.textContent = (LANG === "en" ? (o.en || o.tr) : (o.tr || o.en)) || o.value;
+      }
     }
   }
 

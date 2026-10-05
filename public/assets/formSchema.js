@@ -130,6 +130,135 @@
     }
   };
 
+  // Option lists (stage 5b). A SHARED list is one vocabulary on both forms:
+  // the mentor's expertise and the mentee's development area are compared
+  // by the AI, so an option added to it appears on both forms.
+  const LISTS = {
+    functionalAreas: {
+      shared: true,
+      title: {"tr": "Fonksiyonel alanlar", "en": "Functional areas"},
+      places: { mentor: { field: "functionalAreas", container: "funcTags" }, mentee: { field: "devAreas", container: "devFuncTags" } },
+      builtins: [
+        {"value": "Commercial / Sales", "tr": "Ticari / Satış", "en": "Commercial / Sales"},
+        {"value": "Marketing", "tr": "Pazarlama", "en": "Marketing"},
+        {"value": "Finance & P&L", "tr": "Finans & P&L", "en": "Finance & P&L"},
+        {"value": "Supply Chain", "tr": "Tedarik Zinciri", "en": "Supply Chain"},
+        {"value": "HR & People", "tr": "İK & İnsan", "en": "HR & People"},
+        {"value": "Operations", "tr": "Operasyon", "en": "Operations"},
+        {"value": "Legal & Compliance", "tr": "Hukuk & Uyum", "en": "Legal & Compliance"},
+        {"value": "Digital & IT", "tr": "Dijital & IT", "en": "Digital & IT"},
+        {"value": "Strategy", "tr": "Strateji", "en": "Strategy"},
+        {"value": "General Management", "tr": "Genel Yönetim", "en": "General Management"},
+        {"value": "R&D / Innovation", "tr": "Ar-Ge / İnovasyon", "en": "R&D / Innovation"}
+      ]
+    },
+    behavioural: {
+      shared: true,
+      title: {"tr": "Davranışsal yetkinlikler", "en": "Behavioural competencies"},
+      places: { mentor: { field: "competencies", container: "behaviouralTags" }, mentee: { field: "competenciesToDevelop", container: "devBehaviouralTags" } },
+      builtins: [
+        {"value": "Leadership development", "tr": "Liderlik gelişimi", "en": "Leadership development"},
+        {"value": "Coaching & feedback", "tr": "Koçluk & geri bildirim", "en": "Coaching & feedback"},
+        {"value": "Team management", "tr": "Ekip yönetimi", "en": "Team management"},
+        {"value": "Communication & influence", "tr": "İletişim & etkileme", "en": "Communication & influence"},
+        {"value": "Change management", "tr": "Değişim yönetimi", "en": "Change management"},
+        {"value": "Career planning", "tr": "Kariyer planlama", "en": "Career planning"},
+        {"value": "Cross-cultural working", "tr": "Kültürler arası çalışma", "en": "Cross-cultural working"},
+        {"value": "Psychological safety", "tr": "Psikolojik güvenlik", "en": "Psychological safety"},
+        {"value": "Resilience & wellbeing", "tr": "Dayanıklılık & iyi oluş", "en": "Resilience & wellbeing"},
+        {"value": "Inclusion & diversity", "tr": "Kapsayıcılık & çeşitlilik", "en": "Inclusion & diversity"},
+        {"value": "Negotiation & persuasion", "tr": "Müzakere & ikna", "en": "Negotiation & persuasion"},
+        {"value": "Confidence & visibility", "tr": "Özgüven & görünürlük", "en": "Confidence & visibility"}
+      ]
+    },
+    technical: {
+      shared: true,
+      title: {"tr": "Teknik yetkinlikler", "en": "Technical competencies"},
+      places: { mentor: { field: "competencies", container: "technicalTags" }, mentee: { field: "competenciesToDevelop", container: "devTechnicalTags" } },
+      builtins: [
+        {"value": "P&L / financial acumen", "tr": "P&L / finansal bakış", "en": "P&L / financial acumen"},
+        {"value": "Strategy development", "tr": "Strateji geliştirme", "en": "Strategy development"},
+        {"value": "Customer negotiation", "tr": "Müşteri müzakeresi", "en": "Customer negotiation"},
+        {"value": "Data & analytics", "tr": "Veri & analitik", "en": "Data & analytics"},
+        {"value": "Digital transformation", "tr": "Dijital dönüşüm", "en": "Digital transformation"},
+        {"value": "Project management", "tr": "Proje yönetimi", "en": "Project management"},
+        {"value": "Procurement & tendering", "tr": "Satın alma & ihale", "en": "Procurement & tendering"},
+        {"value": "Presenting & storytelling", "tr": "Sunum & hikâyeleştirme", "en": "Presenting & storytelling"},
+        {"value": "Talent management", "tr": "Yetenek yönetimi", "en": "Talent management"},
+        {"value": "Category & shopper", "tr": "Kategori & müşteri davranışı", "en": "Category & shopper"}
+      ]
+    },
+    languages: {
+      shared: true,
+      title: {"tr": "Diller", "en": "Languages"},
+      places: { mentor: { field: "languages", container: "languageTags" }, mentee: { field: "languages", container: "languageTags" } },
+      builtins: [
+        {"value": "English", "tr": "İngilizce", "en": "English"},
+        {"value": "Turkish", "tr": "Türkçe", "en": "Turkish"},
+        {"value": "German", "tr": "Almanca", "en": "German"},
+        {"value": "French", "tr": "Fransızca", "en": "French"},
+        {"value": "Spanish", "tr": "İspanyolca", "en": "Spanish"},
+        {"value": "Russian", "tr": "Rusça", "en": "Russian"},
+        {"value": "Arabic", "tr": "Arapça", "en": "Arabic"},
+        {"value": "Other", "tr": "Diğer", "en": "Other"}
+      ]
+    },
+    industries: {
+      shared: false,
+      title: {"tr": "Sektörler", "en": "Industries"},
+      places: { mentor: { field: "industries", container: "industryTags" } },
+      builtins: [
+        {"value": "FMCG / CPG", "tr": "FMCG / CPG", "en": "FMCG / CPG"},
+        {"value": "Retail", "tr": "Perakende", "en": "Retail"},
+        {"value": "Technology", "tr": "Teknoloji", "en": "Technology"},
+        {"value": "Manufacturing", "tr": "Üretim", "en": "Manufacturing"},
+        {"value": "Financial services", "tr": "Finansal hizmetler", "en": "Financial services"},
+        {"value": "Consulting", "tr": "Danışmanlık", "en": "Consulting"},
+        {"value": "Healthcare", "tr": "Sağlık", "en": "Healthcare"},
+        {"value": "Energy", "tr": "Enerji", "en": "Energy"}
+      ]
+    },
+    menteeLevels: {
+      shared: false,
+      title: {"tr": "Mentee seviyeleri", "en": "Mentee levels"},
+      places: { mentor: { field: "menteeLevels", container: "menteeLevelTags" } },
+      builtins: [
+        {"value": "New joiners", "tr": "Yeni başlayanlar", "en": "New joiners"},
+        {"value": "Mid-level (Band 6–8)", "tr": "Orta seviye (Band 6–8)", "en": "Mid-level (Band 6–8)"},
+        {"value": "Senior (Band 9–10)", "tr": "Kıdemli (Band 9–10)", "en": "Senior (Band 9–10)"},
+        {"value": "First-time managers", "tr": "İlk kez yönetici olanlar", "en": "First-time managers"},
+        {"value": "Experienced leaders", "tr": "Deneyimli liderler", "en": "Experienced leaders"},
+        {"value": "No preference", "tr": "Tercihim yok", "en": "No preference"}
+      ]
+    },
+    motivations: {
+      shared: false,
+      title: {"tr": "Motivasyonlar", "en": "Motivations"},
+      places: { mentor: { field: "motivations", container: "motivationTags" } },
+      builtins: [
+        {"value": "Giving back", "tr": "Katkı sağlamak", "en": "Giving back"},
+        {"value": "Gaining new perspectives", "tr": "Yeni bakış açıları kazanmak", "en": "Gaining new perspectives"},
+        {"value": "Developing my leadership", "tr": "Liderliğimi geliştirmek", "en": "Developing my leadership"},
+        {"value": "Strengthening the organisation", "tr": "Organizasyonu güçlendirmek", "en": "Strengthening the organisation"},
+        {"value": "Personal growth", "tr": "Kişisel gelişim", "en": "Personal growth"}
+      ]
+    },
+    mentorProfile: {
+      shared: false,
+      title: {"tr": "Tercih edilen mentor profili", "en": "Preferred mentor profile"},
+      places: { mentee: { field: "preferredMentorProfile", container: "mentorProfileTags" } },
+      builtins: [
+        {"value": "Same function", "tr": "Aynı fonksiyondan", "en": "Same function"},
+        {"value": "Different function", "tr": "Farklı fonksiyondan", "en": "Different function"},
+        {"value": "Senior leader", "tr": "Üst düzey lider", "en": "Senior leader"},
+        {"value": "No preference", "tr": "Fark etmez", "en": "No preference"}
+      ]
+    }
+  };
+
+  const OPTION_MAX = 20;      // options an organisation may add to one list
+  const OPTION_TEXT_MAX = 60;
+
   const TEXT_MAX = 200;      // label
   const HELP_MAX = 400;      // help text under the label
   const STEP_MAX = 120;
@@ -147,7 +276,7 @@
    *   { mentor: { fields: { <id>: { hidden, required, label, help } }, steps: { <n>: {tr,en} } }, mentee: {...} }
    */
   function sanitize(raw) {
-    const out = { mentor: { fields: {}, steps: {} }, mentee: { fields: {}, steps: {} } };
+    const out = { mentor: { fields: {}, steps: {} }, mentee: { fields: {}, steps: {} }, options: {} };
     const src = raw && typeof raw === "object" ? raw : {};
     for (const form of Object.keys(FORMS)) {
       const s = src[form] && typeof src[form] === "object" ? src[form] : {};
@@ -170,7 +299,40 @@
         if (p) out[form].steps[n] = p;
       }
     }
+
+    // Option lists: hidden built-ins (by value) and the organisation's own
+    // options. An own option is stored with its English name, else its
+    // Turkish name - like the built-ins, whose values are English.
+    out.options = {};
+    const so = src.options && typeof src.options === "object" ? src.options : {};
+    for (const [lid, def] of Object.entries(LISTS)) {
+      const c = so[lid] && typeof so[lid] === "object" ? so[lid] : {};
+      const builtins = new Set(def.builtins.map(o => o.value));
+      const hidden = [...new Set((Array.isArray(c.hidden) ? c.hidden : []).filter(v => builtins.has(v)))];
+      const taken = new Set(def.builtins.flatMap(o => [o.value, o.tr, o.en]).filter(Boolean).map(x => x.toLocaleLowerCase("tr")));
+      const custom = [];
+      for (const o of Array.isArray(c.custom) ? c.custom : []) {
+        if (custom.length >= OPTION_MAX) break;
+        const tr = cleanText(o && o.tr, OPTION_TEXT_MAX), en = cleanText(o && o.en, OPTION_TEXT_MAX);
+        const value = en || tr;
+        if (!value) continue;
+        const keys = [value, tr, en].filter(Boolean).map(x => x.toLocaleLowerCase("tr"));
+        if (keys.some(k => taken.has(k))) continue;          // same as a built-in or an earlier own option
+        keys.forEach(k => taken.add(k));
+        custom.push({ value, tr, en });
+      }
+      if (hidden.length || custom.length) out.options[lid] = { hidden, custom };
+    }
     return out;
+  }
+
+  /** The option lists shown on one form, with the organisation's changes. */
+  function listsOf(form, config) {
+    const opts = (config && config.options) || {};
+    return Object.entries(LISTS).filter(([, d]) => d.places[form]).map(([id, d]) => {
+      const c = opts[id] || { hidden: [], custom: [] };
+      return { id, ...d, place: d.places[form], hidden: c.hidden || [], custom: c.custom || [] };
+    });
   }
 
   /** The form as an organisation's settings make it: one entry per field. */
@@ -218,7 +380,7 @@
     return own || field.label[lang] || field.label.tr;
   }
 
-  const api = { FORMS, sanitize, effective, missing, missingAll, labelOf, LIMITS: { label: TEXT_MAX, help: HELP_MAX, step: STEP_MAX } };
+  const api = { FORMS, LISTS, sanitize, effective, listsOf, missing, missingAll, labelOf, LIMITS: { label: TEXT_MAX, help: HELP_MAX, step: STEP_MAX, options: OPTION_MAX, optionText: OPTION_TEXT_MAX } };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.MentorFormSchema = api;
 })(typeof window !== "undefined" ? window : this);

@@ -1763,6 +1763,41 @@ async function formChecks(server, ids) {
   r = await api(null, "POST", `/public/invite/${bTok}/mentors`, { ...mentorBase, email: "fb@b.example" });
   check("B's form still requires the role", r.status === 400 && r.json.fields.includes("role"), JSON.stringify(r.json?.fields));
 
+  // ---- Option lists (5b) ----
+  const listLost = [];
+  for (const [lid, def] of Object.entries(schema.LISTS)) {
+    for (const [form, place] of Object.entries(def.places)) {
+      const html = fs.readFileSync(path.join(ROOT, form === "mentor" ? "public/register.html" : "public/mentee_register.html"), "utf8");
+      const i = html.indexOf(`id="${place.container}"`), j = html.indexOf("</div>", i);
+      const inHtml = [...html.slice(i, j).matchAll(/data-value="([^"]+)"/g)].map(m => m[1].replace(/&amp;/g, "&"));
+      const inSchema = def.builtins.map(o => o.value);
+      if (inHtml.join("|") !== inSchema.join("|")) listLost.push(`${form}.${lid}`);
+    }
+  }
+  check("every option list matches its form's built-in options", listLost.length === 0, listLost.join(", "));
+
+  const many = Array.from({ length: 25 }, (_, k) => ({ tr: `Seçenek ${k}`, en: `Option ${k}` }));
+  const ops = await api(F, "PUT", "/registration-forms", { config: { options: {
+    functionalAreas: { hidden: ["Marketing", "Not a built-in"], custom: [{ tr: "Lojistik", en: "Logistics" }, { tr: "pazarlama" }, { tr: "Kalite" }, { en: "logistics" }] },
+    industries: { custom: many },
+    unknownList: { hidden: ["x"] }
+  } } });
+  const o = ops.json?.config?.options || {};
+  check("hidden built-ins and own options are kept",
+        JSON.stringify(o.functionalAreas?.hidden) === '["Marketing"]' &&
+        o.functionalAreas?.custom?.map(x => x.value).join("|") === "Logistics|Kalite", JSON.stringify(o.functionalAreas));
+  check("an own option is stored with its English name, else its Turkish name",
+        o.functionalAreas?.custom?.[0]?.value === "Logistics" && o.functionalAreas?.custom?.[1]?.value === "Kalite");
+  check("same-name options and unknown lists are dropped; at most 20 per list",
+        !o.unknownList && o.industries?.custom?.length === 20);
+  const info2 = (await api(null, "GET", `/public/invite/${token}`)).json;
+  check("the forms receive the options (a shared list once, for both)", info2?.formConfig?.options?.functionalAreas?.custom?.length === 2);
+  r = await api(null, "POST", `/public/invite/${token}/mentors`, { ...mentorBase, role: "Director", email: "fo@form.example", functionalAreas: ["Logistics"] });
+  const stored = (await api(F, "GET", `/mentors/${r.json?.id}`)).json;
+  check("a registration with an own option keeps that value", r.status === 200 && stored?.functionalAreas?.[0] === "Logistics",
+        `HTTP ${r.status} ${JSON.stringify(stored?.functionalAreas)}`);
+  check("B's forms have no options changed", !Object.keys((await api(B, "GET", "/registration-forms")).json?.config?.options || {}).length);
+
   const reset = await api(F, "DELETE", "/registration-forms");
   check("back to the forms as they ship", reset.json?.isDefault === true && (await api(F, "GET", "/registration-forms")).json?.isDefault === true);
 }

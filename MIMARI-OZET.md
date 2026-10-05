@@ -84,7 +84,11 @@ süper admin de yönetim panelinden değiştirebilir.
 
 **Kayıt formları** kuruluş bazında düzenlenebilir ("Kayıt Formları"
 sayfası): alan göster/gizle, zorunlu/isteğe bağlı, alan ve adım metinleri
-(TR/EN). Ad, e-posta, KVKK onayı, mentor kapasitesi ve uygunluğu ile
+(TR/EN), seçim listelerine kuruluşa özel seçenek ekleme ve hazır
+seçenekleri gizleme. Fonksiyonel alanlar, yetkinlikler ve diller iki
+formda ortaktır, çünkü AI eşleştirmesi iki tarafı bu listelerle
+karşılaştırır. Eklenen seçenekler İngilizce adıyla (yoksa Türkçe adıyla)
+kaydedilir. Ad, e-posta, KVKK onayı, mentor kapasitesi ve uygunluğu ile
 mentee'nin gelişim ihtiyacı kilitlidir. Zorunlu alanlar sunucuda da
 denetlenir; kurallar tek bir dosyadadır (`public/assets/formSchema.js`).
 
