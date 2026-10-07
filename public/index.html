@@ -116,7 +116,32 @@
       display: flex;
       flex-direction: column;
     }
-    .card button { margin-top: auto; align-self: flex-start; }
+    .card-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .info {
+      position: relative; flex: 0 0 auto;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #e8ecf5; color: var(--navy);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; line-height: 1;
+      cursor: help; user-select: none; outline: none; transition: background 0.15s;
+    }
+    .info:hover, .info.open { background: #d8dfee; }
+    .info:focus-visible { box-shadow: 0 0 0 3px rgba(26,43,94,0.25); }
+    .info .tip {
+      display: none; position: absolute; z-index: 20;
+      bottom: calc(100% + 10px); right: -6px;
+      width: 280px; max-width: 78vw;
+      background: #1a2b5e; color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px; line-height: 1.5; font-weight: 400; font-style: normal;
+      text-align: left; padding: 10px 12px; border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18); cursor: default;
+    }
+    .info .tip::after {
+      content: ""; position: absolute; top: 100%; right: 12px;
+      border: 7px solid transparent; border-top-color: #1a2b5e;
+    }
+    .info:hover .tip, .info:focus .tip, .info.open .tip { display: block; }
     .crumb { margin: 0 0 14px; font-size: 14px; }
     .crumb a { color: var(--navy); text-decoration: none; font-weight: 600; cursor: pointer; }
     .crumb span { color: var(--muted); }
@@ -267,6 +292,7 @@
         checkinDesc: "The questions of the mid-programme feedback sent to mentors and mentees.",
         programsDesc: "Create mentoring programmes with start and end dates; place mentors and mentees into them.",
         openButton: "Open",
+        infoLabel: "What is this section?",
         footerText: "Built with AI • Mentorship Platform MVP"
       },
       tr: {
@@ -299,6 +325,7 @@
         checkinDesc: "Mentor ve mentee'lere gönderilen ara geri bildirimin soruları.",
         programsDesc: "Başlangıç ve bitiş tarihli mentorluk programları oluşturun; mentor ve mentee'leri programlara yerleştirin.",
         openButton: "Aç",
+        infoLabel: "Bu bölüm nedir?",
         footerText: "AI ile geliştirildi • Mentorluk Platformu MVP"
       }
     };
@@ -354,9 +381,54 @@
         <div class="card" onclick="goTo('${page}')">
           <div class="card-title">${esc(t[title])}</div>
           <div class="card-desc">${esc(t[desc])}</div>
-          <button>${esc(t.openButton)}</button>
+          <div class="card-foot">
+            <button>${esc(t.openButton)}</button>
+            <span class="info" tabindex="0" role="button" aria-label="${esc(t.infoLabel)}" onclick="toggleInfo(event, this)">i<span class="tip" role="tooltip">${esc((HELP[currentLanguage] || HELP.en)[title] || "")}</span></span>
+          </div>
         </div>`).join("");
     }
+
+    // Info icon: hover / keyboard focus shows the tip; a tap toggles it (phones).
+    // It never opens the card itself.
+    function toggleInfo(e, el) {
+      e.stopPropagation();
+      const wasOpen = el.classList.contains("open");
+      document.querySelectorAll(".info.open").forEach(x => x.classList.remove("open"));
+      if (!wasOpen) el.classList.add("open");
+    }
+    document.addEventListener("click", () => document.querySelectorAll(".info.open").forEach(x => x.classList.remove("open")));
+
+    // Short explanation of each section, shown in the info pop-up.
+    const HELP = {
+      en: {
+        mentorRegistrationTitle: "The list of mentors registered for the programme. Here you view and edit a mentor's profile, capacity and programmes; the registration link to send to mentors is here too.",
+        menteeRegistrationTitle: "The list of mentees and their development needs. Here you view and edit mentee records and find the registration link to send to mentees.",
+        menteeMatchingTitle: "Where you choose a mentor for a mentee (or a mentee group). AI suggests suitable mentors based on the development need, or you pick the mentor from the list yourself; once matched, a shared workspace opens.",
+        hrDashboardTitle: "Follow all ongoing mentorships in one place: status, meetings held (date and duration only), feedback and closing surveys. The match e-mail is sent from here.",
+        reportsTitle: "Management report, survey results and event reports, filtered by date. Download as PDF or Excel; downloaded files are anonymous.",
+        announcementsTitle: "Write an announcement like an e-mail and send it to mentors, mentees, groups or any address, with attachments. Each person gets their own e-mail; drafts are kept.",
+        eventsTitle: "Plan group mentoring, trainings and online sessions. Participants get a calendar invitation and answer from their own link; after the event you mark actual attendance.",
+        adminTitle: "Settings you change now and then: programmes, feedback questions, registration forms and organisation settings (logo, default time zone).",
+        programsTitle: "Create mentoring programmes with start and end dates. Mentors and mentees are placed into programmes, and matches follow the programme's dates.",
+        checkinTitle: "The questions of the mid-programme feedback. The same set goes to mentors and mentees; you send a feedback round whenever you want from the dashboard.",
+        formsTitle: "Choose which fields the mentor and mentee registration forms show, which are required, and their TR/EN texts. Fields needed for AI matching stay locked.",
+        companySettingsTitle: "Your organisation's logo on screens, e-mails and reports, and the default time zone for events."
+      },
+      tr: {
+        mentorRegistrationTitle: "Programa kayıt olan mentorların listesi. Mentorun profilini, kapasitesini ve programlarını buradan görür ve düzenlersiniz; mentorlara gönderilecek kayıt bağlantısı da burada.",
+        menteeRegistrationTitle: "Mentee'lerin ve gelişim ihtiyaçlarının listesi. Mentee kayıtlarını buradan görür ve düzenlersiniz; mentee'lere gönderilecek kayıt bağlantısı da burada.",
+        menteeMatchingTitle: "Bir mentee'ye (ya da bir mentee grubuna) mentor seçtiğiniz yer. AI, gelişim ihtiyacına göre uygun mentorları önerir ya da mentoru listeden kendiniz seçersiniz; eşleştirince ortak çalışma sayfası açılır.",
+        hrDashboardTitle: "Devam eden tüm mentorlukları tek yerden izleyin: durum, yapılan toplantılar (yalnızca tarih ve süre), geri bildirimler ve kapanış anketleri. Eşleşme e-postası da buradan gönderilir.",
+        reportsTitle: "Yönetim raporu, anket sonuçları ve etkinlik raporları; tarih filtresiyle. PDF ya da Excel olarak indirin; indirilen dosyalar anonimdir.",
+        announcementsTitle: "Duyuruyu e-posta gibi yazıp mentorlara, mentee'lere, gruplara ya da istediğiniz adreslere ekleriyle gönderin. Herkese ayrı e-posta gider; taslaklar saklanır.",
+        eventsTitle: "Grup mentorluğu, eğitim ve online oturumlar planlayın. Katılımcılara takvim daveti gider, yanıtlarını kendi bağlantılarından verirler; etkinlikten sonra gerçek katılımı işaretlersiniz.",
+        adminTitle: "Ara sıra değiştirilen ayarlar: programlar, geri bildirim soruları, kayıt formları ve firma ayarları (logo, varsayılan saat dilimi).",
+        programsTitle: "Başlangıç ve bitiş tarihli mentorluk programları oluşturun. Mentor ve mentee'ler programlara yerleştirilir; eşleşmeler programın tarihlerine göre ilerler.",
+        checkinTitle: "Program ortasında istenen geri bildirimin soruları. Aynı set mentor ve mentee'ye gider; geri bildirim turunu istediğiniz zaman Dashboard'dan gönderirsiniz.",
+        formsTitle: "Mentor ve mentee kayıt formlarında hangi alanların görüneceğini, hangilerinin zorunlu olacağını ve TR/EN metinlerini seçin. AI eşleştirmesi için gereken alanlar kilitli kalır.",
+        companySettingsTitle: "Firmanızın ekranlarda, e-postalarda ve raporlarda görünen logosu ve etkinlikler için varsayılan saat dilimi."
+      }
+    };
 
     function goTo(page) {
       const target = new URL(page, window.location.href);
