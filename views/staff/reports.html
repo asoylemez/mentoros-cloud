@@ -100,6 +100,7 @@
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-report="management" data-i18n="tabManagement">Yönetim Raporu</button>
     <button class="tab" role="tab" data-report="surveys" data-i18n="tabSurveys">Anket Sonuçları</button>
+    <button class="tab" role="tab" data-report="events" data-i18n="tabEvents">Etkinlikler</button>
   </div>
 
   <div class="toolbar">
@@ -139,7 +140,7 @@ const T = {
   tr: {
     pageTitle: "Raporlar", languageLabel: "Dil",
     subtitle: "Yönetim raporu ve anket sonuçları. Her rapor PDF veya Excel olarak indirilebilir.",
-    tabManagement: "Yönetim Raporu", tabSurveys: "Anket Sonuçları",
+    tabManagement: "Yönetim Raporu", tabSurveys: "Anket Sonuçları", tabEvents: "Etkinlikler",
     program: "Program", allPrograms: "Tüm programlar", noProgram: "Programsız",
     screenOnly: "Yalnızca ekranda isimli; PDF ve Excel'de isimsiz",
     from: "Başlangıç", to: "Bitiş", apply: "Uygula", allTime: "Tüm zamanlar",
@@ -147,12 +148,12 @@ const T = {
     showDetail: "Detayları göster", hideDetail: "Detayları gizle", rows: "{n} satır",
     noRows: "Bu aralıkta kayıt yok.", summary: "Özet", metric: "Gösterge", value: "Değer", notesSheet: "Notlar",
     rangeWrong: "Bitiş tarihi başlangıçtan önce olamaz.",
-    pageTitleDoc: "Raporlar — MentorOS", confidential: "GİZLİ", files: { management: "Yonetim_Raporu", surveys: "Anket_Sonuclari" }
+    pageTitleDoc: "Raporlar — MentorOS", confidential: "GİZLİ", files: { management: "Yonetim_Raporu", surveys: "Anket_Sonuclari", events: "Etkinlik_Raporu" }
   },
   en: {
     pageTitle: "Reports", languageLabel: "Language",
     subtitle: "Management report and survey results. Each report can be downloaded as PDF or Excel.",
-    tabManagement: "Management Report", tabSurveys: "Survey Results",
+    tabManagement: "Management Report", tabSurveys: "Survey Results", tabEvents: "Events",
     program: "Programme", allPrograms: "All programmes", noProgram: "No programme",
     screenOnly: "Named on screen only; anonymous in PDF and Excel",
     from: "From", to: "To", apply: "Apply", allTime: "All time",
@@ -160,7 +161,7 @@ const T = {
     showDetail: "Show details", hideDetail: "Hide details", rows: "{n} rows",
     noRows: "No records in this range.", summary: "Summary", metric: "Measure", value: "Value", notesSheet: "Notes",
     rangeWrong: "The end date cannot be before the start date.",
-    pageTitleDoc: "Reports — MentorOS", confidential: "CONFIDENTIAL", files: { management: "Management_Report", surveys: "Survey_Results" }
+    pageTitleDoc: "Reports — MentorOS", confidential: "CONFIDENTIAL", files: { management: "Management_Report", surveys: "Survey_Results", events: "Event_Report" }
   }
 };
 let LANG = localStorage.getItem("mentorAppLang") || "tr";
@@ -169,7 +170,7 @@ const t = k => (T[LANG][k] ?? T.tr[k] ?? k);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 let REPORT = new URLSearchParams(location.search).get("report") || "management";
-if (!["management", "surveys"].includes(REPORT)) REPORT = "management";
+if (!["management", "surveys", "events"].includes(REPORT)) REPORT = "management";
 let DATA = null;
 const OPEN = new Set();          // detail tables opened
 

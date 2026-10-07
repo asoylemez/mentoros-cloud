@@ -24,5 +24,6 @@ function run(build) {
 
 router.get("/reports/management", requireApiKey, run(reports.management));
 router.get("/reports/surveys", requireApiKey, run(reports.surveyResults));
+router.get("/reports/events", requireApiKey, run(reports.eventsReport));
 
 module.exports = router;

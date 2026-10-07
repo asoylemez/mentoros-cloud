@@ -413,6 +413,7 @@ async function run(server) {
   await eventChecks(server, { SA, B });
   await availabilityChecks(server, { SA, B });
   await aiSwitchChecks(server, { SA, B });
+  await eventReportChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -2058,6 +2059,55 @@ async function aiSwitchChecks(server, ids) {
         (await api(N, "GET", `/mentorships/${ms.id}`)).status === 200);
   await api(SA, "PATCH", "/companies/tenant-n", { aiEnabled: true });
   check("turned on again, AI requests are let through", (await api(N, "POST", "/match", { menteeId: e })).json?.code !== "ai_disabled");
+}
+
+// ---------------------------------------------------------------------
+// EVENT REPORT (stage 6b)
+// ---------------------------------------------------------------------
+
+async function eventReportChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n22) EVENT REPORT\n");
+  check("unauthenticated /reports/events rejected", (await api(null, "GET", "/reports/events")).status === 401);
+  const pw = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-er", name: "ER", password: pw });
+  const R = await login("tenant-er", pw);
+  const post = async (url, body) => (await api(R, "POST", url, body)).json;
+  const P = (await post("/programs", { name: "ERP", startDate: "2020-01-01", endDate: "2030-12-31" })).program.id;
+  const m1 = (await post("/mentors", { fullName: "Erol Raporcu", email: "er1@er.example", role: "Director", capacity: 2 })).id;
+  const m2 = (await post("/mentors", { fullName: "Eda Raporcu", email: "er2@er.example", role: "Director", capacity: 2 })).id;
+  const past = (await post("/events", { title: "Gecmis atolye", eventDate: "2020-05-05", startTime: "10:00", programId: P })).event;
+  const next = (await post("/events", { title: "Gelecek atolye", eventDate: "2030-05-05", startTime: "10:00" })).event;
+  const gone = (await post("/events", { title: "Iptal atolye", eventDate: "2030-06-06", startTime: "10:00" })).event;
+  for (const ev of [past, next, gone]) await api(R, "POST", `/events/${ev.id}/participants`, { selection: { mentorIds: [m1, m2] } });
+
+  const db = openDb(server.dbPath);
+  try {   // as if the invitations had gone out (no mail server needed for the report)
+    db.prepare(`UPDATE event_participants SET invited_at = '2020-01-01T00:00:00Z' WHERE company_id = 'tenant-er'`).run();
+  } finally { db.close(); }
+  const ps = id => (async () => (await api(R, "GET", `/events/${id}`)).json.participants)();
+  const pp = await ps(past.id);
+  await api(R, "PATCH", `/events/${past.id}/participants/${pp[0].id}/attendance`, { attendance: "attended" });
+  await api(R, "PATCH", `/events/${past.id}/participants/${pp[1].id}/attendance`, { attendance: "absent" });
+  const np = await ps(next.id);
+  await api(null, "POST", `/public/event/${new URL(np[0].answerUrl).searchParams.get("token")}`, { response: "accepted" });
+  await api(R, "POST", `/events/${gone.id}/cancel`, { notify: false });
+
+  const rep = async q => (await api(R, "GET", `/reports/events?lang=en${q || ""}`)).json;
+  const val = (d, label) => (d?.summary || []).find(x => x.label === label)?.value;
+  let d = await rep();
+  check("event counts: held, upcoming, cancelled",
+        val(d, "Events") === 3 && val(d, "Held") === 1 && val(d, "Upcoming") === 1 && val(d, "Cancelled") === 1);
+  check("invitations and answers (cancelled events left out)",
+        val(d, "People invited") === 4 && val(d, "Said they would attend") === 1 && val(d, "Not answered") === 3 && val(d, "Response rate") === "25%");
+  check("real attendance and its rate", val(d, "Attended") === 1 && val(d, "Absent") === 1 && val(d, "Attendance rate") === "50%");
+  check("the participant table lists each invited person per event", (d.tables.find(t => t.key === "people")?.rows || []).length === 6);
+  d = await rep(`&programId=${P}`);
+  check("programme filter", val(d, "Events") === 1 && val(d, "Held") === 1);
+  d = await rep("&from=2025-01-01");
+  check("date filter", val(d, "Events") === 2 && val(d, "Held") === 0);
+  const b = (await api(B, "GET", "/reports/events?lang=en")).json;
+  check("B's report has none of these events", !JSON.stringify(b || {}).includes("atolye") && !JSON.stringify(b || {}).includes("Raporcu"));
 }
 
 main().catch(err => {
