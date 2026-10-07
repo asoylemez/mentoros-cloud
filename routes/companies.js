@@ -105,7 +105,7 @@ router.get("/companies/:id/password", staffAuth.requireSuperAdmin, wrap(async (r
 }));
 
 router.patch("/companies/:id", staffAuth.requireSuperAdmin, wrap(async (req, res) => {
-  const { name, domain, status, password, expiresAt } = req.body;
+  const { name, domain, status, password, expiresAt, aiEnabled } = req.body;
 
   if (password && String(password).length < 8) {
     return res.status(400).json({
@@ -114,7 +114,7 @@ router.patch("/companies/:id", staffAuth.requireSuperAdmin, wrap(async (req, res
   }
 
   const updated = companies.update(req.params.id, {
-    name, domain, status, password, expiresAt
+    name, domain, status, password, expiresAt, aiEnabled
   });
 
   if (!updated) {

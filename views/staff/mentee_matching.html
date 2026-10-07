@@ -1059,6 +1059,22 @@
       applyTranslations();
       await loadPrograms();
       await MentorOptionLabels.load();   // the organisation's own option names
+      // AI turned off for this organisation (super admin): manual matching only.
+      try {
+        const me = await (await fetch(`${API_BASE_URL}/my-company`)).json();
+        if (me.aiEnabled === false) {
+          const aiTab = document.querySelector('#methodTabs .tab[data-method="ai"]');
+          if (aiTab) aiTab.style.display = "none";
+          setMethod("manual");
+          const note = document.createElement("div");
+          note.className = "hint";
+          note.style.margin = "6px 0 10px";
+          note.textContent = currentLanguage === "en"
+            ? "AI suggestions are turned off for your organisation; choose the mentor from the list."
+            : "Kuruluşunuz için AI önerileri kapalı; mentoru listeden seçin.";
+          document.getElementById("methodTabs").after(note);
+        }
+      } catch { /* AI stays as it is */ }
       loadCandidates();     // kayitli mentee + aktif mentor listeleri
     });
 

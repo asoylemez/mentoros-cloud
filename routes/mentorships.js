@@ -7,7 +7,7 @@ const { loadMatchableGroup } = require("../lib/groupRules");
 const { db } = require("../db");
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
-const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, refuseIfAiOff, wrap } = require("./_helpers");
 const { programForMatch } = require("../lib/programRules");
 
 const router = express.Router();
@@ -413,6 +413,8 @@ router.patch(
 // =====================================================================
 
 router.post("/development-plan", requireApiKey, wrap(async (req, res) => {
+  const aiCompany = requireCompany(req, res);
+  if (!aiCompany || refuseIfAiOff(res, aiCompany)) return;
   const {
     mentorshipId,
     menteeRole,
@@ -472,6 +474,8 @@ router.post("/development-plan", requireApiKey, wrap(async (req, res) => {
 // =====================================================================
 
 router.post("/guided-session", requireApiKey, wrap(async (req, res) => {
+  const aiCompany = requireCompany(req, res);
+  if (!aiCompany || refuseIfAiOff(res, aiCompany)) return;
   const {
     step = 1,
     mentorshipId = "",

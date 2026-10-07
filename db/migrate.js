@@ -188,6 +188,18 @@ function run() {
   migrateCompanyLogos();
   migrateEvents();
   migrateMeetingSlots();
+  migrateAiSwitch();
+}
+
+/**
+ * AI PER ORGANISATION: the super admin can turn the AI off for one
+ * organisation (matching suggestions, development plan, guided session).
+ * On by default - also for every existing organisation.
+ */
+function migrateAiSwitch() {
+  if (columnExists("companies", "ai_enabled")) return;
+  db.exec(`ALTER TABLE companies ADD COLUMN ai_enabled INTEGER NOT NULL DEFAULT 1`);
+  console.log("  migration: companies.ai_enabled added");
 }
 
 /**

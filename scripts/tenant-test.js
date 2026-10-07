@@ -412,6 +412,7 @@ async function run(server) {
   await formChecks(server, { SA, B });
   await eventChecks(server, { SA, B });
   await availabilityChecks(server, { SA, B });
+  await aiSwitchChecks(server, { SA, B });
 
   // The data on disk is encrypted: no name used above appears in the
   // database file or its WAL.
@@ -2018,6 +2019,45 @@ async function availabilityChecks(server, ids) {
     check("another workspace's token cannot change it -> 403",
           (await api(null, "PUT", `/public/workspace/${bid}/availability?token=${t1}`, { weekly: {} })).status === 403);
   }
+}
+
+// ---------------------------------------------------------------------
+// AI ON / OFF PER ORGANISATION (super admin)
+// ---------------------------------------------------------------------
+
+async function aiSwitchChecks(server, ids) {
+  const { SA, B } = ids;
+  console.log("\n21) AI ON / OFF PER ORGANISATION\n");
+  const pwN = crypto.randomBytes(9).toString("hex");
+  await api(SA, "POST", "/companies", { companyId: "tenant-n", name: "N", password: pwN });
+  const N = await login("tenant-n", pwN);
+  const post = async (url, body) => (await api(N, "POST", url, body)).json;
+  const m = (await post("/mentors", { fullName: "Nmentor", email: "nm@n.example", role: "Director", capacity: 3 })).id;
+  const e = (await post("/mentees", { fullName: "Nmentee", email: "ne@n.example", role: "Analyst", developmentNeeds: "Lead a team" })).id;
+
+  check("AI is on for a new organisation", (await api(N, "GET", "/my-company")).json?.aiEnabled === true);
+  check("an organisation cannot switch its own AI -> 403",
+        (await api(N, "PATCH", "/companies/tenant-n", { aiEnabled: false })).status === 403);
+  const off = await api(SA, "PATCH", "/companies/tenant-n", { aiEnabled: false });
+  check("super admin turns the AI off", off.status === 200 && (await api(N, "GET", "/my-company")).json?.aiEnabled === false);
+
+  check("AI matching is refused -> 403", (await api(N, "POST", "/match", { menteeId: e })).json?.code === "ai_disabled");
+  check("AI development plan (HR) is refused -> 403",
+        (await api(N, "POST", "/development-plan", { developmentNeed: "x" })).json?.code === "ai_disabled");
+  const ms = (await post("/mentorships", { mentorId: m, menteeId: e, closingDate: END_DATE })).mentorship;
+  check("manual matching still works", !!ms?.id);
+  const u = new URL(ms.workspaceUrl), wid = u.searchParams.get("id"), wt = u.searchParams.get("token");
+  const ws = (await api(null, "GET", `/public/workspace/${wid}?token=${wt}`)).json;
+  check("the workspace knows the AI is off", ws?.aiEnabled === false);
+  check("workspace AI plan and guided session are refused -> 403",
+        (await api(null, "POST", `/public/workspace/${wid}/development-plan?token=${wt}`, {})).json?.code === "ai_disabled" &&
+        (await api(null, "POST", `/public/workspace/${wid}/guided-session?token=${wt}`, {})).json?.code === "ai_disabled");
+  check("other organisations keep their AI", (await api(B, "POST", "/match", { menteeId: "x" })).json?.code !== "ai_disabled");
+  check("nothing is lost: people and the mentorship are all there",
+        ((await api(N, "GET", "/mentors")).json || []).length === 1 && ((await api(N, "GET", "/mentees")).json || []).length === 1 &&
+        (await api(N, "GET", `/mentorships/${ms.id}`)).status === 200);
+  await api(SA, "PATCH", "/companies/tenant-n", { aiEnabled: true });
+  check("turned on again, AI requests are let through", (await api(N, "POST", "/match", { menteeId: e })).json?.code !== "ai_disabled");
 }
 
 main().catch(err => {

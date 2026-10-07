@@ -4,7 +4,7 @@ const { mentors, mentees, programs, menteeGroups } = require("../db/repos");
 const { rankMentors } = require("../ai/matching");
 const { composeMenteeNeed, shortNeedSummary, composeGroupNeed } = require("../lib/menteeNeed");
 const { loadMatchableGroup } = require("../lib/groupRules");
-const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, wrap } = require("./_helpers");
+const { requireApiKey, requireCompany, ownRecord, refuseGroupMember, refuseIfAiOff, wrap } = require("./_helpers");
 const { programForMatch } = require("../lib/programRules");
 
 const router = express.Router();
@@ -135,6 +135,7 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
 router.post("/match", requireApiKey, wrap(async (req, res) => {
   const companyId = requireCompany(req, res);
   if (!companyId) return;
+  if (refuseIfAiOff(res, companyId)) return;      // AI turned off for this organisation
   const language = req.body.language || "tr";
 
   // ------------------------------------------------------------------

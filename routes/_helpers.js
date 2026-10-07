@@ -117,6 +117,17 @@ function ownRecord(req, res, record, notFoundMessage = "Not found") {
 }
 
 /**
+ * AI switched off for an organisation (super admin): nothing of theirs is
+ * sent to the AI. Writes 403 and returns true when the AI is off.
+ */
+function refuseIfAiOff(res, companyId) {
+  const { companies } = require("../db/repos");
+  if (companies.aiEnabled(companyId)) return false;
+  res.status(403).json({ error: "AI features are turned off for this organisation.", code: "ai_disabled" });
+  return true;
+}
+
+/**
  * A mentee in a group is matched together with the group, never alone.
  * Writes 409 and returns true when `mentee` is in a group.
  */
@@ -142,4 +153,4 @@ function wrap(handler) {
     Promise.resolve(handler(req, res, next)).catch(next);
 }
 
-module.exports = { requireApiKey, getCompanyId, requireCompany, ownRecord, refuseGroupMember, wrap };
+module.exports = { requireApiKey, getCompanyId, requireCompany, ownRecord, refuseGroupMember, refuseIfAiOff, wrap };

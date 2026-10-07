@@ -75,6 +75,12 @@ const companies = {
     return companies.get(id);
   },
 
+  /** Is the AI on for this organisation? (missing organisation: no) */
+  aiEnabled(id) {
+    const row = db.prepare(`SELECT ai_enabled FROM companies WHERE company_id = ?`).get(slugify(id));
+    return !!(row && row.ai_enabled);
+  },
+
   /** The time zone a new event starts with (IANA name). */
   setDefaultTimezone(id, tz) {
     db.prepare(`UPDATE companies SET default_timezone = ?, updated_at = ? WHERE company_id = ?`).run(tz, now(), slugify(id));
@@ -110,7 +116,7 @@ const companies = {
 
   get(companyId) {
     const row = db.prepare(
-      `SELECT company_id, login_name, name, domain, status, expires_at, reply_to, default_timezone,
+      `SELECT company_id, login_name, name, domain, status, expires_at, reply_to, default_timezone, ai_enabled,
               created_at, updated_at, (password_enc <> '') AS has_password
          FROM companies WHERE company_id = ?`
     ).get(slugify(companyId));
@@ -119,7 +125,7 @@ const companies = {
 
   list() {
     const rows = db.prepare(
-      `SELECT company_id, login_name, name, domain, status, expires_at,
+      `SELECT company_id, login_name, name, domain, status, expires_at, ai_enabled,
               created_at, updated_at, (password_enc <> '') AS has_password
          FROM companies ORDER BY created_at DESC`
     ).all();
@@ -234,7 +240,7 @@ const companies = {
    * Sadece gonderilen alanlar degisir. Sifre bos gelirse KORUNUR
    * (yanlislikla sifirlanmasin).
    */
-  update(companyId, { name, domain, status, password, expiresAt }) {
+  update(companyId, { name, domain, status, password, expiresAt, aiEnabled }) {
     const id = slugify(companyId);
     const existing = companies.get(id);
     if (!existing) return null;
@@ -254,6 +260,12 @@ const companies = {
     if (status !== undefined && ["active", "inactive"].includes(status)) {
       sets.push("status = @status");
       params.status = status;
+    }
+
+    // AI for this organisation (super admin): true / false only.
+    if (typeof aiEnabled === "boolean") {
+      sets.push("ai_enabled = @aiEnabled");
+      params.aiEnabled = aiEnabled ? 1 : 0;
     }
 
     // Sifre SADECE yeni bir deger geldiyse degisir.

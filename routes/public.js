@@ -15,7 +15,7 @@ function programNameOf(programId) {
 const { generateDevelopmentPlan } = require("../ai/devplan");
 const { generateGuidance } = require("../ai/guidedSession");
 const mailer = require("../mail/mailer");
-const { wrap } = require("./_helpers");
+const { refuseIfAiOff, wrap } = require("./_helpers");
 
 const router = express.Router();
 
@@ -135,6 +135,7 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
   safe.members = (full.members || []).map(m => ({ fullName: m.fullName, role: m.role }));
   // The mentor's availability calendar (stored on the mentor).
   safe.mentorAvailability = mentors.getMeetingSlots(full.mentorId) || { weekly: {}, dates: {}, updatedAt: null };
+  safe.aiEnabled = companies.aiEnabled(full.companyId);   // hides the AI buttons when off
   res.json(safe);
 }));
 
@@ -157,6 +158,7 @@ router.post(
   requireWorkspaceToken,
   wrap(async (req, res) => {
     const ms = req.mentorship;
+    if (refuseIfAiOff(res, ms.companyId)) return;
     const mentor = mentors.get(ms.mentorId);
 
     const plan = await generateDevelopmentPlan({
@@ -272,6 +274,7 @@ router.post(
   requireWorkspaceToken,
   wrap(async (req, res) => {
     const ms = req.mentorship;
+    if (refuseIfAiOff(res, ms.companyId)) return;
 
     const guidance = await generateGuidance({
       step: Number(req.body.step) || 1,

@@ -1568,7 +1568,10 @@
         COMPANY_ID = mentorshipData.companyId || COMPANY_ID;
 
         renderWorkspace(mentorshipData);
+        // AI turned off for the organisation: no AI button, no automatic plan.
+        document.querySelectorAll(".btn-ai").forEach(b => { b.style.display = mentorshipData.aiEnabled === false ? "none" : ""; });
         if (
+          mentorshipData.aiEnabled !== false &&
           mentorshipData.developmentNeed &&
           (!mentorshipData.goals || mentorshipData.goals.length === 0)
         ) {

@@ -281,6 +281,12 @@
       </select>
     </div>
     <div class="field">
+      <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+        <input type="checkbox" id="editAi" style="width:auto"> Yapay zekâ (AI) özellikleri açık
+      </label>
+      <div class="hint">Kapalıyken bu kuruluşun hiçbir verisi AI'ya gönderilmez: AI ile mentor önerisi, AI gelişim planı ve rehberli görüşme kapanır. Mevcut veriler etkilenmez; eşleştirme elle yapılır.</div>
+    </div>
+    <div class="field">
       <label>Yeni şifre</label>
       <input id="editPass" placeholder="Değiştirmek istemiyorsanız boş bırakın"/>
       <div class="hint"><a href="#" onclick="genPass('editPass');return false;">Rastgele üret</a></div>
@@ -424,7 +430,7 @@ function render() {
                  </div>`
               : `<span class="pw-none" title="Bu hesap, şifre saklama özelliğinden önce oluşturuldu. Düzenle'den yeni şifre belirlediğinizde burada görünür.">Kayıtlı değil — Düzenle'den yeni şifre belirleyin</span>`}
             </td>
-            <td>${statusPill(c)}</td>
+            <td>${statusPill(c)}${c.aiEnabled === 0 || c.aiEnabled === false ? ` <span class="pill off" title="AI kapalı">AI kapalı</span>` : ""}</td>
             <td>${c.expiresAt ? esc(c.expiresAt) : '<span class="counts">süresiz</span>'}</td>
             <td class="counts">
               ${c.counts.mentors} mentor · ${c.counts.mentees} mentee · ${c.counts.mentorships} eşleşme
@@ -509,6 +515,7 @@ function openEdit(id) {
   document.getElementById("editName").value = c.name;
   document.getElementById("editExp").value = c.expiresAt || "";
   document.getElementById("editStatus").value = c.status;
+  document.getElementById("editAi").checked = c.aiEnabled !== 0 && c.aiEnabled !== false;
   document.getElementById("editPass").value = "";
   renderEditLogo(c);
   document.getElementById("editModal").classList.add("show");
@@ -598,7 +605,8 @@ async function saveEdit() {
   const body = {
     name: document.getElementById("editName").value.trim(),
     expiresAt: document.getElementById("editExp").value,
-    status: document.getElementById("editStatus").value
+    status: document.getElementById("editStatus").value,
+    aiEnabled: document.getElementById("editAi").checked
   };
 
   const pass = document.getElementById("editPass").value.trim();
