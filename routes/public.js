@@ -123,6 +123,11 @@ function requireWorkspaceToken(req, res, next) {
   next();
 }
 
+/** The organisation's default time zone (Organisation Settings). */
+function companyTimezone(companyId) {
+  return (companies.get(companyId) || {}).defaultTimezone || require("../lib/meetingSlots").DEFAULT_TZ;
+}
+
 router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res) => {
   const full = mentorships.getWithMeetings(req.params.id);
 
@@ -133,8 +138,10 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
   // Group: members by name only - the workspace link is shared by the
   // whole group, so it does not carry the members' e-mail addresses.
   safe.members = (full.members || []).map(m => ({ fullName: m.fullName, role: m.role }));
-  // The mentor's availability calendar (stored on the mentor).
-  safe.mentorAvailability = mentors.getMeetingSlots(full.mentorId) || { weekly: {}, dates: {}, updatedAt: null };
+  // The mentor's availability calendar (stored on the mentor), in the
+  // organisation's default time zone (Organisation Settings).
+  safe.timezone = companyTimezone(full.companyId);
+  safe.mentorAvailability = mentors.getMeetingSlots(full.mentorId, safe.timezone) || { weekly: {}, dates: {}, updatedAt: null };
   safe.aiEnabled = companies.aiEnabled(full.companyId);   // hides the AI buttons when off
   res.json(safe);
 }));
@@ -145,7 +152,7 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
  * Anyone holding this workspace link may edit it (as in v28).
  */
 router.put("/public/workspace/:id/availability", requireWorkspaceToken, wrap(async (req, res) => {
-  const saved = mentors.setMeetingSlots(req.mentorship.mentorId, req.body || {});
+  const saved = mentors.setMeetingSlots(req.mentorship.mentorId, req.body || {}, companyTimezone(req.mentorship.companyId));
   if (!saved) {
     return res.status(404).json({ error: "The mentor of this workspace was not found.", code: "no_mentor" });
   }

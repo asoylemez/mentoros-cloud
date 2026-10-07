@@ -2014,6 +2014,18 @@ async function availabilityChecks(server, ids) {
         JSON.stringify(other?.mentorAvailability?.weekly) === '{"1":[9,10]}');
   check("a wrong token cannot change it -> 403",
         (await api(null, "PUT", `/public/workspace/${id1}/availability?token=wrong`, { weekly: {} })).status === 403);
+  // Time zone: the workspace follows the organisation's default time zone.
+  check("the workspace names the organisation's time zone (default Istanbul)", other?.timezone === "Europe/Istanbul", other?.timezone);
+  await api(W, "PUT", "/company-timezone", { timezone: "America/Los_Angeles" });
+  const la = (await api(null, "GET", `/public/workspace/${id1}?token=${t1}`)).json;
+  check("after changing it in Organisation Settings the workspace uses the new zone", la?.timezone === "America/Los_Angeles", la?.timezone);
+  const dayIn = (tz, add) => new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" })
+    .format(new Date(Date.now() + add * 86400000));
+  const laToday = dayIn("America/Los_Angeles", 0), laYesterday = dayIn("America/Los_Angeles", -1);
+  const r2 = (await api(null, "PUT", `/public/workspace/${id1}/availability?token=${t1}`,
+    { weekly: {}, dates: { [laToday]: [10], [laYesterday]: [11] } })).json?.mentorAvailability;
+  check("'today' is counted in the organisation's zone (today kept, yesterday dropped)",
+        JSON.stringify(r2?.dates) === `{"${laToday}":[10]}`, JSON.stringify(r2?.dates));
   const bMs = ((await api(B, "GET", "/mentorships")).json || [])[0];
   if (bMs) {
     const [bid] = ws(bMs);

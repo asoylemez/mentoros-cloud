@@ -552,16 +552,17 @@ const mentors = {
     return mentors.get(id);
   },
 
-  /** The mentor's meeting availability (weekly + specific dates), or null. */
-  getMeetingSlots(id) {
+  /** The mentor's meeting availability (weekly + specific dates), or null.
+   *  tz = the organisation's time zone; it decides which day is "today". */
+  getMeetingSlots(id, tz) {
     const row = db.prepare(`SELECT meeting_slots FROM mentors WHERE id = ?`).get(id);
-    return row ? require("../lib/meetingSlots").parse(row.meeting_slots) : null;
+    return row ? require("../lib/meetingSlots").parse(row.meeting_slots, tz) : null;
   },
 
-  setMeetingSlots(id, input) {
-    const value = require("../lib/meetingSlots").serialize(input);
+  setMeetingSlots(id, input, tz) {
+    const value = require("../lib/meetingSlots").serialize(input, tz);
     const r = db.prepare(`UPDATE mentors SET meeting_slots = ? WHERE id = ?`).run(value, id);
-    return r.changes ? mentors.getMeetingSlots(id) : null;
+    return r.changes ? mentors.getMeetingSlots(id, tz) : null;
   },
 
   get(id) {

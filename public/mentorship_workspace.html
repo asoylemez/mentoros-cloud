@@ -794,7 +794,7 @@
               <span class="guide-toggle" id="availToggle">+</span>
             </div>
             <p class="guide-intro" data-i18n="availIntro">
-              The mentor marks the days and times that suit them for a meeting. Times are Istanbul time.
+              The mentor marks the days and times that suit them for a meeting.
             </p>
             <div class="av-summary" id="availSummary"></div>
 
@@ -964,6 +964,7 @@
   </div>
 
   <script src="/guides.js"></script>
+  <script src="/assets/timezones.js"></script>
 
   <script>
 
@@ -1061,7 +1062,7 @@
         meetingHistory: "Meeting History",
         announcements: "Announcements",
         availTitle: "Mentor Availability",
-        availIntro: "The mentor marks the days and times that suit them for a meeting. Times are Istanbul time.",
+        availIntro: "The mentor marks the days and times that suit them for a meeting. Times are {tz} time.",
         availTabCalendar: "Calendar",
         availTabWeekly: "Weekly repeat",
         availLegendWeekly: "Every week",
@@ -1176,7 +1177,7 @@
         meetingHistory: "Toplantı Geçmişi",
         announcements: "Duyurular",
         availTitle: "Mentorun Uygun Olduğu Zamanlar",
-        availIntro: "Mentor, toplantı için uygun olduğu günleri ve saatleri işaretler. Saatler İstanbul saatidir.",
+        availIntro: "Mentor, toplantı için uygun olduğu günleri ve saatleri işaretler. Saatler {tz} saatidir.",
         availTabCalendar: "Takvim",
         availTabWeekly: "Haftalık tekrar",
         availLegendWeekly: "Her hafta",
@@ -1251,6 +1252,8 @@
         const key = el.getAttribute("data-i18n");
         el.textContent = t(key);
       });
+      // The availability intro names the organisation's time zone.
+      avUpdateIntro();
 
       document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
         const key = el.getAttribute("data-i18n-placeholder");
@@ -1563,6 +1566,7 @@
 
         mentorshipData = await response.json();
         setAvailability(mentorshipData.mentorAvailability);   // the mentor's free hours
+        avUpdateIntro();                                       // names the organisation's time zone
 
         // Firma kodu artik linkte tasinmiyor; iliski verisinden okunur.
         COMPANY_ID = mentorshipData.companyId || COMPANY_ID;
@@ -1925,8 +1929,8 @@
     /* ==================================================================
        MENTOR AVAILABILITY  (stored on the mentor; lib/meetingSlots.js)
 
-       One-hour slots from 08:00 to 20:00 (start hours 8..19), Istanbul
-       time. A day is available through the weekly repeat OR a mark on
+       One-hour slots from 08:00 to 20:00 (start hours 8..19), in the
+       organisation's default time zone. A day is available through the weekly repeat OR a mark on
        that date. Nobody books a slot here - it only shows availability.
        ================================================================== */
 
@@ -1939,7 +1943,25 @@
     let avSelected = null;           // "YYYY-MM-DD"
 
     const pad2 = n => String(n).padStart(2, "0");
-    const avToday = () => new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+    // The organisation's default time zone (sent with the workspace).
+    // Function declarations (hoisted): applyLanguage() runs before this
+    // part of the script and before mentorshipData exists.
+    function avTz() {
+      try { return (mentorshipData && mentorshipData.timezone) || "Europe/Istanbul"; }
+      catch { return "Europe/Istanbul"; }
+    }
+    function avUpdateIntro() {
+      document.querySelectorAll('[data-i18n="availIntro"]').forEach(el => { el.textContent = t("availIntro").replace("{tz}", avTzCity()); });
+    }
+    function avTzCity() {
+      const tz = avTz();
+      if (window.MentorTimeZones) return MentorTimeZones.cityOf(tz, currentLanguage);
+      return tz.split("/").pop().replace(/_/g, " ");
+    }
+    const avToday = () => {
+      try { return new Intl.DateTimeFormat("en-CA", { timeZone: avTz(), year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
+      catch { return new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10); }
+    };
     const avIsoWeekday = ds => ((new Date(ds + "T00:00:00Z").getUTCDay() + 6) % 7) + 1;
     const avLocale = () => (currentLanguage === "tr" ? "tr-TR" : "en-GB");
     const avSlotLabel = h => `${pad2(h)}:00–${pad2(h + 1)}:00`;
