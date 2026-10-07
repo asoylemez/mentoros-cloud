@@ -210,6 +210,11 @@ async function run(server) {
   const B = await login("tenant-b", pwB);
 
   check("unauthenticated /mentors rejected", (await api(null, "GET", "/mentors")).status === 401);
+  // User guides (PDF): no data inside, served without sign-in (mentors and mentees have no account).
+  for (const f of ["user-guide-tr", "user-guide-en", "workspace-guide-tr", "workspace-guide-en"]) {
+    const g = await fetch(`${BASE}/guides/${f}.pdf`);
+    check(`guide ${f}.pdf is served as a PDF`, g.status === 200 && /application\/pdf/.test(g.headers.get("content-type") || ""));
+  }
   check("super admin has no organisation data (/mentors)", (await api(SA, "GET", "/mentors")).status === 401);
   check("organisation cannot list accounts (/companies)", (await api(A, "GET", "/companies")).status === 403);
   check("organisation cannot list backups (/backups)", (await api(A, "GET", "/backups")).status === 403);

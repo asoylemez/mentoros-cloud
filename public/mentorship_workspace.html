@@ -105,6 +105,9 @@
       font-weight: 700;
     }
 
+    .ws-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+    a.copy-link-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+    .ws-buttons .copy-link-btn { font-family: inherit; font-size: 15px; line-height: 1.2; }
     .copy-link-btn {
       background: white;
       color: var(--navy);
@@ -754,7 +757,11 @@
 
         <div class="workspace-actions">
           <div class="workspace-id" id="workspaceIdLabel">Workspace ID: -</div>
-          <button class="copy-link-btn" onclick="copyWorkspaceLink()" data-i18n="copyWorkspaceLink">Copy Workspace Link</button>
+          <div class="ws-buttons">
+            <!-- How to use this page (PDF) in the selected language; href set in applyLanguage(). -->
+            <a id="wsGuideLink" class="copy-link-btn" href="/guides/workspace-guide-en.pdf" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span data-i18n="wsGuideLink">Page Guide (PDF)</span></a>
+            <button class="copy-link-btn" onclick="copyWorkspaceLink()" data-i18n="copyWorkspaceLink">Copy Workspace Link</button>
+          </div>
         </div>
       </header>
 
@@ -1081,6 +1088,7 @@
         availNext: "Next month",
         availLeave: "Unsaved availability changes will be lost.",
         copyWorkspaceLink: "Copy Workspace Link",
+        wsGuideLink: "Page Guide (PDF)",
         workspaceId: "Workspace ID",
         workspaceLinkCopied: "Workspace link copied.",
         dataNotLoaded: "Workspace data is not loaded yet.",
@@ -1196,6 +1204,7 @@
         availNext: "Sonraki ay",
         availLeave: "Kaydedilmemiş uygunluk değişiklikleri kaybolacak.",
         copyWorkspaceLink: "Çalışma Alanı Linkini Kopyala",
+        wsGuideLink: "Sayfa Kılavuzu (PDF)",
         workspaceId: "Çalışma Alanı ID",
         workspaceLinkCopied: "Çalışma alanı linki kopyalandı.",
         dataNotLoaded: "Çalışma alanı verisi henüz yüklenmedi.",
@@ -1247,6 +1256,8 @@
       document.documentElement.lang = currentLanguage;
       const selector = document.getElementById("languageSelect");
       if (selector) selector.value = currentLanguage;
+      const wsGuide = document.getElementById("wsGuideLink");
+      if (wsGuide) wsGuide.href = `/guides/workspace-guide-${currentLanguage === "tr" ? "tr" : "en"}.pdf`;
 
       document.querySelectorAll("[data-i18n]").forEach(el => {
         const key = el.getAttribute("data-i18n");
