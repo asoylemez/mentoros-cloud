@@ -71,6 +71,11 @@
       text-decoration: none;
     }
     .guide-link:hover { background: #eef1f7; }
+    .logout-btn {
+      padding: 9px 14px; border: 1px solid #d6dbe6; border-radius: 10px;
+      background: #fff; color: var(--navy); font-weight: 600; font-size: 14px; cursor: pointer;
+    }
+    .logout-btn:hover { background: #eef1f7; }
 
     .language-select {
       background: white;
@@ -244,6 +249,7 @@
         <option value="en">English</option>
         <option value="tr">Türkçe</option>
       </select>
+      <button id="logoutBtn" class="logout-btn" type="button" data-i18n="logout">Log out</button>
     </div>
 
     <div class="hero">
@@ -305,6 +311,7 @@
         programsDesc: "Create mentoring programmes with start and end dates; place mentors and mentees into them.",
         openButton: "Open",
         guideLink: "User Guide (PDF)",
+        logout: "Log out",
         infoLabel: "What is this section?",
         footerText: "Built with AI • Mentorship Platform MVP"
       },
@@ -339,6 +346,7 @@
         programsDesc: "Başlangıç ve bitiş tarihli mentorluk programları oluşturun; mentor ve mentee'leri programlara yerleştirin.",
         openButton: "Aç",
         guideLink: "Kullanım Kılavuzu (PDF)",
+        logout: "Çıkış",
         infoLabel: "Bu bölüm nedir?",
         footerText: "AI ile geliştirildi • Mentorluk Platformu MVP"
       }
@@ -451,6 +459,12 @@
       target.searchParams.set("company", COMPANY_ID);
       window.location.href = target.toString();
     }
+
+    // Same sign-out as the other staff pages.
+    document.getElementById("logoutBtn").onclick = async () => {
+      try { await fetch("/company-logout", { method: "POST" }); } catch { /* go to sign-in anyway */ }
+      location.href = "/login.html";
+    };
 
     applyLanguage();
   </script>

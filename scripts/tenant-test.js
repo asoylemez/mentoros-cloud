@@ -1226,9 +1226,13 @@ async function announcementChecks(server, ids) {
   const preview = async (selection, cookie = G) => api(cookie, "POST", "/announcements/preview-recipients", { selection });
   const names = r => (r.json?.recipients || []).map(x => x.name || x.email).sort().join(",");
   let r = await preview({ mentors: "programs", mentorProgramIds: [PX] });
-  check("mentors of a programme (active only)", names(r) === "Gamze", names(r));
+  // "inactive" is only the MATCHING status: such people still get announcements.
+  check("mentors of a programme (any matching status)", names(r) === "Gamze,Gulsen", names(r));
   r = await preview({ mentees: "all" });
-  check("all active mentees", names(r) === "Gani,Gonul,Gul,Gurkan", names(r));
+  check("all mentees, inactive ones too", names(r) === "Gani,Gizem,Gonul,Gul,Gurkan", names(r));
+  const pick = (await api(G, "GET", "/announcements/people")).json || {};
+  check("announcement / event pickers list inactive mentors and mentees too",
+        (pick.mentors || []).some(m => m.id === m3) && (pick.mentees || []).some(m => m.id === e3));
   r = await preview({ groupIds: [grp], menteeIds: [e4], extra: ["GONUL@g.example", "dis@x.example"] });
   check("each address once (group + person + typed-in)", r.json?.count === 3, names(r));
   r = await preview({ extra: "ok@x.example, not-an-address" });
@@ -1266,7 +1270,7 @@ async function announcementChecks(server, ids) {
     await api(G, "PUT", "/announcement-settings", { replyTo: "ik@g.example" });
 
     const send = await api(G, "POST", `/announcements/${A1.id}/send`);
-    check("send starts in the background (202)", send.status === 202 && send.json?.queued === 8, `HTTP ${send.status}, ${send.json?.queued}`);
+    check("send starts in the background (202)", send.status === 202 && send.json?.queued === 10, `HTTP ${send.status}, ${send.json?.queued}`);
     let a;
     for (let i = 0; i < 60; i++) {
       a = (await api(G, "GET", `/announcements/${A1.id}`)).json;
@@ -1274,8 +1278,8 @@ async function announcementChecks(server, ids) {
       await new Promise(res => setTimeout(res, 250));
     }
     const st = a.recipients.reduce((o, x) => (o[x.status] = (o[x.status] || 0) + 1, o), {});
-    check("all sent except the refused address", a.status === "sent" && st.sent === 7 && st.failed === 1, JSON.stringify(st));
-    check("one e-mail per recipient", sink.messages.length === 7 && sink.messages.every(m => m.rcpt.length === 1), `${sink.messages.length}`);
+    check("all sent except the refused address", a.status === "sent" && st.sent === 9 && st.failed === 1, JSON.stringify(st));
+    check("one e-mail per recipient", sink.messages.length === 9 && sink.messages.every(m => m.rcpt.length === 1), `${sink.messages.length}`);
     const toGamze = sink.messages.find(m => m.rcpt[0] === "gamze@g.example");
     const body = toGamze ? qp(toGamze.raw) : "";
     check("{ad} becomes the recipient's name (subject and body)", /Merhaba Gamze,/.test(body) && /Program duyurusu Gamze/.test(body));

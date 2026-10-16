@@ -58,8 +58,9 @@ router.get("/announcements/people", requireApiKey, wrap(async (req, res) => {
   res.json({
     programs: programs.listByCompany(companyId).map(p => ({ id: p.id, name: p.name, status: p.status })),
     groups: menteeGroups.listByCompany(companyId).map(g => ({ id: g.id, name: g.name, memberCount: g.members.length })),
-    mentors: mentors.listByCompany(companyId).filter(m => m.status === "active").map(person),
-    mentees: mentees.listByCompany(companyId).filter(m => m.status === "active").map(person)
+    // Everyone, whatever their matching status (see lib/announcements.js resolve()).
+    mentors: mentors.listByCompany(companyId).map(person),
+    mentees: mentees.listByCompany(companyId).map(person)
   });
 }));
 

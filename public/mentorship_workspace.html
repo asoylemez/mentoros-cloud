@@ -688,6 +688,26 @@
       .guide-table th { border-bottom: none; }
     }
 
+    .ws-buttons button.copy-link-btn { display: inline-flex; align-items: center; gap: 6px; }
+    .print-text { display: none; }
+
+    /* "Save Page as PDF": the plan, the people and the meeting history.
+       Forms, editors and buttons are left out. */
+    @media print {
+      @page { size: A4; margin: 14mm; }
+      body { background: #fff !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print, .ws-buttons, .language-switcher, .message, #loading { display: none !important; }
+      .grid { display: block !important; }
+      .card { box-shadow: none !important; border: 1px solid #d6dbe6 !important; margin-bottom: 12px; }
+      .person-box { break-inside: avoid; }
+      .plan-field label { break-after: avoid; }
+      .meeting-card { break-inside: avoid; }
+      textarea { display: none !important; }
+      .print-text { display: block; white-space: pre-wrap; font-size: 13px; line-height: 1.5; color: #1f2937;
+                    border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; min-height: 1.5em; }
+      input[type="checkbox"] { width: auto !important; }
+    }
   </style>
 </head>
 
@@ -759,7 +779,9 @@
           <div class="workspace-id" id="workspaceIdLabel">Workspace ID: -</div>
           <div class="ws-buttons">
             <!-- How to use this page (PDF) in the selected language; href set in applyLanguage(). -->
-            <a id="wsGuideLink" class="copy-link-btn" href="/guides/workspace-guide-en.pdf" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span data-i18n="wsGuideLink">Page Guide (PDF)</span></a>
+            <a id="wsGuideLink" class="copy-link-btn" href="/guides/workspace-guide-en.pdf" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span data-i18n="wsGuideLink">User Guide (PDF)</span></a>
+            <!-- The browser's print dialog; "Save as PDF" there gives a PDF of this page. -->
+            <button class="copy-link-btn" type="button" onclick="printWorkspace()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="6" y="14" width="12" height="7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/></svg><span data-i18n="printPage">Save Page as PDF</span></button>
             <button class="copy-link-btn" onclick="copyWorkspaceLink()" data-i18n="copyWorkspaceLink">Copy Workspace Link</button>
           </div>
         </div>
@@ -793,7 +815,7 @@
             </div>
           </section>
 
-          <section class="card" id="availCard">
+          <section class="card no-print" id="availCard">
             <div class="guide-header" onclick="toggleAvail()" role="button" tabindex="0"
                  aria-controls="availBody" aria-expanded="false" id="availHead"
                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAvail()}">
@@ -830,7 +852,7 @@
             <div id="announcementsList"></div>
           </section>
 
-          <section class="card">
+          <section class="card no-print">
             <div class="guide-header" onclick="toggleGuide()">
               <h2 data-i18n="guideTitle" style="margin:0">Mentoring Guide</h2>
               <span class="guide-toggle" id="guideToggle">+</span>
@@ -877,7 +899,7 @@
               <textarea id="successCriteriaInput" data-i18n-placeholder="successCriteriaPlaceholder" placeholder="Example: Lead 2 meetings independently, receive mentor feedback, complete agreed actions."></textarea>
             </div>
 
-            <div class="plan-actions">
+            <div class="plan-actions no-print">
               <button class="btn-ai" onclick="generateDevelopmentPlan()">
                 <span data-i18n="generateWithAI">✨ Generate with AI</span>
               </button>
@@ -891,7 +913,7 @@
         </div>
         <div>
 
-          <section class="card">
+          <section class="card no-print">
             <h2 data-i18n="addMeetingNote">Add Meeting Note</h2>
 
             <form id="meetingForm">
@@ -1088,7 +1110,8 @@
         availNext: "Next month",
         availLeave: "Unsaved availability changes will be lost.",
         copyWorkspaceLink: "Copy Workspace Link",
-        wsGuideLink: "Page Guide (PDF)",
+        wsGuideLink: "User Guide (PDF)",
+        printPage: "Save Page as PDF",
         workspaceId: "Workspace ID",
         workspaceLinkCopied: "Workspace link copied.",
         dataNotLoaded: "Workspace data is not loaded yet.",
@@ -1204,7 +1227,8 @@
         availNext: "Sonraki ay",
         availLeave: "Kaydedilmemiş uygunluk değişiklikleri kaybolacak.",
         copyWorkspaceLink: "Çalışma Alanı Linkini Kopyala",
-        wsGuideLink: "Sayfa Kılavuzu (PDF)",
+        wsGuideLink: "Kullanım Kılavuzu (PDF)",
+        printPage: "Sayfayı PDF Olarak Kaydet",
         workspaceId: "Çalışma Alanı ID",
         workspaceLinkCopied: "Çalışma alanı linki kopyalandı.",
         dataNotLoaded: "Çalışma alanı verisi henüz yüklenmedi.",
@@ -1961,6 +1985,25 @@
       try { return (mentorshipData && mentorshipData.timezone) || "Europe/Istanbul"; }
       catch { return "Europe/Istanbul"; }
     }
+    // Printing: textareas only show their visible part on paper, so each
+    // plan field gets a plain-text copy that is printed instead.
+    function syncPrintText() {
+      document.querySelectorAll(".plan-field textarea").forEach(ta => {
+        let copy = ta.nextElementSibling;
+        if (!copy || !copy.classList.contains("print-text")) {
+          copy = document.createElement("div");
+          copy.className = "print-text";
+          ta.after(copy);
+        }
+        copy.textContent = ta.value.trim() || "—";
+      });
+    }
+    window.addEventListener("beforeprint", syncPrintText);
+    function printWorkspace() {
+      syncPrintText();
+      window.print();
+    }
+
     function avUpdateIntro() {
       document.querySelectorAll('[data-i18n="availIntro"]').forEach(el => { el.textContent = t("availIntro").replace("{tz}", avTzCity()); });
     }
