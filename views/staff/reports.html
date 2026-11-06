@@ -102,6 +102,7 @@
     <button class="tab" role="tab" data-report="surveys" data-i18n="tabSurveys">Anket Sonuçları</button>
     <button class="tab" role="tab" data-report="events" data-i18n="tabEvents">Etkinlikler</button>
     <button class="tab" role="tab" data-report="person" data-i18n="tabPerson">Kişiye Özel Rapor</button>
+    <button class="tab" role="tab" data-report="ai" data-i18n="tabAi">AI Yönetici Özeti</button>
   </div>
 
   <div class="toolbar">
@@ -154,7 +155,21 @@ const T = {
     showDetail: "Detayları göster", hideDetail: "Detayları gizle", rows: "{n} satır",
     person: "Kişi (sicil no ya da ad soyad)", pickPerson: "Raporu görmek için yukarıdan bir kişi seçin (sicil no ya da ad soyad yazın).",
     personNotFound: "Bu sicil numarasıyla kayıtlı kişi bulunamadı.", roleMentor: "Mentor", roleMentee: "Mentee",
-    noExportNote: "Yalnızca ekranda", tabPerson: "Kişiye Özel Rapor",
+    noExportNote: "Yalnızca ekranda", tabPerson: "Kişiye Özel Rapor", tabAi: "AI Yönetici Özeti",
+    ai: {
+      title: "AI Yönetici Özeti", generate: "Özeti oluştur", regenerate: "Yeniden oluştur", generating: "Oluşturuluyor… (birkaç saniye sürebilir)",
+      intro: "Seçili tarih aralığı ve program için sistemin hesapladığı sayılardan AI kısa bir yönetici özeti yazar. AI'ya isim, e-posta, sicil no, eşleşme bilgisi ve açık uçlu anket cevapları gitmez; yalnızca sayılar, oranlar ve program adları gider.",
+      none: "Henüz özet oluşturulmadı. Filtreleri seçip \"Özeti oluştur\" düğmesine basın.",
+      off: "AI bu firma için kapalı. AI Yönetici Özeti kullanılamaz.",
+      warn: "Bu metin AI tarafından üretildi. Kararlarda kullanmadan önce aşağıdaki sayılarla karşılaştırarak kontrol edin.",
+      created: "Oluşturulma", overview: "Genel değerlendirme", highlights: "Öne çıkan göstergeler", strengths: "Güçlü yönler",
+      risks: "Riskler ve dikkat gerektirenler", programmes: "Program bazında değerlendirme", actions: "Önerilen aksiyonlar",
+      cProgramme: "Program", cAssessment: "Değerlendirme", cPriority: "Öncelik", cAction: "Aksiyon",
+      priority: { high: "Yüksek", medium: "Orta", low: "Düşük" },
+      input: "AI'nın kullandığı sayılar", showInput: "AI'ya gidecek verileri göster", hideInput: "Gizle",
+      inputNow: "Şu anki filtrelerle AI'ya gidecek veriler", metric: "Gösterge", value: "Değer",
+      confirm: "Mevcut özetin yerine yeni bir özet oluşturulsun mu? (AI'ya bir istek gönderilir)", failed: "Özet oluşturulamadı"
+    },
     noRows: "Bu aralıkta kayıt yok.", summary: "Özet", metric: "Gösterge", value: "Değer", notesSheet: "Notlar",
     rangeWrong: "Bitiş tarihi başlangıçtan önce olamaz.",
     pageTitleDoc: "Raporlar — MentorOS", confidential: "GİZLİ", files: { management: "Yonetim_Raporu", surveys: "Anket_Sonuclari", events: "Etkinlik_Raporu", person: "Kisi_Raporu" }
@@ -170,7 +185,21 @@ const T = {
     showDetail: "Show details", hideDetail: "Hide details", rows: "{n} rows",
     person: "Person (person no. or name)", pickPerson: "Choose a person above to see the report (type a person number or a name).",
     personNotFound: "No person with this person number.", roleMentor: "Mentor", roleMentee: "Mentee",
-    noExportNote: "On screen only", tabPerson: "Person Report",
+    noExportNote: "On screen only", tabPerson: "Person Report", tabAi: "AI Executive Summary",
+    ai: {
+      title: "AI Executive Summary", generate: "Generate summary", regenerate: "Generate again", generating: "Generating… (this can take a few seconds)",
+      intro: "The AI writes a short executive summary from the figures the system works out for the chosen date range and programme. No names, e-mails, person numbers, matches or free-text survey answers go to the AI; only numbers, rates and programme names.",
+      none: "No summary yet. Choose the filters and press \"Generate summary\".",
+      off: "AI is turned off for this organisation. The AI Executive Summary cannot be used.",
+      warn: "This text was written by AI. Check it against the figures below before using it in decisions.",
+      created: "Created", overview: "Overall assessment", highlights: "Key figures", strengths: "Strengths",
+      risks: "Risks and points that need attention", programmes: "By programme", actions: "Recommended actions",
+      cProgramme: "Programme", cAssessment: "Assessment", cPriority: "Priority", cAction: "Action",
+      priority: { high: "High", medium: "Medium", low: "Low" },
+      input: "The figures the AI used", showInput: "Show what goes to the AI", hideInput: "Hide",
+      inputNow: "What goes to the AI with the current filters", metric: "Measure", value: "Value",
+      confirm: "Replace the current summary with a new one? (a request is sent to the AI)", failed: "The summary could not be generated"
+    },
     noRows: "No records in this range.", summary: "Summary", metric: "Measure", value: "Value", notesSheet: "Notes",
     rangeWrong: "The end date cannot be before the start date.",
     pageTitleDoc: "Reports — MentorOS", confidential: "CONFIDENTIAL", files: { management: "Management_Report", surveys: "Survey_Results", events: "Event_Report", person: "Person_Report" }
@@ -182,7 +211,7 @@ const t = k => (T[LANG][k] ?? T.tr[k] ?? k);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 let REPORT = new URLSearchParams(location.search).get("report") || "management";
-if (!["management", "surveys", "events", "person"].includes(REPORT)) REPORT = "management";
+if (!["management", "surveys", "events", "person", "ai"].includes(REPORT)) REPORT = "management";
 let DATA = null;
 const OPEN = new Set();          // detail tables opened
 
@@ -219,6 +248,7 @@ async function load() {
     return;
   }
   $("pdfBtn").disabled = $("xlsxBtn").disabled = true;
+  if (REPORT === "ai") return loadAi();
   if (REPORT === "person" && !PERSON) {
     DATA = null;
     $("report").innerHTML = `<div class="note">${esc(t("pickPerson"))}</div>`;
@@ -288,6 +318,7 @@ function exportTables() {
 
 /* ---------------- PDF (browser print, assets/report-print.js) ---------------- */
 function downloadPdf() {
+  if (REPORT === "ai") return downloadAiPdf();
   if (!DATA) return;
   const sections = [];
   (DATA.notes || []).forEach(n => sections.push({ note: n }));
@@ -344,6 +375,105 @@ document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () =>
   applyStatic();
   load();
 }));
+/* ---------------- AI executive summary ---------------- */
+let AI = null, AI_INPUT_OPEN = false;
+const A = k => (T[LANG].ai[k] ?? T.tr.ai[k] ?? k);
+async function loadAi() {
+  $("report").innerHTML = `<div class="loading">${esc(t("loading"))}</div>`;
+  try {
+    const res = await fetch("/reports/ai-summary");
+    if (res.status === 401) { location.href = "/login.html"; return; }
+    AI = await res.json();
+  } catch { AI = { aiEnabled: false, last: null }; }
+  renderAi();
+}
+const ul = list => `<ul style="margin:6px 0 0 18px">${list.map(x => `<li style="margin:3px 0">${esc(x)}</li>`).join("")}</ul>`;
+const block = (title, inner, extra = "") => `<div class="block"><div class="block-head"><h3>${esc(title)}</h3>${extra}</div><div style="padding:12px 16px">${inner}</div></div>`;
+function inputTables(sections) {
+  return sections.map(sec => sec.items
+    ? `<h4 style="margin:12px 0 6px;color:var(--navy)">${esc(sec.title)}</h4><div class="scroll"><table><thead><tr><th>${esc(A("metric"))}</th><th>${esc(A("value"))}</th></tr></thead>
+       <tbody>${sec.items.map(i => `<tr><td>${esc(i.label)}</td>${cell(i.value)}</tr>`).join("")}</tbody></table></div>`
+    : `<h4 style="margin:12px 0 6px;color:var(--navy)">${esc(sec.title)}</h4><div class="scroll"><table><thead><tr>${sec.table.columns.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead>
+       <tbody>${sec.table.rows.map(r => `<tr>${r.map(cell).join("")}</tr>`).join("")}</tbody></table></div>`).join("");
+}
+function renderAi() {
+  const L = AI && AI.last;
+  let html = `<div class="report-head"><h2>${esc(A("title"))}</h2></div><div class="note">${esc(A("intro"))}</div>`;
+  if (!AI || !AI.aiEnabled) {
+    $("report").innerHTML = html + `<div class="note err">${esc(A("off"))}</div>`;
+    return;
+  }
+  html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px">
+      <button id="aiGen" class="primary">${esc(L ? A("regenerate") : A("generate"))}</button>
+      <button id="aiShowInput" class="ghost">${esc(AI_INPUT_OPEN ? A("hideInput") : A("showInput"))}</button></div>
+    <div id="aiInputBox"></div>`;
+  if (!L) {
+    html += `<div class="empty">${esc(A("none"))}</div>`;
+  } else {
+    html += `<div class="range" style="margin-bottom:8px">${esc(A("created"))}: ${esc(new Date(L.createdAt).toLocaleString(LANG === "en" ? "en-GB" : "tr-TR"))} · ${esc(L.subtitle)}</div>`;
+    html += `<div class="note">⚠ ${esc(A("warn"))}</div>`;
+    const S = L.summary;
+    html += block(A("overview"), `<p style="margin:0;line-height:1.6">${esc(S.overview)}</p>`);
+    if (S.highlights.length) html += block(A("highlights"), ul(S.highlights));
+    if (S.strengths.length) html += block(A("strengths"), ul(S.strengths));
+    if (S.risks.length) html += block(A("risks"), ul(S.risks));
+    if (S.programmes.length) html += block(A("programmes"), `<div class="scroll"><table><thead><tr><th>${esc(A("cProgramme"))}</th><th>${esc(A("cAssessment"))}</th></tr></thead>
+      <tbody>${S.programmes.map(p => `<tr><td>${esc(p.programme)}</td><td>${esc(p.assessment)}</td></tr>`).join("")}</tbody></table></div>`);
+    if (S.actions.length) html += block(A("actions"), `<div class="scroll"><table><thead><tr><th>${esc(A("cPriority"))}</th><th>${esc(A("cAction"))}</th></tr></thead>
+      <tbody>${S.actions.map(a => `<tr><td>${esc(A("priority")[a.priority] || a.priority)}</td><td>${esc(a.action)}</td></tr>`).join("")}</tbody></table></div>`);
+    html += block(A("input"), inputTables(L.input || []));
+  }
+  $("report").innerHTML = html;
+  $("pdfBtn").disabled = !L;
+  $("xlsxBtn").disabled = true;
+  $("aiGen").onclick = generateAi;
+  $("aiShowInput").onclick = toggleAiInput;
+  if (AI_INPUT_OPEN) showAiInput();
+}
+async function showAiInput() {
+  const box = $("aiInputBox");
+  try {
+    const res = await fetch(`/reports/ai-summary/input?${query()}`);
+    const d = await res.json();
+    box.innerHTML = block(A("inputNow"), `<div class="range" style="margin-bottom:6px">${esc(d.subtitle)}</div>` + inputTables(d.sections || []));
+  } catch { box.innerHTML = ""; }
+}
+function toggleAiInput() { AI_INPUT_OPEN = !AI_INPUT_OPEN; renderAi(); }
+async function generateAi() {
+  if (AI.last && !confirm(A("confirm"))) return;
+  const btn = $("aiGen"); btn.disabled = true; btn.textContent = A("generating");
+  try {
+    const res = await fetch("/reports/ai-summary", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from: $("from").value, to: $("to").value, programId: $("programSel").value, lang: LANG }) });
+    if (res.status === 401) { location.href = "/login.html"; return; }
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error([d.error || res.status, d.detail, d.action].filter(Boolean).join("\n"));
+    AI.last = d.summary;
+    renderAi();
+  } catch (e) {
+    alert(`${A("failed")}:\n${e.message}`);
+    btn.disabled = false; btn.textContent = AI.last ? A("regenerate") : A("generate");
+  }
+}
+function downloadAiPdf() {
+  const L = AI && AI.last; if (!L) return;
+  const S = L.summary, list = arr => ({ rows: arr.map((x, i) => ({ label: String(i + 1), value: x })) });
+  const sections = [{ note: A("warn") }, { title: A("overview"), note: S.overview }];
+  if (S.highlights.length) sections.push({ title: A("highlights"), ...list(S.highlights) });
+  if (S.strengths.length) sections.push({ title: A("strengths"), ...list(S.strengths) });
+  if (S.risks.length) sections.push({ title: A("risks"), ...list(S.risks) });
+  if (S.programmes.length) sections.push({ title: A("programmes"), table: { columns: [A("cProgramme"), A("cAssessment")], rows: S.programmes.map(p => [p.programme, p.assessment]) } });
+  if (S.actions.length) sections.push({ title: A("actions"), table: { columns: [A("cPriority"), A("cAction")], rows: S.actions.map(a => [A("priority")[a.priority] || a.priority, a.action]) } });
+  for (const sec of L.input || []) {
+    sections.push(sec.items
+      ? { title: `${A("input")} — ${sec.title}`, table: { columns: [A("metric"), A("value")], rows: sec.items.map(i => [i.label, String(i.value)]) } }
+      : { title: `${A("input")} — ${sec.title}`, table: { columns: sec.table.columns, rows: sec.table.rows.map(r => r.map(v => v == null ? "" : String(v))) } });
+  }
+  MentorOSPrint.printReport({ landscape: false, lang: LANG, logoUrl: LOGO_URL, title: A("title"),
+    subtitle: `${L.subtitle} · ${A("created")}: ${new Date(L.createdAt).toLocaleString(LANG === "en" ? "en-GB" : "tr-TR")}`,
+    sections, footer: `MentorOS - ${A("title")}` });
+}
+
 /* ---------------- Person picker (person report) ---------------- */
 let PERSON = new URLSearchParams(location.search).get("sicil") || "", PEOPLE = [];
 const personLabel = p => `${p.sicilNo} · ${p.name} (${p.roles.map(r => t(r === "mentor" ? "roleMentor" : "roleMentee")).join(", ")})`;

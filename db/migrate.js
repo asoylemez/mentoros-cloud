@@ -191,6 +191,7 @@ function run() {
   migrateAiSwitch();
   migratePeopleV01V02();
   migrateV03Mail();
+  migrateV06AiSummary();
 }
 
 /**
@@ -750,6 +751,20 @@ function migrateV03Mail() {
   if (!columnExists("surveys", "last_reminded_at")) {
     db.exec(`ALTER TABLE surveys ADD COLUMN last_reminded_at TEXT NOT NULL DEFAULT ''`);
     console.log("  migration: surveys.last_reminded_at added");
+  }
+}
+
+/** V06: the organisation's last AI executive summary (lib/aiSummary.js). */
+function migrateV06AiSummary() {
+  if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='ai_summaries'`).get()) {
+    db.exec(`
+      CREATE TABLE ai_summaries (
+        company_id  TEXT PRIMARY KEY REFERENCES companies(company_id) ON DELETE CASCADE,
+        record      TEXT NOT NULL,
+        created_at  TEXT NOT NULL
+      );
+    `);
+    console.log("  migration: ai_summaries table added");
   }
 }
 
