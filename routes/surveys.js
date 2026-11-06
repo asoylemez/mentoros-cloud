@@ -113,7 +113,7 @@ router.post("/mentorships/:id/survey", requireApiKey, wrap(async (req, res) => {
     });
   }
 
-  const { survey, reused } = surveys.create(companyId, {
+  const { survey, reused, tooSoon } = surveys.create(companyId, {
     mentorshipId: ms.id,
     role,
     recipientName: recipient.name,
@@ -121,15 +121,25 @@ router.post("/mentorships/:id/survey", requireApiKey, wrap(async (req, res) => {
     language: lang
   });
 
+  if (tooSoon) {
+    return res.status(429).json({
+      error: "A reminder was sent less than 24 hours ago. Try again later.",
+      code: "reminder_too_soon"
+    });
+  }
+
   try {
     await mailer.sendSurvey({
       to: recipient.email,
+      name: recipient.name,
       otherName: recipient.other,
       survey,
       mentorship: ms,
       url: surveyUrl(survey.token),
+      reminder: reused,
       lang
     });
+    if (reused) surveys.markReminded(survey.id);
   } catch (error) {
     // Anket kaydi DURUR - IK linki elle de paylasabilsin diye geri doner.
     return res.status(502).json({
@@ -170,15 +180,20 @@ async function sendGroupSurveys(res, companyId, ms, lang) {
       failed.push({ name: member.fullName, reason: "No email address on file." });
       continue;
     }
-    const { survey } = surveys.create(companyId, {
+    const { survey, reused, tooSoon } = surveys.create(companyId, {
       mentorshipId: ms.id, role: "mentee", memberId: member.id,
       recipientName: member.fullName, recipientEmail: member.email, language: lang
     });
+    if (tooSoon) {
+      skipped.push({ name: member.fullName, reason: "reminder_too_soon" });
+      continue;
+    }
     try {
       await mailer.sendSurvey({
-        to: member.email, otherName: ms.mentorName, survey, mentorship: ms,
-        url: surveyUrl(survey.token), lang
+        to: member.email, name: member.fullName, otherName: ms.mentorName, survey, mentorship: ms,
+        url: surveyUrl(survey.token), reminder: reused, lang
       });
+      if (reused) surveys.markReminded(survey.id);
       sent.push({ name: member.fullName, email: member.email });
     } catch (error) {
       // The survey record stays (as for a single mentee), so HR can share

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>E-postalar — MentorOS</title>
+<style>
+  :root {
+    --navy: #1a2b5e; --copper: #b5651d; --bg: #f4f5f7; --card: #ffffff; --border: #e0e0e0;
+    --text: #23262d; --muted: #6b7280; --ok: #16a34a; --err: #dc2626; --warn: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 26px 22px 70px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff); color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0; }
+  .brand-text { font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  select, input, textarea { padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 14px;
+    background: #fff; color: var(--text); width: 100%; }
+  select.compact { width: auto; }
+  textarea { min-height: 260px; resize: vertical; line-height: 1.5; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--navy); }
+  button { padding: 9px 16px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px; }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .55; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--navy); filter: brightness(1.15); }
+  button.sm { padding: 6px 12px; font-size: 13px; }
+  h1 { color: var(--navy); font-size: 26px; margin-bottom: 4px; }
+  .sub { color: var(--muted); margin-bottom: 18px; max-width: 900px; }
+  .layout { display: grid; grid-template-columns: 290px 1fr; gap: 16px; align-items: start; }
+  .list { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .list button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eef0f5; border-radius: 0;
+    padding: 11px 14px; font-size: 14px; background: #fff; }
+  .list button:last-child { border-bottom: 0; }
+  .list button.on { background: #eef1f8; color: var(--navy); font-weight: 600; box-shadow: inset 3px 0 0 var(--copper); }
+  .list .tag { display: inline-block; font-size: 11px; background: #fef3c7; color: #92400e; border-radius: 999px; padding: 1px 7px; margin-left: 6px; font-weight: 600; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .panel h2 { color: var(--navy); font-size: 18px; margin-bottom: 10px; }
+  .tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+  .tabs button { border: 0; border-radius: 0; padding: 7px 16px; }
+  .tabs button.on { background: var(--navy); color: #fff; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  .vars { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+  .vars button { padding: 3px 9px; font-size: 12.5px; border-radius: 999px; background: #eef1f6; border-color: #dfe3ec; color: var(--navy); }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .state { font-size: 13px; color: var(--muted); }
+  .state.custom { color: #92400e; }
+  .bar { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .preview { margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .preview .ph { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 12px;
+    border-bottom: 1px solid var(--border); font-size: 13px; background: #fafbfc; }
+  .preview .subj { font-weight: 600; color: var(--navy); }
+  .preview iframe { width: 100%; height: 640px; border: 0; display: block; background: #f4f5f7; }
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--navy); color: #fff;
+    padding: 10px 18px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50; }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS</div>
+        <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:2px;">Mentorluk Programı Yönetim Platformu</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact"><option value="tr">Türkçe</option><option value="en">English</option></select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <h1 data-i18n="pageTitle">E-postalar</h1>
+  <div class="sub" data-i18n="pageSub"></div>
+
+  <div class="layout">
+    <div class="list" id="list"></div>
+    <div class="panel">
+      <h2 id="tplTitle">—</h2>
+      <div class="tabs">
+        <button id="tabTr" class="on" data-i18n="tabTr">Türkçe metin</button>
+        <button id="tabEn" data-i18n="tabEn">İngilizce metin</button>
+      </div>
+      <div class="field"><label for="f_subject" data-i18n="fSubject">Konu</label><input id="f_subject"></div>
+      <div class="field"><label for="f_title" data-i18n="fTitle">Başlık</label><input id="f_title"></div>
+      <div class="field">
+        <label for="f_body" data-i18n="fBody">Metin</label>
+        <div class="vars" id="vars"></div>
+        <textarea id="f_body"></textarea>
+        <div class="hint" data-i18n="bodyHint"></div>
+      </div>
+      <div class="field"><label for="f_button" data-i18n="fButton">Buton yazısı</label><input id="f_button"></div>
+      <div class="bar">
+        <span class="state" id="state"></span>
+        <div style="display:flex;gap:8px">
+          <button id="resetBtn" data-i18n="reset">Varsayılana dön</button>
+          <button id="previewBtn" data-i18n="preview">Önizle</button>
+          <button class="primary" id="saveBtn" data-i18n="save">Kaydet</button>
+        </div>
+      </div>
+      <div class="preview">
+        <div class="ph"><span><span data-i18n="previewSubject">Konu</span>: <span class="subj" id="pvSubject"></span></span>
+          <span class="hint" style="margin:0" data-i18n="previewHint"></span></div>
+        <iframe id="pvFrame" title="preview" sandbox=""></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const T = {
+  tr: {
+    pageTitle: "E-postalar", logout: "Çıkış",
+    pageSub: "Mentor ve mentee'lere giden e-postaların metinlerini firmanız için düzenleyin. Her e-postanın Türkçe ve İngilizce metni ayrıdır; kişiye hangi dilde gönderildiyse o metin kullanılır. Değiştirmediğiniz e-postalar varsayılan metinle gider.",
+    tabTr: "Türkçe metin", tabEn: "İngilizce metin", fSubject: "Konu", fTitle: "Başlık", fBody: "Metin", fButton: "Buton yazısı",
+    bodyHint: "Düz metin: satır boşlukları korunur. Değişkene tıklayınca metne eklenir; gönderimde her kişi için doldurulur. Logo, kişiye özel bağlantılı buton ve alt bilgi otomatik eklenir. Program adı (varsa) eşleşme ve ara dönem anketi e-postalarının başında da otomatik yazılır.",
+    reset: "Varsayılana dön", preview: "Önizle", save: "Kaydet", previewSubject: "Konu",
+    previewHint: "Örnek isimlerle önizleme (kaydedilmeden önce de)",
+    isDefault: "Varsayılan metin kullanılıyor.", isCustom: "Firmanıza özel metin kullanılıyor.", unsaved: "Kaydedilmemiş değişiklik var.",
+    saved: "Kaydedildi ✓", resetDone: "Varsayılan metne dönüldü ✓", resetConfirm: "Bu e-postanın {lang} metni varsayılana dönsün mü?",
+    custom: "özel", loadFailed: "E-postalar yüklenemedi.", leave: "Kaydedilmemiş değişiklikler kaybolacak. Devam edilsin mi?",
+    langTr: "Türkçe", langEn: "İngilizce",
+    err: { empty_field: "Boş bırakılamaz: ", too_long: "Çok uzun: " },
+    fieldNames: { subject: "Konu", title: "Başlık", body: "Metin", button: "Buton yazısı" }
+  },
+  en: {
+    pageTitle: "E-mails", logout: "Log out",
+    pageSub: "Edit the texts of the e-mails sent to mentors and mentees, for your organisation. Each e-mail has a Turkish and an English text; the one in the language the person gets is used. E-mails you do not change go out with the default text.",
+    tabTr: "Turkish text", tabEn: "English text", fSubject: "Subject", fTitle: "Title", fBody: "Text", fButton: "Button label",
+    bodyHint: "Plain text: line breaks are kept. Click a variable to add it; it is filled in for each person when sent. The logo, the button with the personal link and the footer are added automatically. The programme name (if any) is also shown at the top of match and mid-term survey e-mails.",
+    reset: "Back to default", preview: "Preview", save: "Save", previewSubject: "Subject",
+    previewHint: "Preview with sample names (also before saving)",
+    isDefault: "The default text is used.", isCustom: "Your organisation's own text is used.", unsaved: "There are unsaved changes.",
+    saved: "Saved ✓", resetDone: "Back to the default text ✓", resetConfirm: "Put the {lang} text of this e-mail back to the default?",
+    custom: "custom", loadFailed: "The e-mails could not be loaded.", leave: "Unsaved changes will be lost. Continue?",
+    langTr: "Turkish", langEn: "English",
+    err: { empty_field: "Cannot be empty: ", too_long: "Too long: " },
+    fieldNames: { subject: "Subject", title: "Title", body: "Text", button: "Button label" }
+  }
+};
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+if (!T[LANG]) LANG = "tr";
+const t = k => (T[LANG][k] ?? T.tr[k] ?? k);
+
+let LIST = [], LIMITS = {}, KEY = "", TPL_LANG = "tr", DIRTY = false;
+const FIELDS = ["subject", "title", "body", "button"];
+const cur = () => LIST.find(x => x.key === KEY);
+
+function toast(msg, isErr) {
+  const el = $("toast"); el.textContent = msg; el.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => { el.className = "toast"; }, 2800);
+}
+async function api(url, opts = {}) {
+  const res = await fetch(url, { headers: { "Content-Type": "application/json" }, ...opts });
+  if (res.status === 401) { location.href = "/login.html"; throw new Error("401"); }
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const e = T[LANG].err[d.code];
+    throw new Error(e ? e + (T[LANG].fieldNames[d.field] || "") : (d.error || res.status));
+  }
+  return d;
+}
+
+function renderList() {
+  $("list").innerHTML = LIST.map(x => `<button class="${x.key === KEY ? "on" : ""}" data-key="${esc(x.key)}">
+      ${esc(x.label[LANG] || x.label.tr)}${x.tr.custom || x.en.custom ? `<span class="tag">${esc(t("custom"))}</span>` : ""}
+    </button>`).join("");
+  $("list").querySelectorAll("button").forEach(b => b.onclick = () => select(b.dataset.key));
+}
+
+function fillEditor() {
+  const x = cur(); if (!x) return;
+  const v = x[TPL_LANG];
+  $("tplTitle").textContent = x.label[LANG] || x.label.tr;
+  $("tabTr").classList.toggle("on", TPL_LANG === "tr");
+  $("tabEn").classList.toggle("on", TPL_LANG === "en");
+  FIELDS.forEach(f => { $("f_" + f).value = v[f]; $("f_" + f).maxLength = LIMITS[f] || 5000; });
+  $("vars").innerHTML = x.variables.map(vr =>
+    `<button type="button" title="${esc(vr.help[LANG] || vr.help.tr)}" data-token="{${esc(vr[TPL_LANG])}}">{${esc(vr[TPL_LANG])}}</button>`).join("");
+  $("vars").querySelectorAll("button").forEach(b => b.onclick = () => insert(b.dataset.token));
+  DIRTY = false;
+  stateLine();
+  preview();
+}
+function stateLine() {
+  const x = cur(); if (!x) return;
+  const el = $("state");
+  el.textContent = DIRTY ? t("unsaved") : x[TPL_LANG].custom ? t("isCustom") : t("isDefault");
+  el.className = "state" + (DIRTY || x[TPL_LANG].custom ? " custom" : "");
+}
+function insert(token) {
+  const ta = $("f_body");
+  const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? s;
+  ta.value = ta.value.slice(0, s) + token + ta.value.slice(e);
+  ta.focus(); ta.selectionStart = ta.selectionEnd = s + token.length;
+  changed();
+}
+function changed() { DIRTY = true; stateLine(); }
+const values = () => Object.fromEntries(FIELDS.map(f => [f, $("f_" + f).value]));
+
+async function preview() {
+  try {
+    const d = await api(`/email-templates/${KEY}/${TPL_LANG}/preview`, { method: "POST", body: JSON.stringify(values()) });
+    $("pvSubject").textContent = d.subject;
+    $("pvFrame").srcdoc = d.html;
+  } catch (e) { toast(e.message, true); }
+}
+function confirmLeave() { return !DIRTY || confirm(t("leave")); }
+function select(key) { if (key !== KEY && !confirmLeave()) return; KEY = key; renderList(); fillEditor(); }
+function setTplLang(l) { if (l !== TPL_LANG && !confirmLeave()) return; TPL_LANG = l; fillEditor(); }
+
+$("tabTr").onclick = () => setTplLang("tr");
+$("tabEn").onclick = () => setTplLang("en");
+FIELDS.forEach(f => { $("f_" + f).oninput = changed; });
+$("previewBtn").onclick = preview;
+$("saveBtn").onclick = async () => {
+  const btn = $("saveBtn"); btn.disabled = true;
+  try {
+    const d = await api(`/email-templates/${KEY}/${TPL_LANG}`, { method: "PUT", body: JSON.stringify(values()) });
+    cur()[TPL_LANG] = d.template; DIRTY = false;
+    renderList(); fillEditor(); toast(t("saved"));
+  } catch (e) { toast(e.message, true); }
+  finally { btn.disabled = false; }
+};
+$("resetBtn").onclick = async () => {
+  if (!confirm(t("resetConfirm").replace("{lang}", TPL_LANG === "en" ? t("langEn") : t("langTr")))) return;
+  try {
+    const d = await api(`/email-templates/${KEY}/${TPL_LANG}`, { method: "DELETE" });
+    cur()[TPL_LANG] = d.template; DIRTY = false;
+    renderList(); fillEditor(); toast(t("resetDone"));
+  } catch (e) { toast(e.message, true); }
+};
+
+function applyLang() {
+  document.documentElement.lang = LANG; document.title = t("pageTitle") + " — MentorOS";
+  $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  renderList();
+  if (KEY) { const keep = DIRTY ? values() : null; fillEditor(); if (keep) { FIELDS.forEach(f => { $("f_" + f).value = keep[f]; }); changed(); } }
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { if (confirmLeave()) { DIRTY = false; location.href = "/index.html?section=admin"; } };
+$("logoutBtn").onclick = async () => { await fetch("/company-logout", { method: "POST" }); location.href = "/login.html"; };
+window.addEventListener("beforeunload", e => { if (DIRTY) { e.preventDefault(); e.returnValue = ""; } });
+
+(async function init() {
+  try {
+    const d = await api("/email-templates");
+    LIST = d.templates; LIMITS = d.limits; KEY = LIST[0].key;
+    TPL_LANG = LANG === "en" ? "en" : "tr";
+  } catch (e) { if (e.message !== "401") toast(t("loadFailed"), true); }
+  applyLang();
+})();
+</script>
+<script src="/assets/company-logo.js" data-staff></script>
+</body>
+</html>

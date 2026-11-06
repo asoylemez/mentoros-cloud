@@ -1582,6 +1582,11 @@ const meetings = {
 // =====================================================================
 
 const surveys = {
+  /** A reminder went out for this pending survey. */
+  markReminded(id) {
+    db.prepare(`UPDATE surveys SET reminder_count = reminder_count + 1, last_reminded_at = ? WHERE id = ?`).run(now(), id);
+  },
+
 
   /**
    * Anket olusturur. AYNI rol icin zaten CEVAPLANMAMIS bir anket varsa
@@ -1600,7 +1605,9 @@ const surveys = {
        LIMIT 1
     `).get(cid, mentorshipId, role, memberId || "");
 
-    if (existing) return { survey: hydrateSurvey(existing), reused: true };
+    // A pending survey sent again is a REMINDER - at most one per 24 hours.
+    if (existing) return { survey: hydrateSurvey(existing), reused: true,
+                           tooSoon: withinDay(existing.last_reminded_at || existing.sent_at) };
 
     const survey = {
       id: newId(),
@@ -1665,6 +1672,12 @@ const surveys = {
     return { ok: true, survey: surveys.getByToken(token) };
   }
 };
+
+/** True when the time (ISO) is less than 24 hours ago - reminder limit. */
+function withinDay(iso) {
+  const t = Date.parse(iso || "");
+  return Number.isFinite(t) && Date.now() - t < 24 * 60 * 60 * 1000;
+}
 
 function hydrateSurvey(row) {
   const survey = camelize(row);
@@ -2057,6 +2070,10 @@ const checkins = {
     `).get(cid, mentorshipId, role, memberId || "");
 
     if (pending) {
+      // At most one reminder per 24 hours (counted from the request or the last reminder).
+      if (withinDay(pending.last_reminded_at || pending.sent_at)) {
+        return { checkin: checkins.get(pending.id), reminded: true, tooSoon: true };
+      }
       db.prepare(`
         UPDATE checkins SET reminder_count = reminder_count + 1, last_reminded_at = ?,
                recipient_email = ? WHERE id = ?

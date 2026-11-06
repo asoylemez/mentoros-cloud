@@ -1072,10 +1072,18 @@ async function checkinChecks(server, ids) {
   const both = await api(F, "POST", `/mentorships/${ms.id}/checkin`, { target: "both", language: "tr" });
   check("feedback to both: two rounds, links returned when e-mail fails",
         both.status === 502 && both.json?.failed?.length === 2 && both.json.failed.every(x => x.checkinUrl), `HTTP ${both.status}`);
+  // V03: at most one reminder per 24 hours.
+  const tooSoon = await api(F, "POST", `/mentorships/${ms.id}/checkin`, { target: "mentee", language: "tr" });
+  check("asking again within 24 hours is refused (skipped, reminder_too_soon)",
+        tooSoon.status === 200 && tooSoon.json?.skipped?.[0]?.code === "reminder_too_soon" && !tooSoon.json?.sent?.length,
+        JSON.stringify(tooSoon.json));
+  { const db = openDb(server.dbPath);
+    db.prepare(`UPDATE checkins SET sent_at = ? WHERE mentorship_id = ?`).run(new Date(Date.now() - 25 * 3600e3).toISOString(), ms.id);
+    db.close(); }
   const again = await api(F, "POST", `/mentorships/${ms.id}/checkin`, { target: "mentee", language: "tr" });
   let list = (await api(F, "GET", `/mentorships/${ms.id}/checkins`)).json;
   const menteeRound = list?.rounds?.find(r => r.role === "mentee");
-  check("asking an unanswered person again is a reminder (same round)",
+  check("asking an unanswered person again after 24 hours is a reminder (same round)",
         list?.rounds?.length === 2 && menteeRound?.reminderCount === 1, `${list?.rounds?.length} rounds, ${menteeRound?.reminderCount} reminder(s)`);
 
   check("B cannot ask feedback for F's mentorship -> 404",
@@ -1581,7 +1589,7 @@ async function reportChecks(server, ids) {
   await api(null, "POST", `/public/survey/${sTok}`, { answers: sa });
 
   const sr = await rep("surveys");
-  check("survey results: feedback counts", val(sr, "Feedback rounds sent") === 2 && val(sr, "Feedback rounds answered") === 1 &&
+  check("survey results: mid-term survey counts", val(sr, "Mid-term surveys sent") === 2 && val(sr, "Mid-term surveys answered") === 1 &&
         val(sr, "People asking for support (latest answer)") === 1, JSON.stringify(sr?.summary?.slice(0, 5)));
   check("survey results: closing survey counts", val(sr, "Closing surveys sent") === 1 && val(sr, "Closing surveys answered") === 1 &&
         val(sr, "NPS (net promoter score) — Mentee") === "100");

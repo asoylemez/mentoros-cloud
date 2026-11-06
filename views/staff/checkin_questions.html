@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Geri Bildirim Soruları — MentorOS</title>
+<title>Ara Dönem Anketi Soruları — MentorOS</title>
 <style>
   :root {
     --navy: #1a2b5e;
@@ -226,8 +226,8 @@
     </div>
   </div>
 
-  <h1 data-i18n="pageTitle">Geri Bildirim Soruları</h1>
-  <div class="sub" data-i18n="pageSub">Ara geri bildirimde mentora ve mentee'ye sorulan sorular. Kapanış anketinden ayrıdır. Her gönderim, o anki soruların bir kopyasını saklar; burada yaptığınız değişiklik daha önce gönderilmiş geri bildirimleri etkilemez.</div>
+  <h1 data-i18n="pageTitle">Ara Dönem Anketi Soruları</h1>
+  <div class="sub" data-i18n="pageSub">Ara Dönem Anketide mentora ve mentee'ye sorulan sorular. Kapanış anketinden ayrıdır. Her gönderim, o anki soruların bir kopyasını saklar; burada yaptığınız değişiklik daha önce gönderilmiş anketleri etkilemez.</div>
 
   <div class="bar">
     <div class="hint" id="stateNote" style="margin:0"></div>
@@ -254,8 +254,8 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&l
 
 const T = {
   tr: {
-    pageTitle: "Geri Bildirim Soruları",
-    pageSub: "Ara geri bildirimde mentora ve mentee'ye sorulan sorular. Kapanış anketinden ayrıdır. Her gönderim, o anki soruların bir kopyasını saklar; burada yaptığınız değişiklik daha önce gönderilmiş geri bildirimleri etkilemez.",
+    pageTitle: "Ara Dönem Anketi Soruları",
+    pageSub: "Ara Dönem Anketide mentora ve mentee'ye sorulan sorular. Kapanış anketinden ayrıdır. Her gönderim, o anki soruların bir kopyasını saklar; burada yaptığınız değişiklik daha önce gönderilmiş anketleri etkilemez.",
     logout: "Çıkış", reset: "Varsayılana dön", add: "+ Soru ekle", save: "Kaydet", saving: "Kaydediliyor…",
     previewTitle: "Önizleme",
     type_scale5: "1–5 katılım ölçeği", type_text: "Kısa metin", type_yesno: "Evet / Hayır",
@@ -264,7 +264,7 @@ const T = {
     up: "↑", down: "↓", remove: "Sil",
     isDefault: "Şu an varsayılan sorular kullanılıyor.", isCustom: "Firmanıza özel soru seti kullanılıyor.",
     saved: "Kaydedildi ✓", resetDone: "Varsayılan sorulara dönüldü ✓",
-    resetConfirm: "Varsayılan sorulara dönülsün mü? Firmanıza özel sorular silinir (daha önce gönderilmiş geri bildirimler etkilenmez).",
+    resetConfirm: "Varsayılan sorulara dönülsün mü? Firmanıza özel sorular silinir (daha önce gönderilmiş anketler etkilenmez).",
     removeConfirm: "Bu soru silinsin mi?",
     unsaved: "Kaydedilmemiş değişiklikler var.",
     err_no_questions: "En az bir soru olmalı.", err_too_many: "En fazla 20 soru olabilir.",
@@ -273,8 +273,8 @@ const T = {
     loadFailed: "Sorular yüklenemedi."
   },
   en: {
-    pageTitle: "Feedback Questions",
-    pageSub: "The questions the mentor and the mentee are asked in the mid-programme feedback. Separate from the closing survey. Every round keeps a copy of the questions it was sent with; changes here do not affect feedback already sent.",
+    pageTitle: "Mid-Term Survey Questions",
+    pageSub: "The questions the mentor and the mentee are asked in the mid-term survey. Separate from the closing survey. Every round keeps a copy of the questions it was sent with; changes here do not affect feedback already sent.",
     logout: "Log out", reset: "Back to defaults", add: "+ Add question", save: "Save", saving: "Saving…",
     previewTitle: "Preview",
     type_scale5: "1–5 agreement scale", type_text: "Short text", type_yesno: "Yes / No",
@@ -283,7 +283,7 @@ const T = {
     up: "↑", down: "↓", remove: "Delete",
     isDefault: "The default questions are in use.", isCustom: "Your organisation's own question set is in use.",
     saved: "Saved ✓", resetDone: "Back to the default questions ✓",
-    resetConfirm: "Go back to the default questions? Your organisation's own questions are deleted (feedback already sent is not affected).",
+    resetConfirm: "Go back to the default questions? Your organisation's own questions are deleted (surveys already sent are not affected).",
     removeConfirm: "Delete this question?",
     unsaved: "There are unsaved changes.",
     err_no_questions: "There must be at least one question.", err_too_many: "At most 20 questions.",

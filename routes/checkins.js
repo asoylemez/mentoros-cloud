@@ -103,14 +103,18 @@ router.post("/mentorships/:id/checkin", requireApiKey, wrap(async (req, res) => 
   }
 
   const questions = questionSet.get(ms.companyId);
-  const sent = [], failed = [];
+  const sent = [], failed = [], skipped = [];
 
   for (const r of list) {
-    const { checkin, reminded } = checkins.openRound(ms.companyId, {
+    const { checkin, reminded, tooSoon } = checkins.openRound(ms.companyId, {
       mentorshipId: ms.id, role: r.role, memberId: r.memberId,
       recipientName: r.name, recipientEmail: r.email, language: lang, questions
     });
     const url = checkinUrl(checkin.token);
+    if (tooSoon) {
+      skipped.push({ role: r.role, name: r.name, code: "reminder_too_soon" });
+      continue;
+    }
     if (!r.email) {
       failed.push({ role: r.role, name: r.name, reason: "No email address on file.", code: "no_email", checkinUrl: url });
       continue;
@@ -127,7 +131,7 @@ router.post("/mentorships/:id/checkin", requireApiKey, wrap(async (req, res) => 
     }
   }
 
-  res.status(sent.length ? 200 : 502).json({ success: sent.length > 0, sent, failed });
+  res.status(sent.length || !failed.length ? 200 : 502).json({ success: sent.length > 0, sent, failed, skipped });
 }));
 
 /** All rounds of a mentorship, newest first, with answers (HR only). */

@@ -20,7 +20,8 @@
     "db-decrypt": "node scripts/db-decrypt.js",
     "encryption-test": "node scripts/encryption-test.js",
     "sicil-test": "node scripts/sicil-test.js",
-    "multiprogram-test": "node scripts/multiprogram-test.js"
+    "multiprogram-test": "node scripts/multiprogram-test.js",
+    "email-test": "node scripts/email-test.js"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.27.0",

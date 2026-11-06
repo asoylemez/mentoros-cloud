@@ -190,6 +190,7 @@ function run() {
   migrateMeetingSlots();
   migrateAiSwitch();
   migratePeopleV01V02();
+  migrateV03Mail();
 }
 
 /**
@@ -719,6 +720,37 @@ function migratePeopleV01V02() {
 
   const numbered = require("./sicil").backfill();
   if (numbered) console.log(`  migration: person numbers given to ${numbered} record(s)`);
+}
+
+/**
+ * V03: e-mail templates per organisation (lib/emailTemplates.js) and
+ * reminders for the closing survey (the mid-term survey had them).
+ */
+function migrateV03Mail() {
+  if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='email_templates'`).get()) {
+    db.exec(`
+      CREATE TABLE email_templates (
+        company_id    TEXT NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
+        template_key  TEXT NOT NULL,
+        lang          TEXT NOT NULL CHECK (lang IN ('tr', 'en')),
+        subject       TEXT NOT NULL,
+        title         TEXT NOT NULL,
+        body          TEXT NOT NULL,
+        button        TEXT NOT NULL,
+        updated_at    TEXT NOT NULL,
+        PRIMARY KEY (company_id, template_key, lang)
+      );
+    `);
+    console.log("  migration: email_templates table added");
+  }
+  if (!columnExists("surveys", "reminder_count")) {
+    db.exec(`ALTER TABLE surveys ADD COLUMN reminder_count INTEGER NOT NULL DEFAULT 0`);
+    console.log("  migration: surveys.reminder_count added");
+  }
+  if (!columnExists("surveys", "last_reminded_at")) {
+    db.exec(`ALTER TABLE surveys ADD COLUMN last_reminded_at TEXT NOT NULL DEFAULT ''`);
+    console.log("  migration: surveys.last_reminded_at added");
+  }
 }
 
 module.exports = { run };

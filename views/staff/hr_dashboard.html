@@ -554,12 +554,14 @@ const translations = {
     sendSurveyMentor: "Send Survey to Mentor",
     sendSurveyMentee: "Send Survey to Mentee",
     sendSurveyMembers: "Send Survey to Members",
-    checkinLabel: "Feedback", checkinMentor: "Mentor", checkinMentee: "Mentee", checkinMembers: "Members",
-    checkinBoth: "Both", checkinShow: "Show Feedback",
-    checkinNone: "No feedback asked yet.", checkinNoAnswer: "no answer yet", checkinLastAnswer: "last answer",
-    checkinPending: "waiting", checkinSentTo: "Feedback request sent to:", checkinRemindedTo: "Reminder sent to:",
-    checkinNotSent: "Not sent (share the link by hand):", checkinFailed: "The feedback request could not be sent.",
-    checkinReminders: "reminders", needsSupport: "Needs support", colCheckin: "Feedback", yes: "Yes", no: "No",
+    checkinLabel: "Mid-Term Survey", checkinMentor: "Mentor", checkinMentee: "Mentee", checkinMembers: "Members",
+    checkinBoth: "Both", checkinShow: "Show Mid-Term Surveys",
+    checkinNone: "No mid-term survey sent yet.", checkinNoAnswer: "no answer yet", checkinLastAnswer: "last answer",
+    checkinPending: "waiting", checkinSentTo: "Mid-term survey sent to:", checkinRemindedTo: "Reminder sent to:",
+    checkinNotSent: "Not sent (share the link by hand):", checkinFailed: "The mid-term survey could not be sent.",
+    checkinReminders: "reminders", needsSupport: "Needs support", colCheckin: "Mid-Term Survey", yes: "Yes", no: "No",
+    reminderTooSoon: "Not reminded - a reminder already went out in the last 24 hours:",
+    reminderTooSoonOne: "A reminder already went out in the last 24 hours. You can send another one later.",
     deletedMentee: "(deleted mentee)",
     surveyAlreadyDoneBy: "Already answered by",
     group: "Group", people: "people", groupMembers: "Members", groupMember: "Member",
@@ -658,12 +660,14 @@ const translations = {
     sendSurveyMentor: "Mentore Anket Gönder",
     sendSurveyMentee: "Mentee'ye Anket Gönder",
     sendSurveyMembers: "Üyelere Anket Gönder",
-    checkinLabel: "Geri bildirim", checkinMentor: "Mentora", checkinMentee: "Mentee'ye", checkinMembers: "Üyelere",
-    checkinBoth: "İkisine", checkinShow: "Geri Bildirimleri Göster",
-    checkinNone: "Henüz geri bildirim istenmedi.", checkinNoAnswer: "henüz cevap yok", checkinLastAnswer: "son cevap",
-    checkinPending: "bekliyor", checkinSentTo: "Geri bildirim isteği gönderildi:", checkinRemindedTo: "Hatırlatma gönderildi:",
-    checkinNotSent: "Gönderilemedi (bağlantıyı elle paylaşın):", checkinFailed: "Geri bildirim isteği gönderilemedi.",
-    checkinReminders: "hatırlatma", needsSupport: "Destek istiyor", colCheckin: "Geri bildirim", yes: "Evet", no: "Hayır",
+    checkinLabel: "Ara Dönem Anketi", checkinMentor: "Mentora", checkinMentee: "Mentee'ye", checkinMembers: "Üyelere",
+    checkinBoth: "İkisine", checkinShow: "Ara Dönem Anketlerini Göster",
+    checkinNone: "Henüz ara dönem anketi gönderilmedi.", checkinNoAnswer: "henüz cevap yok", checkinLastAnswer: "son cevap",
+    checkinPending: "bekliyor", checkinSentTo: "Ara dönem anketi gönderildi:", checkinRemindedTo: "Hatırlatma gönderildi:",
+    checkinNotSent: "Gönderilemedi (bağlantıyı elle paylaşın):", checkinFailed: "Ara dönem anketi gönderilemedi.",
+    checkinReminders: "hatırlatma", needsSupport: "Destek istiyor", colCheckin: "Ara Dönem Anketi", yes: "Evet", no: "Hayır",
+    reminderTooSoon: "Hatırlatılmadı - son 24 saatte zaten hatırlatma gönderildi:",
+    reminderTooSoonOne: "Son 24 saatte zaten hatırlatma gönderildi. Daha sonra tekrar gönderebilirsiniz.",
     deletedMentee: "(silinmiş mentee)",
     surveyAlreadyDoneBy: "Zaten cevaplayanlar:",
     group: "Grup", people: "kişi", groupMembers: "Üyeler", groupMember: "Üye",
@@ -909,7 +913,10 @@ async function sendSurvey(mentorshipId, role, btn) {
       // A member whose e-mail failed still has a survey: their link is shown.
       const lines = [];
       if (data.sent.length) lines.push(`${t("surveySent")} ${data.sent.map(x => x.name).join(", ")}`);
-      if (data.skipped.length) lines.push(`${t("surveyAlreadyDoneBy")} ${data.skipped.map(x => x.name).join(", ")}`);
+      const done = data.skipped.filter(x => x.reason !== "reminder_too_soon");
+      const soon = data.skipped.filter(x => x.reason === "reminder_too_soon");
+      if (done.length) lines.push(`${t("surveyAlreadyDoneBy")} ${done.map(x => x.name).join(", ")}`);
+      if (soon.length) lines.push(`${t("reminderTooSoon")} ${soon.map(x => x.name).join(", ")}`);
       if (data.failed.length) lines.push(`${t("surveySendFailed")}:\n` +
         data.failed.map(x => `${x.name}: ${x.reason}${x.surveyUrl ? "\n  " + x.surveyUrl : ""}`).join("\n"));
       alert(lines.join("\n\n"));
@@ -922,6 +929,7 @@ async function sendSurvey(mentorshipId, role, btn) {
       // Bilinen durumlar icin AÇIK mesaj ver; ham hata metni IK'ya
       // bir sey anlatmaz.
       if (data.code === "already_completed") throw new Error(t("surveyAlreadyDone"));
+      if (data.code === "reminder_too_soon") throw new Error(t("reminderTooSoonOne"));
       if (data.code === "no_email") throw new Error(t("surveyNoEmail"));
 
       // SMTP hatasinda anket kaydi yine de olusmustur; linki verelim ki
@@ -977,6 +985,7 @@ async function sendCheckin(mentorshipId, target, btn) {
     const fresh = data.sent.filter(x => !x.reminder), again = data.sent.filter(x => x.reminder);
     if (fresh.length) lines.push(`${t("checkinSentTo")} ${fresh.map(x => x.name).join(", ")}`);
     if (again.length) lines.push(`${t("checkinRemindedTo")} ${again.map(x => x.name).join(", ")}`);
+    if ((data.skipped || []).length) lines.push(`${t("reminderTooSoon")} ${data.skipped.map(x => x.name).join(", ")}`);
     if (data.failed.length) lines.push(`${t("checkinNotSent")}\n` +
       data.failed.map(x => `${x.name}: ${x.reason}${x.checkinUrl ? "\n  " + x.checkinUrl : ""}`).join("\n"));
     alert(lines.join("\n\n"));

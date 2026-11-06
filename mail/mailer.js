@@ -208,6 +208,8 @@ function card(rows) {
     padding:12px 16px;margin:4px 0;">${cells}</table>`;
 }
 
+const tpl = require("../lib/emailTemplates");   // per-organisation texts (V03)
+
 const T = {
   tr: {
     inviteSubject: c => `${c} - Mentor Kaydi Daveti`,
@@ -790,18 +792,12 @@ async function send({ to, subject, html, companyId, kind, refId, fromName, reply
 // --- Hazir e-postalar --------------------------------------------------
 
 async function sendInvite({ to, companyName, companyId, url, lang = "tr", form }) {
-  const t = T[lang] || T.tr;
-  const isMentee = form === "mentee";
-
-  const subject = (isMentee ? t.inviteSubjectMentee : t.inviteSubject)(companyName);
-  const title   = isMentee ? t.inviteTitleMentee : t.inviteTitle;
-  const body    = (isMentee ? t.inviteBodyMentee : t.inviteBody)(companyName);
-  const button  = isMentee ? t.inviteButtonMentee : t.inviteButton;
-
+  const key = form === "mentee" ? "invite_mentee" : "invite_mentor";
+  const m = tpl.render(companyId, key, lang, { company: companyName || tpl.context(companyId).company });
   return send({
     to,
-    subject,
-    html: layout({ title, body, button, url, lang }),
+    subject: m.subject,
+    html: layout({ title: m.title, body: m.body, button: m.button, url, lang }),
     companyId,
     kind: "invite"
   });
@@ -824,57 +820,20 @@ function programLine(programId, lang) {
 }
 
 /**
- * Check-in (mid-programme feedback) request. The link is personal: it
- * opens this person's own round only. A repeat for an unanswered round
- * is a reminder (same link).
+ * Mid-term survey (check-in) request. The link is personal: it opens this
+ * person's own round only. A repeat for an unanswered round is a
+ * reminder (same link, the reminder template).
  */
-const CHECKIN_TEXT = {
-  tr: {
-    subject: "Ara geri bildirim: mentorluk süreciniz nasıl gidiyor?",
-    reminderSubject: "Hatırlatma - ara geri bildirim: mentorluk süreciniz nasıl gidiyor?",
-    title: "Kısa bir ara geri bildirim",
-    body: ({ name, other, group }) =>
-      `Merhaba ${name},<br><br>` +
-      (group ? `<b>${group}</b> grubundaki ` : `<b>${other}</b> ile yürüttüğünüz `) +
-      `mentorluk süreci için kısa bir ara geri bildirim rica ediyoruz. ` +
-      `Birkaç soru, yaklaşık 2 dakika.` +
-      `<br><br>Bu bir kapanış anketi değildir; süreç devam ederken nasıl gittiğini anlamak içindir. ` +
-      `Cevaplarınızı yalnızca İnsan Kaynakları görür` +
-      (group ? `; mentorunuz ve diğer katılımcılar görmez.` : `; ${other} görmez.`),
-    button: "Geri bildirim formunu aç"
-  },
-  en: {
-    subject: "Mid-programme feedback: how is your mentorship going?",
-    reminderSubject: "Reminder - mid-programme feedback: how is your mentorship going?",
-    title: "A short mid-programme feedback",
-    body: ({ name, other, group }) =>
-      `Hello ${name},<br><br>` +
-      `We would like a short piece of feedback on your mentorship ` +
-      (group ? `in the group <b>${group}</b>. ` : `with <b>${other}</b>. `) +
-      `A few questions, about 2 minutes.` +
-      `<br><br>This is not the closing survey; it is to see how things are going while the mentorship runs. ` +
-      `Only HR sees your answers` +
-      (group ? `; your mentor and the other participants do not.` : `; ${other} does not.`),
-    button: "Open the feedback form"
-  }
-};
-
 async function sendCheckin({ to, name, otherName, groupName, checkin, mentorship, url, reminder = false, lang = "tr" }) {
-  const t = CHECKIN_TEXT[lang === "en" ? "en" : "tr"];
+  const ctx = tpl.context(mentorship.companyId, mentorship.programId);
+  const m = tpl.render(mentorship.companyId, reminder ? "checkin_reminder" : "checkin", lang, {
+    name: name || "", other: otherName || groupName || "-", group: groupName || "",
+    company: ctx.company, programme: ctx.programme
+  });
   return send({
     to,
-    subject: reminder ? t.reminderSubject : t.subject,
-    html: layout({
-      title: t.title,
-      body: programLine(mentorship.programId, lang) + t.body({
-        name: escapeHtml(name || ""),
-        other: escapeHtml(otherName || "-"),
-        group: groupName ? escapeHtml(groupName) : ""
-      }),
-      button: t.button,
-      url,
-      lang
-    }),
+    subject: m.subject,
+    html: layout({ title: m.title, body: programLine(mentorship.programId, lang) + m.body, button: m.button, url, lang }),
     companyId: mentorship.companyId,
     kind: "checkin",
     refId: mentorship.id
@@ -1033,27 +992,25 @@ function longDate(iso, lang) {
  *   role: "mentor" | "mentee"  - the RECIPIENT's role
  */
 async function sendWorkspace({ to, role, name, otherName, mentorship, url, lang = "tr" }) {
-  const t = T[lang] || T.tr;
   const start = longDate(mentorship.createdAt, lang);
   const end = longDate(mentorship.closingDate, lang);
+  const isMentor = role === "mentor";
+  const key = mentorship.groupId
+    ? (isMentor ? "workspace_group_mentor" : "workspace_group_member")
+    : (isMentor ? "workspace_mentor" : "workspace_mentee");
+  const ctx = tpl.context(mentorship.companyId, mentorship.programId);
+  const m = tpl.render(mentorship.companyId, key, lang, {
+    name: name || "", other: otherName || "-",
+    company: ctx.company, programme: ctx.programme,
+    period: start && end ? `${start} – ${end}` : "",
+    group: mentorship.groupId ? (mentorship.groupName || mentorship.menteeName || "") : "",
+    participants: (mentorship.members || []).map(x => x.fullName).join(", ")
+  });
 
   return send({
     to,
-    subject: t.workspaceSubject,
-    html: layout({
-      title: t.workspaceTitle,
-      body: programLine(mentorship.programId, lang) + t.workspaceBody({
-        name: escapeHtml(name || ""),
-        other: escapeHtml(otherName || "-"),
-        isMentor: role === "mentor",
-        period: start && end ? t.workspacePeriod(start, end) : "",
-        group: mentorship.groupId ? escapeHtml(mentorship.groupName || mentorship.menteeName) : "",
-        members: (mentorship.members || []).map(m => escapeHtml(m.fullName)).join(", ")
-      }),
-      button: t.workspaceButton,
-      url,
-      lang
-    }),
+    subject: m.subject,
+    html: layout({ title: m.title, body: programLine(mentorship.programId, lang) + m.body, button: m.button, url, lang }),
     companyId: mentorship.companyId,
     kind: "workspace",
     refId: mentorship.id
@@ -1061,28 +1018,46 @@ async function sendWorkspace({ to, role, name, otherName, mentorship, url, lang 
 }
 
 /**
- * Kapanis anketi daveti.
+ * Kapanis anketi daveti (reminder = hatirlatma sablonu, ayni baglanti).
  *
  * Anket linki KISIYE OZELDIR - token o kisinin anketini acar. Bu yuzden
  * tek alicili gonderilir; toplu gonderim yapilmaz.
  */
-async function sendSurvey({ to, otherName, survey, mentorship, url, lang = "tr" }) {
-  const t = T[lang] || T.tr;
-
+async function sendSurvey({ to, name, otherName, survey, mentorship, url, reminder = false, lang = "tr" }) {
+  const ctx = tpl.context(mentorship.companyId, mentorship.programId);
+  const m = tpl.render(mentorship.companyId, reminder ? "survey_reminder" : "survey", lang, {
+    name: name || survey.recipientName || "", other: otherName || "-",
+    company: ctx.company, programme: ctx.programme
+  });
   return send({
     to,
-    subject: t.surveySubject,
-    html: layout({
-      title: t.surveyTitle,
-      body: t.surveyBody(escapeHtml(otherName || "-")),
-      button: t.surveyButton,
-      url,
-      lang
-    }),
+    subject: m.subject,
+    html: layout({ title: m.title, body: m.body, button: m.button, url, lang }),
     companyId: mentorship.companyId,
     kind: "survey",
     refId: survey.id
   });
+}
+
+/**
+ * Preview of a template for the E-mails page: the full e-mail as it would
+ * go out, with sample names. `override` = the text being edited (not saved).
+ */
+function previewTemplate(companyId, key, lang, override = null) {
+  const ctx = tpl.context(companyId, "");
+  const en = lang === "en";
+  const sample = {
+    name: en ? "Alex Morgan" : "Ayşe Yılmaz",
+    other: en ? "Sam Taylor" : "Mehmet Demir",
+    company: ctx.company || (en ? "Your organisation" : "Firmanız"),
+    programme: en ? "Leadership 2026" : "Liderlik 2026",
+    period: en ? "6 November 2026 – 30 June 2027" : "6 Kasım 2026 – 30 Haziran 2027",
+    group: en ? "Team A" : "A Takımı",
+    participants: en ? "Alex Morgan, Jamie Lee" : "Ayşe Yılmaz, Can Kaya"
+  };
+  const m = tpl.render(companyId, key, lang, sample, override);
+  const url = "https://app.getmentoros.com/...";
+  return { subject: m.subject, html: layout({ title: m.title, body: m.body, button: m.button, url, lang }) };
 }
 
 /** Baglanti testi - kendine bir deneme e-postasi gonderir. */
@@ -1143,6 +1118,7 @@ module.exports = {
   testConnection,
   sendInvite,
   sendWorkspace,
+  previewTemplate,
   sendMeetingInvite,
   sendSurvey,
   sendCheckin,

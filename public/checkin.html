@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ara geri bildirim</title>
+  <title>Ara Dönem Anketi</title>
   <!--
-    Check-in (mid-programme feedback). Opened with a personal token; only
+    Check-in (mid-term survey). Opened with a personal token; only
     HR sees the answers. The questions come from the round's own copy, so
     they are exactly the ones this round was sent with.
   -->
@@ -276,7 +276,7 @@ const TOKEN = new URLSearchParams(location.search).get("token") || "";
 
 const T = {
   tr: {
-    title: "Ara geri bildirim",
+    title: "Ara Dönem Anketi",
     intro: name => `Merhaba ${name}, mentorluk süreciniz devam ederken nasıl gittiğini merak ediyoruz. Birkaç soru, yaklaşık 2 dakika.`,
     withWhom: (other, isGroup, role) => role === "mentor"
       ? (isGroup ? `Grup: ${other}` : `Mentee: ${other}`)
@@ -288,13 +288,13 @@ const T = {
     yes: "Evet", no: "Hayır",
     send: "Gönder", sending: "Gönderiliyor…",
     missing: "Lütfen işaretli zorunlu soruları cevaplayın.",
-    thanks: "Teşekkürler!", thanksText: "Geri bildiriminiz İnsan Kaynakları'na iletildi.",
-    done: "Bu geri bildirim zaten gönderilmiş.", doneText: "Bu bağlantıyla gönderilen cevaplar kaydedildi. Teşekkür ederiz.",
-    invalid: "Bağlantı geçersiz", invalidText: "Bu geri bildirim bağlantısı geçerli değil. Lütfen İnsan Kaynakları ile iletişime geçin.",
+    thanks: "Teşekkürler!", thanksText: "Cevaplarınız İnsan Kaynakları'na iletildi.",
+    done: "Bu anket zaten gönderilmiş.", doneText: "Bu bağlantıyla gönderilen cevaplar kaydedildi. Teşekkür ederiz.",
+    invalid: "Bağlantı geçersiz", invalidText: "Bu anket bağlantısı geçerli değil. Lütfen İnsan Kaynakları ile iletişime geçin.",
     failed: "Gönderilemedi. Lütfen tekrar deneyin."
   },
   en: {
-    title: "Mid-programme feedback",
+    title: "Mid-Term Survey",
     intro: name => `Hello ${name}, we would like to know how your mentorship is going while it runs. A few questions, about 2 minutes.`,
     withWhom: (other, isGroup, role) => role === "mentor"
       ? (isGroup ? `Group: ${other}` : `Mentee: ${other}`)
@@ -306,9 +306,9 @@ const T = {
     yes: "Yes", no: "No",
     send: "Send", sending: "Sending…",
     missing: "Please answer the required questions marked.",
-    thanks: "Thank you!", thanksText: "Your feedback has been passed on to HR.",
-    done: "This feedback has already been sent.", doneText: "The answers sent with this link have been saved. Thank you.",
-    invalid: "Invalid link", invalidText: "This feedback link is not valid. Please contact HR.",
+    thanks: "Thank you!", thanksText: "Your answers have been passed on to HR.",
+    done: "This survey has already been sent.", doneText: "The answers sent with this link have been saved. Thank you.",
+    invalid: "Invalid link", invalidText: "This survey link is not valid. Please contact HR.",
     failed: "Could not be sent. Please try again."
   }
 };
