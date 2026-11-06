@@ -22,7 +22,8 @@
     "sicil-test": "node scripts/sicil-test.js",
     "multiprogram-test": "node scripts/multiprogram-test.js",
     "email-test": "node scripts/email-test.js",
-    "survey-management-test": "node scripts/survey-management-test.js"
+    "survey-management-test": "node scripts/survey-management-test.js",
+    "person-report-test": "node scripts/person-report-test.js"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.27.0",

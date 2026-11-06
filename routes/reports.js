@@ -26,4 +26,22 @@ router.get("/reports/management", requireApiKey, run(reports.management));
 router.get("/reports/surveys", requireApiKey, run(reports.surveyResults));
 router.get("/reports/events", requireApiKey, run(reports.eventsReport));
 
+/** People for the person report picker (person number, name, roles). */
+router.get("/reports/people", requireApiKey, wrap(async (req, res) => {
+  const companyId = requireCompany(req, res);
+  if (!companyId) return;
+  res.setHeader("Cache-Control", "no-store");
+  res.json(reports.personList(companyId));
+}));
+
+/** One person's report: ?sicil=0001 (+ from, to, lang). 404 if no such person here. */
+router.get("/reports/person", requireApiKey, wrap(async (req, res) => {
+  const companyId = requireCompany(req, res);
+  if (!companyId) return;
+  res.setHeader("Cache-Control", "no-store");
+  const report = reports.personReport(companyId, req.query);
+  if (!report) return res.status(404).json({ error: "No person with this person number.", code: "person_not_found" });
+  res.json(report);
+}));
+
 module.exports = router;

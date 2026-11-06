@@ -101,6 +101,7 @@
     <button class="tab" role="tab" data-report="management" data-i18n="tabManagement">Yönetim Raporu</button>
     <button class="tab" role="tab" data-report="surveys" data-i18n="tabSurveys">Anket Sonuçları</button>
     <button class="tab" role="tab" data-report="events" data-i18n="tabEvents">Etkinlikler</button>
+    <button class="tab" role="tab" data-report="person" data-i18n="tabPerson">Kişiye Özel Rapor</button>
   </div>
 
   <div class="toolbar">
@@ -116,9 +117,10 @@
       <label for="programSel" data-i18n="program">Program</label>
       <select id="programSel"></select>
     </div>
-    <div>
-      <label for="q" data-i18n="search">Ara (sicil no, ad soyad)</label>
-      <input type="search" id="q" autocomplete="off" style="min-width:200px">
+    <div id="personBox" hidden>
+      <label for="personInput" data-i18n="person">Kişi (sicil no ya da ad soyad)</label>
+      <input id="personInput" list="peopleList" autocomplete="off" style="min-width:280px">
+      <datalist id="peopleList"></datalist>
     </div>
     <button id="applyBtn" data-i18n="apply">Uygula</button>
     <button id="clearBtn" class="ghost" data-i18n="allTime">Tüm zamanlar</button>
@@ -150,11 +152,12 @@ const T = {
     from: "Başlangıç", to: "Bitiş", apply: "Uygula", allTime: "Tüm zamanlar",
     pdf: "PDF indir", xlsx: "Excel indir", loading: "Yükleniyor…", failed: "Rapor yüklenemedi",
     showDetail: "Detayları göster", hideDetail: "Detayları gizle", rows: "{n} satır",
-    search: "Ara (sicil no, ad soyad)", rowsOf: "{n} / {m} satır", noMatch: "Aramayla eşleşen satır yok.",
-    searchNote: "Arama yalnızca ekrandaki tabloları süzer. Özet kartları, PDF ve Excel tüm raporu içerir.",
+    person: "Kişi (sicil no ya da ad soyad)", pickPerson: "Raporu görmek için yukarıdan bir kişi seçin (sicil no ya da ad soyad yazın).",
+    personNotFound: "Bu sicil numarasıyla kayıtlı kişi bulunamadı.", roleMentor: "Mentor", roleMentee: "Mentee",
+    noExportNote: "Yalnızca ekranda", tabPerson: "Kişiye Özel Rapor",
     noRows: "Bu aralıkta kayıt yok.", summary: "Özet", metric: "Gösterge", value: "Değer", notesSheet: "Notlar",
     rangeWrong: "Bitiş tarihi başlangıçtan önce olamaz.",
-    pageTitleDoc: "Raporlar — MentorOS", confidential: "GİZLİ", files: { management: "Yonetim_Raporu", surveys: "Anket_Sonuclari", events: "Etkinlik_Raporu" }
+    pageTitleDoc: "Raporlar — MentorOS", confidential: "GİZLİ", files: { management: "Yonetim_Raporu", surveys: "Anket_Sonuclari", events: "Etkinlik_Raporu", person: "Kisi_Raporu" }
   },
   en: {
     pageTitle: "Reports", languageLabel: "Language",
@@ -165,11 +168,12 @@ const T = {
     from: "From", to: "To", apply: "Apply", allTime: "All time",
     pdf: "Download PDF", xlsx: "Download Excel", loading: "Loading…", failed: "Could not load the report",
     showDetail: "Show details", hideDetail: "Hide details", rows: "{n} rows",
-    search: "Search (person no., name)", rowsOf: "{n} / {m} rows", noMatch: "No rows match the search.",
-    searchNote: "The search filters only the tables on screen. The summary cards, PDF and Excel contain the full report.",
+    person: "Person (person no. or name)", pickPerson: "Choose a person above to see the report (type a person number or a name).",
+    personNotFound: "No person with this person number.", roleMentor: "Mentor", roleMentee: "Mentee",
+    noExportNote: "On screen only", tabPerson: "Person Report",
     noRows: "No records in this range.", summary: "Summary", metric: "Measure", value: "Value", notesSheet: "Notes",
     rangeWrong: "The end date cannot be before the start date.",
-    pageTitleDoc: "Reports — MentorOS", confidential: "CONFIDENTIAL", files: { management: "Management_Report", surveys: "Survey_Results", events: "Event_Report" }
+    pageTitleDoc: "Reports — MentorOS", confidential: "CONFIDENTIAL", files: { management: "Management_Report", surveys: "Survey_Results", events: "Event_Report", person: "Person_Report" }
   }
 };
 let LANG = localStorage.getItem("mentorAppLang") || "tr";
@@ -178,7 +182,7 @@ const t = k => (T[LANG][k] ?? T.tr[k] ?? k);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 let REPORT = new URLSearchParams(location.search).get("report") || "management";
-if (!["management", "surveys", "events"].includes(REPORT)) REPORT = "management";
+if (!["management", "surveys", "events", "person"].includes(REPORT)) REPORT = "management";
 let DATA = null;
 const OPEN = new Set();          // detail tables opened
 
@@ -188,20 +192,24 @@ function applyStatic() {
   $("languageSelect").value = LANG;
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.report === REPORT)));
+  // Person report: the person picker instead of the programme filter.
+  $("personBox").hidden = REPORT !== "person";
+  $("programBox").style.display = REPORT === "person" ? "none" : "";
 }
 
 function setLanguage(l) {
   LANG = T[l] ? l : "tr";
   localStorage.setItem("mentorAppLang", LANG);
   applyStatic();
-  loadPrograms().then(load);       // texts come from the server in the chosen language
+  Promise.all([loadPrograms(), loadPeople()]).then(load);       // texts come from the server in the chosen language
 }
 
 function query() {
   const p = new URLSearchParams({ lang: LANG });
   if ($("from").value) p.set("from", $("from").value);
   if ($("to").value) p.set("to", $("to").value);
-  if ($("programSel").value) p.set("programId", $("programSel").value);
+  if (REPORT === "person") p.set("sicil", PERSON);
+  else if ($("programSel").value) p.set("programId", $("programSel").value);
   return p.toString();
 }
 
@@ -210,11 +218,21 @@ async function load() {
     $("report").innerHTML = `<div class="note err">${esc(t("rangeWrong"))}</div>`;
     return;
   }
-  $("report").innerHTML = `<div class="loading">${esc(t("loading"))}</div>`;
   $("pdfBtn").disabled = $("xlsxBtn").disabled = true;
+  if (REPORT === "person" && !PERSON) {
+    DATA = null;
+    $("report").innerHTML = `<div class="note">${esc(t("pickPerson"))}</div>`;
+    return;
+  }
+  $("report").innerHTML = `<div class="loading">${esc(t("loading"))}</div>`;
   try {
     const res = await fetch(`/reports/${REPORT}?${query()}`);
     if (res.status === 401) { location.href = "/login.html"; return; }
+    if (res.status === 404 && REPORT === "person") {
+      DATA = null;
+      $("report").innerHTML = `<div class="note err">${esc(t("personNotFound"))}</div>`;
+      return;
+    }
     if (!res.ok) throw new Error(res.status);
     DATA = await res.json();
     render();
@@ -229,28 +247,19 @@ function cell(v) {
   return typeof v === "number" ? `<td class="num">${esc(v)}</td>` : `<td>${esc(v)}</td>`;
 }
 
-/* Screen search (person no., name - any cell). Files are not filtered. */
-const norm = v => String(v ?? "").toLocaleLowerCase("tr");
-function shownRows(tb) {
-  const q = norm($("q").value.trim());
-  return q ? tb.rows.filter(r => r.some(v => norm(v).includes(q))) : tb.rows;
-}
-
 function render() {
   const d = DATA;
-  const searching = !!$("q").value.trim();
   let html = `<div class="report-head"><h2>${esc(d.title)}</h2><div class="range">${esc(d.subtitle)}</div></div>`;
   html += (d.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("");
-  if (searching) html += `<div class="note">${esc(t("searchNote"))}</div>`;
-  html += `<div class="cards">${d.summary.map(s => `<div class="stat"><div class="v">${esc(s.value)}</div><div class="l">${esc(s.label)}</div></div>`).join("")}</div>`;
+  if (d.summary.length) html += `<div class="cards">${d.summary.map(s => `<div class="stat"><div class="v">${esc(s.value)}</div><div class="l">${esc(s.label)}</div></div>`).join("")}</div>`;
   for (const tb of d.tables) {
     const closed = tb.detail && !OPEN.has(tb.key);
-    const rows = shownRows(tb);
+    const rows = tb.rows;
     html += `<div class="block">
       <div class="block-head"><h3>${esc(tb.title)}</h3>
         <span>
-          ${tb.screenOnly ? `<span class="count" style="margin-right:8px">🔒 ${esc(t("screenOnly"))}</span>` : ""}
-          <span class="count">${esc(searching ? t("rowsOf").replace("{n}", rows.length).replace("{m}", tb.rows.length) : t("rows").replace("{n}", tb.rows.length))}</span>
+          ${tb.screenOnly ? `<span class="count" style="margin-right:8px">🔒 ${esc(t(tb.noExport ? "noExportNote" : "screenOnly"))}</span>` : ""}
+          <span class="count">${esc(t("rows").replace("{n}", tb.rows.length))}</span>
           ${tb.detail && tb.rows.length ? `<button class="ghost" style="margin-left:8px;padding:5px 10px;font-size:12.5px"
               onclick="toggleDetail('${tb.key}')" aria-expanded="${!closed}">${esc(closed ? t("showDetail") : t("hideDetail"))}</button>` : ""}
         </span>
@@ -258,7 +267,7 @@ function render() {
       ${closed ? "" : rows.length ? `<div class="scroll"><table>
         <thead><tr>${tb.columns.map((c, i) => `<th${tb.rows.every(r => typeof r[i] === "number" || r[i] === "—") && tb.rows.some(r => typeof r[i] === "number") ? ' style="text-align:right"' : ""}>${esc(c)}</th>`).join("")}</tr></thead>
         <tbody>${rows.map(r => `<tr>${r.map(cell).join("")}</tr>`).join("")}</tbody>
-      </table></div>` : `<div class="empty">${esc(t(searching && tb.rows.length ? "noMatch" : "noRows"))}</div>`}
+      </table></div>` : `<div class="empty">${esc(t("noRows"))}</div>`}
     </div>`;
   }
   $("report").innerHTML = html;
@@ -272,7 +281,7 @@ function toggleDetail(key) {
 /* Tables as they go into the FILES: a screenOnly table (named answers)
    is replaced by its anonymous version - names never leave the screen. */
 function exportTables() {
-  return DATA.tables.map(tb => tb.screenOnly
+  return DATA.tables.filter(tb => !tb.noExport).map(tb => tb.screenOnly
     ? { ...tb, columns: tb.exportColumns || [], rows: tb.exportRows || [] }
     : tb);
 }
@@ -282,7 +291,7 @@ function downloadPdf() {
   if (!DATA) return;
   const sections = [];
   (DATA.notes || []).forEach(n => sections.push({ note: n }));
-  sections.push({ title: t("summary"), rows: DATA.summary.map(s => ({ label: s.label, value: s.value })) });
+  if (DATA.summary.length) sections.push({ title: t("summary"), rows: DATA.summary.map(s => ({ label: s.label, value: s.value })) });
   for (const tb of exportTables()) {
     sections.push({ title: tb.title, emptyText: t("noRows"),
                     table: { columns: tb.columns, rows: tb.rows.map(r => r.map(v => v == null ? "" : String(v))) } });
@@ -302,12 +311,13 @@ function downloadPdf() {
 function downloadXlsx() {
   if (!DATA) return;
   const summaryRows = [[t("metric"), t("value")], ...DATA.summary.map(s => [s.label, s.value])];
-  const sheets = [{ name: t("summary"), rows: summaryRows }];
+  const sheets = DATA.summary.length ? [{ name: t("summary"), rows: summaryRows }] : [];
   for (const tb of exportTables()) sheets.push({ name: tb.sheet || tb.title, rows: [tb.columns, ...tb.rows] });
   sheets.push({ name: t("notesSheet"), rows: [[DATA.title], [DATA.subtitle], ...(DATA.notes || []).map(n => [n])] });
   const stamp = new Date().toISOString().slice(0, 10);
   const range = [$("from").value, $("to").value].filter(Boolean).join("_");
-  MentorXlsx.download(`${T[LANG].files[REPORT]}${range ? "_" + range : ""}_${stamp}.xlsx`, sheets);
+  const who = REPORT === "person" && DATA.person ? "_" + DATA.person.sicilNo : "";
+  MentorXlsx.download(`${T[LANG].files[REPORT]}${who}${range ? "_" + range : ""}_${stamp}.xlsx`, sheets);
 }
 
 let LOGO_URL = "";
@@ -329,20 +339,48 @@ async function loadPrograms() {
 
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
   REPORT = b.dataset.report;
-  history.replaceState(null, "", `?report=${REPORT}`);
+  history.replaceState(null, "", REPORT === "person" && PERSON ? `?report=person&sicil=${encodeURIComponent(PERSON)}` : `?report=${REPORT}`);
   OPEN.clear();
   applyStatic();
   load();
 }));
+/* ---------------- Person picker (person report) ---------------- */
+let PERSON = new URLSearchParams(location.search).get("sicil") || "", PEOPLE = [];
+const personLabel = p => `${p.sicilNo} · ${p.name} (${p.roles.map(r => t(r === "mentor" ? "roleMentor" : "roleMentee")).join(", ")})`;
+async function loadPeople() {
+  try {
+    const res = await fetch("/reports/people");
+    PEOPLE = res.ok ? await res.json() : [];
+  } catch { PEOPLE = []; }
+  $("peopleList").innerHTML = PEOPLE.map(p => `<option value="${esc(personLabel(p))}"></option>`).join("");
+  const cur = PEOPLE.find(p => p.sicilNo === PERSON);
+  $("personInput").value = cur ? personLabel(cur) : "";
+}
+/* The typed text -> a person: a chosen list entry, an exact person number or one name match. */
+function pickPerson() {
+  const v = $("personInput").value.trim();
+  const lower = v.toLocaleLowerCase("tr");
+  const found = PEOPLE.find(p => personLabel(p) === v) || PEOPLE.find(p => p.sicilNo === v) ||
+    (() => { const m = PEOPLE.filter(p => p.name.toLocaleLowerCase("tr") === lower); return m.length === 1 ? m[0] : null; })();
+  if (!found) return;
+  PERSON = found.sicilNo;
+  $("personInput").value = personLabel(found);
+  history.replaceState(null, "", `?report=person&sicil=${encodeURIComponent(PERSON)}`);
+  OPEN.clear();
+  load();
+}
+$("personInput").addEventListener("change", pickPerson);
+$("personInput").addEventListener("keydown", e => { if (e.key === "Enter") pickPerson(); });
+
 $("applyBtn").onclick = load;
 $("clearBtn").onclick = () => { $("from").value = ""; $("to").value = ""; load(); };
 $("programSel").onchange = load;
 $("pdfBtn").onclick = downloadPdf;
 $("xlsxBtn").onclick = downloadXlsx;
-$("q").oninput = () => { if (DATA) render(); };
+
 
 applyStatic();
-loadPrograms().then(load);
+Promise.all([loadPrograms(), loadPeople()]).then(load);
 </script>
 <script src="/assets/company-logo.js" data-staff></script>
 </body>
