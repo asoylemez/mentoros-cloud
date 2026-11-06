@@ -260,6 +260,7 @@ const T = {
       "Asagidaki tarihte bir mentorluk gorusmesi planlandi. " +
       "Takviminize eklemek icin ekteki daveti kabul edin.",
     meetingInviteWhen: "Tarih ve saat",
+    meetingInviteLocation: "Yer / bağlantı",
     meetingInviteWith: "Katilimcilar",
     meetingInviteFocus: "Gorusme odagi",
     meetingInviteGuests: "Ek katilimcilar",
@@ -326,6 +327,7 @@ const T = {
       "A mentoring session has been scheduled for the date below. " +
       "Accept the attached invitation to add it to your calendar.",
     meetingInviteWhen: "Date and time",
+    meetingInviteLocation: "Place / link",
     meetingInviteWith: "Participants",
     meetingInviteFocus: "Session focus",
     meetingInviteGuests: "Additional guests",
@@ -453,7 +455,8 @@ function buildMeetingICS({
   menteeName = "Mentee",
   guests = [],
   summary = "Mentorluk Gorusmesi",
-  description = ""
+  description = "",
+  location = ""
 }) {
   const uid = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}@mentoros`;
   const totalStart = startHour * 60 + startMinute;
@@ -487,6 +490,8 @@ function buildMeetingICS({
     `DTEND;TZID=Europe/Istanbul:${icsLocal(meetingDate, Math.floor(totalEnd / 60), totalEnd % 60)}`,
     `SUMMARY:${icsEscape(summary)}`,
     description ? `DESCRIPTION:${icsEscape(description)}` : null,
+    location ? `LOCATION:${icsEscape(location)}` : null,
+    /^https?:\/\/\S+$/i.test(location) ? `URL:${location}` : null,
     `ORGANIZER;CN=${icsEscape(organizerName)}:mailto:${organizerEmail}`,
     `ATTENDEE;CN=${icsEscape(mentorName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${mentorEmail}`,
     `ATTENDEE;CN=${icsEscape(menteeName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${menteeEmail}`,
@@ -598,6 +603,7 @@ async function sendMeetingInvite({
   time = "10:00",
   focus = "",
   guests = "",
+  location = "",
   durationMinutes = 60,
   lang = "tr"
 }) {
@@ -645,8 +651,11 @@ async function sendMeetingInvite({
     menteeName: mentorship.menteeName || "Mentee",
     guests: guestResult.valid,
     summary: t.meetingInviteSummary,
-    description
+    description,
+    location
   });
+  const loc = escapeHtml(location);
+  const locHtml = /^https?:\/\/\S+$/i.test(location) ? `<a href="${loc}">${loc}</a>` : loc;
 
   const html = meetingInviteLayout({
     lang,
@@ -655,6 +664,7 @@ async function sendMeetingInvite({
     rows: [
       [t.meetingInviteWhen, `<b>${meetingDate} &nbsp; ${timeLabel}</b> (Istanbul)`],
       [t.meetingInviteWith, `${escapeHtml(mentorship.mentorName || "-")} &amp; ${escapeHtml(mentorship.menteeName || "-")}`],
+      location ? [t.meetingInviteLocation, locHtml] : null,
       focus ? [t.meetingInviteFocus, focus] : null,
       // Ek katilimcilar herkese GORUNUR olsun: mentor ve mentee de
       // toplantiya baska kimin cagrildigini bilmeli.

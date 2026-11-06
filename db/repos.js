@@ -1351,12 +1351,21 @@ const mentorships = {
    * duymaz - dolayisiyla o anahtari ele gecirip IK verilerine
    * ulasamazlar.
    */
+  /**
+   * The workspace token: the shared one (viewer unknown) or a personal one
+   * (viewer = { role, memberId }). Returns the mentorship or null.
+   */
   verifyAccess(id, token) {
     if (!token) return null;
 
     const ms = mentorships.get(id);
-    if (!ms || ms.accessToken !== token) return null;
+    if (!ms) return null;
+    if (ms.accessToken === token) { ms.viewer = null; return ms; }
 
+    const own = db.prepare(`SELECT role, member_id FROM workspace_access WHERE token = ? AND mentorship_id = ?`)
+      .get(String(token), id);
+    if (!own) return null;
+    ms.viewer = { role: own.role, memberId: own.member_id || "" };
     return ms;
   },
 
@@ -1438,12 +1447,30 @@ const mentorships = {
     return mentorships.get(id);
   },
 
-  setNextMeeting(id, date, time) {
+  setNextMeeting(id, date, time, location = "") {
     db.prepare(
       `UPDATE mentorships
-          SET next_meeting_date = ?, next_meeting_time = ?, updated_at = ?
+          SET next_meeting_date = ?, next_meeting_time = ?, next_meeting_location = ?, updated_at = ?
         WHERE id = ?`
-    ).run(date || "", time || "", now(), id);
+    ).run(date || "", time || "", location || "", now(), id);
+  },
+
+  /**
+   * Personal workspace link (V07): one token per person (mentor, the
+   * mentee, or each group member), made once and reused. With it the
+   * workspace knows who opened it.
+   */
+  personalToken(mentorshipId, role, memberId = "") {
+    const ms = mentorships.get(mentorshipId);
+    if (!ms) return null;
+    const r = role === "mentor" ? "mentor" : "mentee";
+    const found = db.prepare(`SELECT token FROM workspace_access WHERE mentorship_id = ? AND role = ? AND member_id = ?`)
+      .get(mentorshipId, r, memberId || "");
+    if (found) return found.token;
+    const token = newToken();
+    db.prepare(`INSERT INTO workspace_access (token, mentorship_id, company_id, role, member_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)`).run(token, mentorshipId, ms.companyId, r, memberId || "", now());
+    return token;
   },
 
   // Calisma alaninin kapanacagi tarihi belirler/revize eder.
@@ -1499,12 +1526,12 @@ const meetings = {
       INSERT INTO meetings (
         id, mentorship_id, meeting_date, title, agenda, discussed,
         progress_since_last_meeting, action_items,
-        next_meeting_focus, next_meeting_date, next_meeting_time,
+        next_meeting_focus, next_meeting_date, next_meeting_time, next_meeting_location,
         duration_minutes, created_by, created_at, updated_at
       ) VALUES (
         @id, @mentorshipId, @meetingDate, @title, @agenda, @discussed,
         @progressSinceLastMeeting, @actionItems,
-        @nextMeetingFocus, @nextMeetingDate, @nextMeetingTime,
+        @nextMeetingFocus, @nextMeetingDate, @nextMeetingTime, @nextMeetingLocation,
         @durationMinutes, @createdBy, @createdAt, @updatedAt
       )
     `).run({
@@ -1525,6 +1552,7 @@ const meetings = {
       nextMeetingFocus: body.nextMeetingFocus || "",
       nextMeetingDate: body.nextMeetingDate || "",
       nextMeetingTime: body.nextMeetingTime || "",
+      nextMeetingLocation: body.nextMeetingDate ? meetingLocation(body.nextMeetingLocation) : "",
       durationMinutes: meetingDuration(body.duration ?? body.durationMinutes),
       createdBy: body.createdBy || "unknown",
       createdAt: ts,
@@ -1534,7 +1562,8 @@ const meetings = {
     mentorships.setNextMeeting(
       mentorshipId,
       body.nextMeetingDate || body.meetingDate,
-      body.nextMeetingTime || ""
+      body.nextMeetingTime || "",
+      body.nextMeetingDate ? meetingLocation(body.nextMeetingLocation) : ""
     );
 
     return meetings.get(id);
@@ -1672,6 +1701,11 @@ const surveys = {
     return { ok: true, survey: surveys.getByToken(token) };
   }
 };
+
+/** Place or online link of the next meeting: one line, at most 500 characters. */
+function meetingLocation(v) {
+  return String(v || "").replace(/[\r\n]+/g, " ").trim().slice(0, 500);
+}
 
 /** True when the time (ISO) is less than 24 hours ago - reminder limit. */
 function withinDay(iso) {

@@ -813,6 +813,17 @@
               <strong data-i18n="nextMeeting">Next Meeting</strong>
               <span id="nextMeetingDate">Not scheduled yet</span>
             </div>
+            <div class="info-row" id="nextMeetingLocationRow" hidden>
+              <strong data-i18n="nextMeetingPlace">Place</strong>
+              <span id="nextMeetingLocation"></span>
+            </div>
+          </section>
+
+          <!-- V07: surveys still waiting. Only the viewer's OWN survey has a
+               link (personal workspace link); the others show status only. -->
+          <section class="card no-print" id="surveysCard">
+            <h2 data-i18n="pendingSurveys">Surveys</h2>
+            <div id="pendingSurveysList"></div>
           </section>
 
           <section class="card no-print" id="availCard">
@@ -847,7 +858,7 @@
 
           <!-- Announcements sent to EVERYONE in this workspace (an
                announcement to one side only stays in e-mail). -->
-          <section class="card" id="announcementsCard" hidden>
+          <section class="card" id="announcementsCard">
             <h2 data-i18n="announcements">Announcements</h2>
             <div id="announcementsList"></div>
           </section>
@@ -967,6 +978,11 @@
               <label for="nextMeetingTimeInput" data-i18n="nextMeetingTime">Next Meeting Time</label>
               <input type="time" id="nextMeetingTimeInput" value="10:00" />
 
+              <label for="nextMeetingLocationInput" data-i18n="nextMeetingLocation">Next Meeting Place</label>
+              <input type="text" id="nextMeetingLocationInput" maxlength="500"
+                     data-i18n-placeholder="nextLocationPlaceholder"
+                     placeholder="Meeting room, address or online meeting link (Teams, Zoom, Meet...)" />
+
               <label for="nextMeetingGuestsInput" data-i18n="nextMeetingGuests">Additional Guests (optional)</label>
               <textarea id="nextMeetingGuestsInput" rows="2"
                         data-i18n-placeholder="guestsPlaceholder"
@@ -1049,6 +1065,13 @@
         notScheduledYet: "Not scheduled yet",
         closingLabel: "Closing",
         closed: "closed",
+        daysLeft: "{n} days to closing", closingToday: "closing today", closingPassed: "closing date passed",
+        nextMeetingLocation: "Next Meeting Place", nextMeetingPlace: "Place",
+        nextLocationPlaceholder: "Meeting room, address or online meeting link (Teams, Zoom, Meet...)",
+        pendingSurveys: "Surveys", noPendingSurveys: "No survey is waiting.", surveyCheckin: "Mid-Term Survey",
+        surveyClosing: "Closing Survey", surveyWaiting: "waiting", surveySentOn: "Sent on", answerSurvey: "Answer the survey",
+        surveysSharedLink: "To answer your own survey from here, open the workspace with the personal link e-mailed to you.",
+        noAnnouncements: "No announcements yet.",
         developmentPlan: "Development Plan",
         developmentPlanHelp: "AI can draft this plan based on the mentee’s development need. The mentor can review and edit before saving.",
         developmentGoals: "Development Goals",
@@ -1166,6 +1189,13 @@
         notScheduledYet: "Henüz planlanmadı",
         closingLabel: "Kapanış",
         closed: "kapandı",
+        daysLeft: "Kapanışa {n} gün kaldı", closingToday: "Bugün kapanış günü", closingPassed: "Kapanış tarihi geçti",
+        nextMeetingLocation: "Sonraki Toplantı Yeri", nextMeetingPlace: "Yer",
+        nextLocationPlaceholder: "Toplantı odası, adres ya da online toplantı linki (Teams, Zoom, Meet…)",
+        pendingSurveys: "Anketler", noPendingSurveys: "Bekleyen anket yok.", surveyCheckin: "Ara Dönem Anketi",
+        surveyClosing: "Kapanış Anketi", surveyWaiting: "bekliyor", surveySentOn: "Gönderim:", answerSurvey: "Anketi cevapla",
+        surveysSharedLink: "Kendi anketinizi buradan cevaplamak için size e-postayla gelen kişisel çalışma sayfası bağlantısını kullanın.",
+        noAnnouncements: "Henüz duyuru yok.",
         developmentPlan: "Gelişim Planı",
         developmentPlanHelp: "AI, mentee’nin gelişim ihtiyacına göre bu planı taslak olarak oluşturabilir. Mentor kaydetmeden önce gözden geçirip düzenleyebilir.",
         developmentGoals: "Gelişim Hedefleri",
@@ -1701,6 +1731,21 @@
       }
 
       document.getElementById("nextMeetingDate").textContent = formatDateTime(data.nextMeetingDate, data.nextMeetingTime);
+      const locRow = document.getElementById("nextMeetingLocationRow");
+      locRow.hidden = !(data.nextMeetingLocation && data.nextMeetingDate);
+      document.getElementById("nextMeetingLocation").innerHTML = locRow.hidden ? "" : linkOrText(data.nextMeetingLocation);
+
+      // V07: countdown to the closing date (not for a finished mentorship).
+      if (data.closingDate && (data.status || "active") === "active") {
+        const days = Math.round((new Date(data.closingDate + "T00:00:00") - new Date(new Date().toDateString())) / 86400000);
+        closingBadge.textContent += " · " + (days > 0 ? t("daysLeft").replace("{n}", days) : days === 0 ? t("closingToday") : t("closingPassed"));
+        closingBadge.style.textTransform = "none";     // the badge style capitalises every word
+      }
+
+      // V07: the viewer (personal link) fills "Created by" by themselves.
+      WORKSPACE_DATA = data;
+      if (data.viewer) document.getElementById("createdBy").value = data.viewer.role;
+      renderPendingSurveys();
 
       document.getElementById("workspaceIdLabel").textContent =
         t("workspaceId") + ": " + mentorshipId.slice(0, 8) + "...";
@@ -1756,10 +1801,39 @@
           ${renderActionItems(actionItems, meeting.id)}
           ${renderNoteSection(t("nextFocusTitle"), meeting.nextMeetingFocus)}
           ${renderNoteSection(t("nextMeetingDateTitle"), formatDateTime(meeting.nextMeetingDate, meeting.nextMeetingTime))}
+          ${meeting.nextMeetingLocation ? `<div class="note-section"><strong>${escapeHtml(t("nextMeetingPlace"))}</strong><p>${linkOrText(meeting.nextMeetingLocation)}</p></div>` : ""}
         `;
 
         container.appendChild(card);
       });
+    }
+
+    /* A place: a web address becomes a link (opens in a new tab), anything else is text. */
+    function linkOrText(v) {
+      const s = String(v || "").trim();
+      return /^https?:\/\/\S+$/i.test(s)
+        ? `<a href="${escapeHtml(s)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s)}</a>`
+        : escapeHtml(s);
+    }
+
+    let WORKSPACE_DATA = null;
+    function renderPendingSurveys() {
+      const data = WORKSPACE_DATA; if (!data) return;
+      const list = data.pendingSurveys || [];
+      const box = document.getElementById("pendingSurveysList");
+      if (!list.length) { box.innerHTML = `<div class="small-help">${escapeHtml(t("noPendingSurveys"))}</div>`; return; }
+      const rows = list.map(s => {
+        const who = s.role === "mentor" ? t("mentor") : t("mentee");
+        const kind = s.type === "checkin" ? t("surveyCheckin") : t("surveyClosing");
+        return `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eef0f5;padding:8px 0">
+          <div><strong>${escapeHtml(who)}${s.name ? " (" + escapeHtml(s.name) + ")" : ""}:</strong> ${escapeHtml(kind)} ${escapeHtml(t("surveyWaiting"))}
+            <div class="small-help" style="margin:2px 0 0">${escapeHtml(t("surveySentOn"))} ${escapeHtml(formatDate(s.sentAt))}</div></div>
+          ${s.mine && s.url ? `<a class="btn" href="${escapeHtml(s.url)}" target="_blank" rel="noopener"
+              style="white-space:nowrap;background:#b5651d;color:#fff;padding:7px 12px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">${escapeHtml(t("answerSurvey"))}</a>` : ""}
+        </div>`;
+      }).join("");
+      const hint = !data.viewer ? `<div class="small-help" style="margin-top:8px">${escapeHtml(t("surveysSharedLink"))}</div>` : "";
+      box.innerHTML = rows + hint;
     }
 
     function renderNoteSection(title, content) {
@@ -1880,6 +1954,7 @@
         nextMeetingFocus: document.getElementById("nextMeetingFocus").value,
         nextMeetingDate: document.getElementById("nextMeetingDateInput").value,
         nextMeetingTime: document.getElementById("nextMeetingTimeInput").value,
+        nextMeetingLocation: document.getElementById("nextMeetingLocationInput").value,
         nextMeetingGuests: document.getElementById("nextMeetingGuestsInput").value,
         createdBy: document.getElementById("createdBy").value,
         durationMinutes,
@@ -2206,9 +2281,11 @@
         if (!res.ok) return;
         const list = await res.json();
         const card = document.getElementById("announcementsCard");
-        card.hidden = !list.length;
+        card.hidden = false;          // always shown (V07), empty or not
         const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-        document.getElementById("announcementsList").innerHTML = list.map(a => `
+        document.getElementById("announcementsList").innerHTML = !list.length
+          ? `<div class="small-help">${esc(t("noAnnouncements"))}</div>`
+          : list.map(a => `
           <div style="border-top:1px solid #eef0f5;padding:10px 0">
             <div style="font-weight:600;color:#1a2b5e">${esc(a.subject)}</div>
             <div style="font-size:12px;color:#6b7280;margin-bottom:6px">${esc(formatDate(a.sentAt))}</div>

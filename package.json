@@ -24,7 +24,8 @@
     "email-test": "node scripts/email-test.js",
     "survey-management-test": "node scripts/survey-management-test.js",
     "person-report-test": "node scripts/person-report-test.js",
-    "ai-summary-test": "node scripts/ai-summary-test.js"
+    "ai-summary-test": "node scripts/ai-summary-test.js",
+    "workspace-test": "node scripts/workspace-test.js"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.27.0",

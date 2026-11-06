@@ -224,8 +224,8 @@ router.get("/storage-report", staffAuth.requireSuperAdmin, wrap(async (req, res)
 // ---------------------------------------------------------------------
 
 router.get("/public/workspace/:id/announcements", wrap(async (req, res) => {
-  const ms = mentorships.get(req.params.id);
-  if (!ms || !req.query.token || ms.accessToken !== String(req.query.token)) {
+  const ms = mentorships.verifyAccess(req.params.id, String(req.query.token || ""));   // shared or personal link
+  if (!ms) {
     return res.status(403).json({ error: "You do not have access to this workspace.", code: "invalid_token" });
   }
   res.json(announcements.forMentorship(ms).map(a => ({ ...a, attachments: attachments.list(a.id) })));
@@ -233,8 +233,8 @@ router.get("/public/workspace/:id/announcements", wrap(async (req, res) => {
 
 /** A file of an announcement this workspace shows (and only such). */
 router.get("/public/workspace/:id/announcements/:annId/attachments/:attId", wrap(async (req, res) => {
-  const ms = mentorships.get(req.params.id);
-  if (!ms || !req.query.token || ms.accessToken !== String(req.query.token)) {
+  const ms = mentorships.verifyAccess(req.params.id, String(req.query.token || ""));   // shared or personal link
+  if (!ms) {
     return res.status(403).json({ error: "You do not have access to this workspace.", code: "invalid_token" });
   }
   if (!announcements.forMentorship(ms).some(a => a.id === req.params.annId)) {

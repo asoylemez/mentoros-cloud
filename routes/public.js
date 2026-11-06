@@ -1,4 +1,5 @@
 const express = require("express");
+const { db } = require("../db");
 const { logos } = require("../lib/logo");
 const formConfig = require("../lib/formConfig");
 
@@ -158,6 +159,31 @@ router.get("/public/workspace/:id", requireWorkspaceToken, wrap(async (req, res)
   safe.timezone = companyTimezone(full.companyId);
   safe.mentorAvailability = mentors.getMeetingSlots(full.mentorId, safe.timezone) || { weekly: {}, dates: {}, updatedAt: null };
   safe.aiEnabled = companies.aiEnabled(full.companyId);   // hides the AI buttons when off
+
+  // V07: who opened the page (personal link) and the surveys still waiting.
+  // Only the viewer's OWN survey carries its link; the others show status
+  // only - nobody can open (and answer) someone else's survey.
+  const viewer = req.mentorship.viewer || null;
+  safe.viewer = viewer ? {
+    role: viewer.role,
+    name: viewer.role === "mentor" ? (full.mentorName || "")
+      : viewer.memberId ? ((full.members || []).find(x => x.id === viewer.memberId) || {}).fullName || "" : (full.menteeName || "")
+  } : null;
+  const isMine = r => !!viewer && viewer.role === r.role && (r.role === "mentor" || (viewer.memberId || "") === (r.member_id || ""));
+  const pending = [
+    ...db.prepare(`SELECT 'checkin' AS type, role, member_id, recipient_name, sent_at, token FROM checkins
+                    WHERE mentorship_id = ? AND status = 'pending'`).all(full.id),
+    ...db.prepare(`SELECT 'closing' AS type, role, COALESCE(member_id, '') AS member_id, recipient_name, sent_at, token FROM surveys
+                    WHERE mentorship_id = ? AND status = 'pending'`).all(full.id)
+  ].sort((a, b) => String(a.sent_at).localeCompare(String(b.sent_at)));
+  safe.pendingSurveys = pending.map(r => ({
+    type: r.type,
+    role: r.role,
+    name: r.recipient_name || "",
+    sentAt: r.sent_at,
+    mine: isMine(r),
+    url: isMine(r) ? `/${r.type === "checkin" ? "checkin" : "survey"}.html?token=${r.token}` : undefined
+  }));
   res.json(safe);
 }));
 
@@ -248,6 +274,7 @@ router.post(
           time: req.body.nextMeetingTime || "10:00",
           focus: req.body.nextMeetingFocus || "",
           guests: req.body.nextMeetingGuests || "",
+          location: meeting.nextMeetingLocation || "",
           lang: req.body.language === "en" ? "en" : "tr"
         });
         // Gecersiz/atlanan adresler de doner - arayuz "davet gitti" deyip

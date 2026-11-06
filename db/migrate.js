@@ -192,6 +192,7 @@ function run() {
   migratePeopleV01V02();
   migrateV03Mail();
   migrateV06AiSummary();
+  migrateV07Workspace();
 }
 
 /**
@@ -765,6 +766,34 @@ function migrateV06AiSummary() {
       );
     `);
     console.log("  migration: ai_summaries table added");
+  }
+}
+
+/**
+ * V07: personal workspace links (the page knows who opened it, so it can
+ * offer that person's own survey) and the place of the next meeting.
+ * The old shared link (mentorships.access_token) keeps working.
+ */
+function migrateV07Workspace() {
+  if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='workspace_access'`).get()) {
+    db.exec(`
+      CREATE TABLE workspace_access (
+        token          TEXT PRIMARY KEY,
+        mentorship_id  TEXT NOT NULL REFERENCES mentorships(id) ON DELETE CASCADE,
+        company_id     TEXT NOT NULL,
+        role           TEXT NOT NULL CHECK (role IN ('mentor', 'mentee')),
+        member_id      TEXT NOT NULL DEFAULT '',
+        created_at     TEXT NOT NULL,
+        UNIQUE (mentorship_id, role, member_id)
+      );
+    `);
+    console.log("  migration: workspace_access table added");
+  }
+  for (const table of ["mentorships", "meetings"]) {
+    if (!columnExists(table, "next_meeting_location")) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN next_meeting_location TEXT NOT NULL DEFAULT ''`);
+      console.log(`  migration: ${table}.next_meeting_location added`);
+    }
   }
 }
 

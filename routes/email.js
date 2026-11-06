@@ -146,24 +146,26 @@ router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
   const ms = ownRecord(req, res, mentorships.get(req.params.id), m("mentorshipNotFound", lang));
   if (!ms) return;
 
-  const url = `${config.siteBaseUrl}/mentorship_workspace.html` +
-              `?id=${ms.id}&token=${ms.accessToken}`;
+  // V07: everyone gets their OWN workspace link (the page then knows who
+  // opened it and offers that person's surveys).
+  const urlFor = (role, memberId = "") => `${config.siteBaseUrl}/mentorship_workspace.html` +
+    `?id=${ms.id}&token=${mentorships.personalToken(ms.id, role, memberId)}`;
 
   const targets = [];
 
   if (target === "mentor" || target === "both") {
     const email = ms.mentorEmail || mentors.get(ms.mentorId)?.email || "";
-    targets.push({ type: "mentor", email, name: ms.mentorName, other: ms.menteeName });
+    targets.push({ type: "mentor", email, name: ms.mentorName, other: ms.menteeName, memberId: "" });
   }
 
   if (target === "mentee" || target === "both") {
     if (ms.groupId) {
       // Group mentorship: every member gets their own copy.
       for (const member of ms.members) {
-        targets.push({ type: "mentee", email: member.email || "", name: member.fullName, other: ms.mentorName });
+        targets.push({ type: "mentee", email: member.email || "", name: member.fullName, other: ms.mentorName, memberId: member.id });
       }
     } else {
-      targets.push({ type: "mentee", email: ms.menteeEmail || "", name: ms.menteeName, other: ms.mentorName });
+      targets.push({ type: "mentee", email: ms.menteeEmail || "", name: ms.menteeName, other: ms.mentorName, memberId: "" });
     }
   }
 
@@ -183,7 +185,7 @@ router.post("/email/workspace/:id", requireApiKey, wrap(async (req, res) => {
         name: t.name,
         otherName: t.other,
         mentorship: ms,
-        url,
+        url: urlFor(t.type, t.memberId),
         lang
       });
       sent.push({ type: t.type, email: t.email });
