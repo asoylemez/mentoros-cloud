@@ -17,6 +17,7 @@ const { generateGuidance } = require("../ai/guidedSession");
 const mailer = require("../mail/mailer");
 const { refuseIfAiOff, wrap } = require("./_helpers");
 
+const sicil = require("../db/sicil");
 const router = express.Router();
 
 // =====================================================================
@@ -63,6 +64,13 @@ router.post("/public/invite/:token/mentors", wrap(async (req, res) => {
   if (missingFields.length) {
     return res.status(400).json({ error: "Some required fields are empty.", code: "missing_fields", fields: missingFields });
   }
+  // One registration per person per role (a mentor may still register as a mentee).
+  if (sicil.emailTaken(company.companyId, "mentor", req.body.email)) {
+    return res.status(409).json({
+      error: "This e-mail address is already registered as a mentor.",
+      code: "already_registered"
+    });
+  }
 
   const mentor = mentors.create(company.companyId, req.body);
 
@@ -92,6 +100,13 @@ router.post("/public/invite/:token/mentees", wrap(async (req, res) => {
   const missingFields = formConfig.missing(company.companyId, "mentee", req.body);
   if (missingFields.length) {
     return res.status(400).json({ error: "Some required fields are empty.", code: "missing_fields", fields: missingFields });
+  }
+  // One registration per person per role (a mentor may still register as a mentee).
+  if (sicil.emailTaken(company.companyId, "mentee", req.body.email)) {
+    return res.status(409).json({
+      error: "This e-mail address is already registered as a mentee.",
+      code: "already_registered"
+    });
   }
 
   const mentee = mentees.create(company.companyId, req.body);

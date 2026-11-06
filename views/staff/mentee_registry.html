@@ -103,6 +103,7 @@
   tr:hover td { background: #fafbfc; }
 
   .name { font-weight: 600; color: var(--navy); }
+  td.sicil { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); font-size: 13px; }
   .email { color: var(--muted); font-size: 12px; }
 
   .tag {
@@ -287,6 +288,7 @@
       <table>
         <thead>
           <tr>
+            <th data-i18n="thSicil">Sicil No</th>
             <th data-i18n="thMentee">Mentee</th>
             <th data-i18n="thRole">Rol / Departman</th>
             <th data-i18n="thProgram">Program</th>
@@ -457,7 +459,9 @@ const T = {
     sendInvite: "Gönder", sending: "Gönderiliyor…", noEmails: "Lütfen en az bir e-posta girin.",
     notSent: "Gönderilemeyenler:", whatToDo: "Ne yapmalı:",
     statTotal: "toplam mentee", statActive: "aktif", statInactive: "pasif", statMonth: "bu ay eklenen",
-    searchPh: "Ada, role, gelişim alanına göre ara…",
+    searchPh: "Sicil no, ad, rol, gelişim alanına göre ara…",
+    thSicil: "Sicil No", sicil: "Sicil No",
+    dupEmail: "Bu e-posta adresiyle kayıtlı başka bir mentee var.",
     filterAll: "Tümü", filterActive: "Aktif", filterInactive: "Pasif", refresh: "Yenile",
     thMentee: "Mentee", thRole: "Rol / Departman", thDevAreas: "Gelişim Alanları", thStatus: "Durum", thRegistered: "Kayıt",
     thProgram: "Program", secProgram: "Program", fProgram: "Bu mentee'nin programı",
@@ -524,7 +528,9 @@ const T = {
     sendInvite: "Send", sending: "Sending…", noEmails: "Please enter at least one email.",
     notSent: "Not sent:", whatToDo: "What to do:",
     statTotal: "total mentees", statActive: "active", statInactive: "inactive", statMonth: "added this month",
-    searchPh: "Search by name, role, development area…",
+    searchPh: "Search by person no., name, role, development area…",
+    thSicil: "Person No.", sicil: "Person No.",
+    dupEmail: "Another mentee is already registered with this e-mail address.",
     filterAll: "All", filterActive: "Active", filterInactive: "Inactive", refresh: "Refresh",
     thMentee: "Mentee", thRole: "Role / Department", thDevAreas: "Development areas", thStatus: "Status", thRegistered: "Registered",
     thProgram: "Programme", secProgram: "Programme", fProgram: "This mentee's programme",
@@ -699,7 +705,7 @@ function filtered() {
     if (pf === "none" && m.programId) return false;
     if (pf !== "all" && pf !== "none" && m.programId !== pf) return false;
     if (!q) return true;
-    const hay = [m.fullName, m.email, m.role, m.department,
+    const hay = [m.sicilNo, m.fullName, m.email, m.role, m.department,
       ...(m.devFunctionalAreas || []), ...(m.competenciesToDevelop || [])].join(" ").toLowerCase();
     return hay.includes(q);
   });
@@ -729,6 +735,7 @@ function render() {
     const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "–";
     return `
       <tr>
+        <td class="sicil">${esc(m.sicilNo || "–")}</td>
         <td><div class="name">${esc(m.fullName)}</div><div class="email">${esc(m.email)}</div></td>
         <td>${esc(m.role || "–")}${m.department ? `<div class="email">${esc(m.department)}</div>` : ""}</td>
         <td>${programCell(m)}</td>
@@ -758,7 +765,7 @@ window.openMentee = function (id) {
   if (!m) return;
   EDITING = m;
   $("mTitle").textContent = m.fullName || "—";
-  $("mMeta").textContent = `${m.email || ""} · ${t("registered")}: ` +
+  $("mMeta").textContent = `${t("sicil")} ${m.sicilNo || "–"} · ${m.email || ""} · ${t("registered")}: ` +
     (m.createdAt ? new Date(m.createdAt).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "–");
   // Choices are stored with their English values; the boxes show them in
   // the screen's language and turn them back on save (optionLabels.js).
@@ -795,7 +802,10 @@ $("mSave").onclick = async () => {
     const body = { status: $("f_status").value };
     TEXT_FIELDS.forEach(f => { const v = $("f_" + f).value; body[f] = VOCAB_FIELDS.includes(f) ? MentorOptionLabels.toValue(v, LANG) : v; });
     ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value).map(v => MentorOptionLabels.toValue(v, LANG)); });
-    await api(`/mentees/${EDITING.id}`, { method: "PATCH", body: JSON.stringify(body) });
+    await api(`/mentees/${EDITING.id}`, { method: "PATCH", body: JSON.stringify(body) }).catch(e => {
+      if (e.data && e.data.code === "already_registered") throw new Error(t("dupEmail"));
+      throw e;
+    });
 
     // Programme is saved separately; the server warns first (409) when the
     // mentee has an active mentorship or a pending request.

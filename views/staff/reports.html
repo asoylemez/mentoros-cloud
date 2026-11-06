@@ -116,6 +116,10 @@
       <label for="programSel" data-i18n="program">Program</label>
       <select id="programSel"></select>
     </div>
+    <div>
+      <label for="q" data-i18n="search">Ara (sicil no, ad soyad)</label>
+      <input type="search" id="q" autocomplete="off" style="min-width:200px">
+    </div>
     <button id="applyBtn" data-i18n="apply">Uygula</button>
     <button id="clearBtn" class="ghost" data-i18n="allTime">Tüm zamanlar</button>
     <span class="spacer"></span>
@@ -146,6 +150,8 @@ const T = {
     from: "Başlangıç", to: "Bitiş", apply: "Uygula", allTime: "Tüm zamanlar",
     pdf: "PDF indir", xlsx: "Excel indir", loading: "Yükleniyor…", failed: "Rapor yüklenemedi",
     showDetail: "Detayları göster", hideDetail: "Detayları gizle", rows: "{n} satır",
+    search: "Ara (sicil no, ad soyad)", rowsOf: "{n} / {m} satır", noMatch: "Aramayla eşleşen satır yok.",
+    searchNote: "Arama yalnızca ekrandaki tabloları süzer. Özet kartları, PDF ve Excel tüm raporu içerir.",
     noRows: "Bu aralıkta kayıt yok.", summary: "Özet", metric: "Gösterge", value: "Değer", notesSheet: "Notlar",
     rangeWrong: "Bitiş tarihi başlangıçtan önce olamaz.",
     pageTitleDoc: "Raporlar — MentorOS", confidential: "GİZLİ", files: { management: "Yonetim_Raporu", surveys: "Anket_Sonuclari", events: "Etkinlik_Raporu" }
@@ -159,6 +165,8 @@ const T = {
     from: "From", to: "To", apply: "Apply", allTime: "All time",
     pdf: "Download PDF", xlsx: "Download Excel", loading: "Loading…", failed: "Could not load the report",
     showDetail: "Show details", hideDetail: "Hide details", rows: "{n} rows",
+    search: "Search (person no., name)", rowsOf: "{n} / {m} rows", noMatch: "No rows match the search.",
+    searchNote: "The search filters only the tables on screen. The summary cards, PDF and Excel contain the full report.",
     noRows: "No records in this range.", summary: "Summary", metric: "Measure", value: "Value", notesSheet: "Notes",
     rangeWrong: "The end date cannot be before the start date.",
     pageTitleDoc: "Reports — MentorOS", confidential: "CONFIDENTIAL", files: { management: "Management_Report", surveys: "Survey_Results", events: "Event_Report" }
@@ -221,26 +229,36 @@ function cell(v) {
   return typeof v === "number" ? `<td class="num">${esc(v)}</td>` : `<td>${esc(v)}</td>`;
 }
 
+/* Screen search (person no., name - any cell). Files are not filtered. */
+const norm = v => String(v ?? "").toLocaleLowerCase("tr");
+function shownRows(tb) {
+  const q = norm($("q").value.trim());
+  return q ? tb.rows.filter(r => r.some(v => norm(v).includes(q))) : tb.rows;
+}
+
 function render() {
   const d = DATA;
+  const searching = !!$("q").value.trim();
   let html = `<div class="report-head"><h2>${esc(d.title)}</h2><div class="range">${esc(d.subtitle)}</div></div>`;
   html += (d.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("");
+  if (searching) html += `<div class="note">${esc(t("searchNote"))}</div>`;
   html += `<div class="cards">${d.summary.map(s => `<div class="stat"><div class="v">${esc(s.value)}</div><div class="l">${esc(s.label)}</div></div>`).join("")}</div>`;
   for (const tb of d.tables) {
     const closed = tb.detail && !OPEN.has(tb.key);
+    const rows = shownRows(tb);
     html += `<div class="block">
       <div class="block-head"><h3>${esc(tb.title)}</h3>
         <span>
           ${tb.screenOnly ? `<span class="count" style="margin-right:8px">🔒 ${esc(t("screenOnly"))}</span>` : ""}
-          <span class="count">${esc(t("rows").replace("{n}", tb.rows.length))}</span>
+          <span class="count">${esc(searching ? t("rowsOf").replace("{n}", rows.length).replace("{m}", tb.rows.length) : t("rows").replace("{n}", tb.rows.length))}</span>
           ${tb.detail && tb.rows.length ? `<button class="ghost" style="margin-left:8px;padding:5px 10px;font-size:12.5px"
               onclick="toggleDetail('${tb.key}')" aria-expanded="${!closed}">${esc(closed ? t("showDetail") : t("hideDetail"))}</button>` : ""}
         </span>
       </div>
-      ${closed ? "" : tb.rows.length ? `<div class="scroll"><table>
+      ${closed ? "" : rows.length ? `<div class="scroll"><table>
         <thead><tr>${tb.columns.map((c, i) => `<th${tb.rows.every(r => typeof r[i] === "number" || r[i] === "—") && tb.rows.some(r => typeof r[i] === "number") ? ' style="text-align:right"' : ""}>${esc(c)}</th>`).join("")}</tr></thead>
-        <tbody>${tb.rows.map(r => `<tr>${r.map(cell).join("")}</tr>`).join("")}</tbody>
-      </table></div>` : `<div class="empty">${esc(t("noRows"))}</div>`}
+        <tbody>${rows.map(r => `<tr>${r.map(cell).join("")}</tr>`).join("")}</tbody>
+      </table></div>` : `<div class="empty">${esc(t(searching && tb.rows.length ? "noMatch" : "noRows"))}</div>`}
     </div>`;
   }
   $("report").innerHTML = html;
@@ -321,6 +339,7 @@ $("clearBtn").onclick = () => { $("from").value = ""; $("to").value = ""; load()
 $("programSel").onchange = load;
 $("pdfBtn").onclick = downloadPdf;
 $("xlsxBtn").onclick = downloadXlsx;
+$("q").oninput = () => { if (DATA) render(); };
 
 applyStatic();
 loadPrograms().then(load);

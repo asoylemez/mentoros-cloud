@@ -548,6 +548,9 @@ const mentors = {
       createdAt: ts,
       updatedAt: ts
     });
+    // Person number: the one this e-mail already has here, else the next.
+    db.prepare(`UPDATE mentors SET sicil_no = ? WHERE id = ?`)
+      .run(require("./sicil").assign(slugify(companyId), body.email), id);
 
     return mentors.get(id);
   },
@@ -774,6 +777,9 @@ const mentees = {
       createdAt: ts,
       updatedAt: ts
     });
+    // Person number: the one this e-mail already has here, else the next.
+    db.prepare(`UPDATE mentees SET sicil_no = ? WHERE id = ?`)
+      .run(require("./sicil").assign(slugify(companyId), body.email), id);
 
     return mentees.get(id);
   },

@@ -659,7 +659,8 @@
       back: "← Back",
       submit: "Complete registration ✓",
       saving: "Saving...",
-      saveError: "Error saving your profile: "
+      saveError: "Error saving your profile: ",
+      alreadyRegistered: "A mentee registration already exists with this e-mail address. To update your details, please contact your HR team."
     },
     tr: {
       fullName: "Ad Soyad",
@@ -674,7 +675,8 @@
       back: "← Geri",
       submit: "Kaydı tamamla ✓",
       saving: "Kaydediliyor...",
-      saveError: "Profilin kaydedilirken hata oluştu: "
+      saveError: "Profilin kaydedilirken hata oluştu: ",
+      alreadyRegistered: "Bu e-posta adresiyle zaten bir mentee kaydı var. Bilgilerinizi güncellemek için İK ekibinizle iletişime geçin."
     }
   };
   const optionTranslations = {
@@ -1138,6 +1140,11 @@
       console.log('Mentee submit:', response.status, result);
 
       if (!response.ok) {
+        if (result && result.code === 'already_registered') {
+          const dup = new Error(t('alreadyRegistered'));
+          dup.plain = true;
+          throw dup;
+        }
         throw new Error((result && result.error) || ('HTTP ' + response.status));
       }
 
@@ -1152,7 +1159,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (error) {
-      showFormMessage((t('saveError') || 'Kayıt sırasında hata: ') + error.message, true);
+      showFormMessage(error.plain ? error.message : (t('saveError') || 'Kayıt sırasında hata: ') + error.message, true);
       submitBtn.disabled = false;
       submitBtn.textContent = t('submit');
     }

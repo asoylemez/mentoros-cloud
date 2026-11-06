@@ -103,6 +103,7 @@
   tr:hover td { background: #fafbfc; }
 
   .name { font-weight: 600; color: var(--navy); }
+  td.sicil { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); font-size: 13px; }
   .email { color: var(--muted); font-size: 12px; }
 
   .tag {
@@ -291,6 +292,7 @@
       <table>
         <thead>
           <tr>
+            <th data-i18n="thSicil">Sicil No</th>
             <th data-i18n="thMentor">Mentor</th>
             <th data-i18n="thRole">Rol / Kademe</th>
             <th data-i18n="thProgram">Program</th>
@@ -506,7 +508,10 @@ const T = {
     statActive: "aktif",
     statFree: "boş kapasite",
     statAssigned: "atanmış mentee",
-    searchPh: "Ada, role, yetkinliğe göre ara…",
+    searchPh: "Sicil no, ad, rol, yetkinliğe göre ara…",
+    thSicil: "Sicil No",
+    sicil: "Sicil No",
+    dupEmail: "Bu e-posta adresiyle kayıtlı başka bir mentor var.",
     filterAll: "Tümü",
     filterActive: "Aktif",
     filterInactive: "Pasif",
@@ -599,7 +604,10 @@ const T = {
     statActive: "active",
     statFree: "free capacity",
     statAssigned: "assigned mentees",
-    searchPh: "Search by name, role, expertise…",
+    searchPh: "Search by person no., name, role, expertise…",
+    thSicil: "Person No.",
+    sicil: "Person No.",
+    dupEmail: "Another mentor is already registered with this e-mail address.",
     filterAll: "All",
     filterActive: "Active",
     filterInactive: "Inactive",
@@ -858,7 +866,7 @@ function filtered() {
     if (!q) return true;
 
     const hay = [
-      m.fullName, m.email, m.role, m.band,
+      m.sicilNo, m.fullName, m.email, m.role, m.band,
       ...(m.functionalAreas || []),
       ...(m.behaviouralCompetencies || []),
       ...(m.technicalCompetencies || []),
@@ -915,6 +923,7 @@ function render() {
 
     return `
       <tr>
+        <td class="sicil">${esc(m.sicilNo || "–")}</td>
         <td>
           <div class="name">${esc(m.fullName)}</div>
           <div class="email">${esc(m.email)}</div>
@@ -974,7 +983,7 @@ window.openMentor = function (id) {
 
   $("mTitle").textContent = m.fullName || "—";
   $("mMeta").textContent =
-    `${m.email || ""} · ${t("registered")}: ` +
+    `${t("sicil")} ${m.sicilNo || "–"} · ${m.email || ""} · ${t("registered")}: ` +
     (m.createdAt ? new Date(m.createdAt).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "–");
 
   // Choices are stored with their English values; the boxes show them in
@@ -1041,6 +1050,9 @@ $("mSave").onclick = async () => {
     await api(`/mentors/${EDITING.id}`, {
       method: "PATCH",
       body: JSON.stringify(body)
+    }).catch(e => {
+      if (e.data && e.data.code === "already_registered") throw new Error(t("dupEmail"));
+      throw e;
     });
 
     // Programmes are saved separately, as the whole list.

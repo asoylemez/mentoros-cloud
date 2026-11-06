@@ -18,7 +18,8 @@
     "acceptance-test": "node scripts/acceptance-test.js",
     "db-key": "node scripts/db-key.js",
     "db-decrypt": "node scripts/db-decrypt.js",
-    "encryption-test": "node scripts/encryption-test.js"
+    "encryption-test": "node scripts/encryption-test.js",
+    "sicil-test": "node scripts/sicil-test.js"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.27.0",

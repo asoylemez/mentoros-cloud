@@ -1593,14 +1593,14 @@ async function reportChecks(server, ids) {
   check("for the files: no names, no matches, participants numbered",
         !/Raporlu|Rapormentor/.test(files) && /Participant 1/.test(files) && t("ci_detail")?.screenOnly === true);
   const mAll = await rep("management");
-  const row = (mAll.tables.find(x => x.key === "matches")?.rows || []).find(r => r[0] === "Rasim Rapormentor");
+  const row = (mAll.tables.find(x => x.key === "matches")?.rows || []).find(r => r[1] === "Rasim Rapormentor");   // [0] = mentor person no.
   check("management: \"needs support\" column", row && row[row.length - 1] === "Yes", JSON.stringify(row));
 
   // Deleted mentee
   await api(R, "DELETE", `/mentees/${c}`);
   const after = await rep("management");
-  const crow = (after.tables.find(x => x.key === "matches")?.rows || []).find(r => r[0] === "Ruya Rapormentor");
-  check("a deleted mentee appears as \"(deleted mentee)\"", crow && crow[1] === "(deleted mentee)" && !JSON.stringify(after).includes("Cem Raporlu"),
+  const crow = (after.tables.find(x => x.key === "matches")?.rows || []).find(r => r[1] === "Ruya Rapormentor");
+  check("a deleted mentee appears as \"(deleted mentee)\"", crow && crow[3] === "(deleted mentee)" && crow[2] === "" && !JSON.stringify(after).includes("Cem Raporlu"),
         JSON.stringify(crow));
   check("... and their closing survey is gone from the results", val(await rep("surveys"), "Closing surveys sent") === 0);
 }

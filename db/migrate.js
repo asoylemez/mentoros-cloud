@@ -636,6 +636,27 @@ function migratePrograms() {
                ON mentorships(company_id, mentor_id, mentee_id, program_id)`);
     console.log("  migration: mentorships unique pair-per-programme index added");
   }
+
+  // Person number (sicil no): one per person (e-mail) per organisation.
+  // Logic in db/sicil.js. Existing records are numbered oldest first.
+  if (!columnExists("companies", "sicil_seq")) {
+    db.exec(`ALTER TABLE companies ADD COLUMN sicil_seq INTEGER NOT NULL DEFAULT 0`);
+    console.log("  migration: companies.sicil_seq added");
+  }
+  for (const table of ["mentors", "mentees"]) {
+    if (!columnExists(table, "sicil_no")) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN sicil_no TEXT NOT NULL DEFAULT ''`);
+      console.log(`  migration: ${table}.sicil_no added`);
+    }
+  }
+  for (const table of ["mentors", "mentees"]) {
+    const idx = `idx_${table}_sicil`;
+    if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='index' AND name=?`).get(idx)) {
+      db.exec(`CREATE INDEX ${idx} ON ${table}(company_id, sicil_no)`);
+    }
+  }
+  const numbered = require("./sicil").backfill();
+  if (numbered) console.log(`  migration: person numbers given to ${numbered} record(s)`);
 }
 
 module.exports = { run };

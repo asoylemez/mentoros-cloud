@@ -829,7 +829,8 @@
         "validateCapacity": "Please select mentor capacity.",
         "validateAvailability": "Please select current availability.",
         "saveFail": "Failed to save mentor profile",
-        "saveError": "Error saving mentor profile: "
+        "saveError": "Error saving mentor profile: ",
+        "alreadyRegistered": "A mentor registration already exists with this e-mail address. To update your details, please contact your HR team."
     },
     "tr": {
         "pageTitle": "Mentor Kayıt Formu",
@@ -908,7 +909,8 @@
         "validateCapacity": "Lütfen mentor kapasitesini seçin.",
         "validateAvailability": "Lütfen mevcut uygunluk durumunu seçin.",
         "saveFail": "Mentor profili kaydedilemedi",
-        "saveError": "Mentor profili kaydedilirken hata oluştu: "
+        "saveError": "Mentor profili kaydedilirken hata oluştu: ",
+        "alreadyRegistered": "Bu e-posta adresiyle zaten bir mentor kaydı var. Bilgilerinizi güncellemek için İK ekibinizle iletişime geçin."
     }
 };
 
@@ -1347,6 +1349,11 @@
       const result = await response.json();
 
       if (!response.ok) {
+        if (result.code === 'already_registered') {
+          const dup = new Error(t('alreadyRegistered'));
+          dup.plain = true;
+          throw dup;
+        }
         throw new Error(result.error || t('saveFail'));
       }
 
@@ -1357,7 +1364,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (error) {
-      alert(t('saveError') + error.message);
+      alert(error.plain ? error.message : t('saveError') + error.message);
       console.error(error);
       submitBtn.disabled = false;
       submitBtn.textContent = t('submit');

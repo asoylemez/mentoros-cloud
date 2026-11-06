@@ -2,7 +2,19 @@ const express = require("express");
 const { mentors, mentees, companies } = require("../db/repos");
 const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
+const sicil = require("../db/sicil");
+
 const router = express.Router();
+
+/** 409 if the e-mail is already registered in this role (one record per person per role). */
+function refuseDuplicate(res, companyId, role, email, exceptId = "") {
+  if (!sicil.emailTaken(companyId, role, email, exceptId)) return false;
+  res.status(409).json({
+    error: `This e-mail address is already registered as a ${role}.`,
+    code: "already_registered"
+  });
+  return true;
+}
 
 /** Firma yoksa FK hatasi verir; once anlamli bir mesaj don. */
 function ensureCompany(req, res) {
@@ -35,6 +47,8 @@ router.post("/mentors", requireApiKey, wrap(async (req, res) => {
     return res.status(400).json({ error: "fullName is required" });
   }
 
+  if (refuseDuplicate(res, companyId, "mentor", req.body.email)) return;
+
   const mentor = mentors.create(companyId, req.body);
 
   res.json({
@@ -55,7 +69,9 @@ router.get("/mentors/:id", requireApiKey, wrap(async (req, res) => {
  * Mentorun kendisi formu tekrar doldurmak zorunda kalmaz.
  */
 router.patch("/mentors/:id", requireApiKey, wrap(async (req, res) => {
-  if (!ownRecord(req, res, mentors.get(req.params.id), "Mentor not found")) return;
+  const own = ownRecord(req, res, mentors.get(req.params.id), "Mentor not found");
+  if (!own) return;
+  if ("email" in req.body && refuseDuplicate(res, own.companyId, "mentor", req.body.email, own.id)) return;
 
   const updated = mentors.update(req.params.id, req.body);
 
@@ -115,6 +131,8 @@ router.post("/mentees", requireApiKey, wrap(async (req, res) => {
   const companyId = ensureCompany(req, res);
   if (!companyId) return;
 
+  if (refuseDuplicate(res, companyId, "mentee", req.body.email)) return;
+
   const mentee = mentees.create(companyId, req.body);
 
   res.json({
@@ -132,7 +150,9 @@ router.get("/mentees/:id", requireApiKey, wrap(async (req, res) => {
 
 /** Mentee profilini guncelle (IK duzenler). */
 router.patch("/mentees/:id", requireApiKey, wrap(async (req, res) => {
-  if (!ownRecord(req, res, mentees.get(req.params.id), "Mentee not found")) return;
+  const own = ownRecord(req, res, mentees.get(req.params.id), "Mentee not found");
+  if (!own) return;
+  if ("email" in req.body && refuseDuplicate(res, own.companyId, "mentee", req.body.email, own.id)) return;
 
   const updated = mentees.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: "Mentee not found" });
