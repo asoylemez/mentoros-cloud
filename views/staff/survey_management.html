@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anket Yönetimi — MentorOS</title>
+<style>
+  :root {
+    --navy: #1a2b5e; --copper: #b5651d; --bg: #f4f5f7; --card: #ffffff; --border: #e0e0e0;
+    --text: #23262d; --muted: #6b7280; --ok: #16a34a; --err: #dc2626; --warn: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 26px 22px 70px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .brand-mark { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #101b3f, #3657ff); color: #fff; font-weight: 900; font-size: 20px; flex-shrink: 0; }
+  .brand-text { font-size: 22px; font-weight: 800; color: #101b3f; line-height: 1; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  select, input, textarea { padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 14px;
+    background: #fff; color: var(--text); width: 100%; }
+  select.compact { width: auto; }
+  textarea { min-height: 260px; resize: vertical; line-height: 1.5; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--navy); }
+  button { padding: 9px 16px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+    background: #fff; color: var(--text); font: inherit; font-size: 14px; }
+  button:hover:not(:disabled) { background: #f7f8fa; }
+  button:disabled { opacity: .55; cursor: default; }
+  button.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--navy); filter: brightness(1.15); }
+  button.sm { padding: 6px 12px; font-size: 13px; }
+  h1 { color: var(--navy); font-size: 26px; margin-bottom: 4px; }
+  .sub { color: var(--muted); margin-bottom: 18px; max-width: 900px; }
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .filters label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  .filters .grow { flex: 1; min-width: 200px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .stat .v { font-size: 24px; font-weight: 800; color: var(--navy); }
+  .stat .l { font-size: 13px; color: var(--muted); }
+  .note { background: #eef4ff; border: 1px solid #c9d8f5; color: #1a2b5e; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; margin-bottom: 14px; }
+  .actions { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .tablewrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; padding: 10px 10px; background: #fafbfc; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  td.nowrap { white-space: nowrap; }
+  td input, th input { width: auto; }
+  .badge { display: inline-block; font-size: 12px; border-radius: 999px; padding: 2px 9px; font-weight: 600; white-space: nowrap; }
+  .badge.done { background: #dcfce7; color: #15803d; }
+  .badge.wait { background: #fef3c7; color: #92400e; }
+  .type { font-size: 12px; color: var(--navy); background: #eef1f6; border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+  .why { font-size: 12px; color: var(--muted); }
+  .empty { padding: 30px; text-align: center; color: var(--muted); }
+  @media (max-width: 860px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  .layout { display: grid; grid-template-columns: 290px 1fr; gap: 16px; align-items: start; }
+  .list { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .list button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eef0f5; border-radius: 0;
+    padding: 11px 14px; font-size: 14px; background: #fff; }
+  .list button:last-child { border-bottom: 0; }
+  .list button.on { background: #eef1f8; color: var(--navy); font-weight: 600; box-shadow: inset 3px 0 0 var(--copper); }
+  .list .tag { display: inline-block; font-size: 11px; background: #fef3c7; color: #92400e; border-radius: 999px; padding: 1px 7px; margin-left: 6px; font-weight: 600; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .panel h2 { color: var(--navy); font-size: 18px; margin-bottom: 10px; }
+  .tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+  .tabs button { border: 0; border-radius: 0; padding: 7px 16px; }
+  .tabs button.on { background: var(--navy); color: #fff; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  .vars { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+  .vars button { padding: 3px 9px; font-size: 12.5px; border-radius: 999px; background: #eef1f6; border-color: #dfe3ec; color: var(--navy); }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .state { font-size: 13px; color: var(--muted); }
+  .state.custom { color: #92400e; }
+  .bar { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .preview { margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .preview .ph { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 12px;
+    border-bottom: 1px solid var(--border); font-size: 13px; background: #fafbfc; }
+  .preview .subj { font-weight: 600; color: var(--navy); }
+  .preview iframe { width: 100%; height: 640px; border: 0; display: block; background: #f4f5f7; }
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--navy); color: #fff;
+    padding: 10px 18px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50; }
+  .toast.show { opacity: 1; }
+  .toast.err { background: var(--err); }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand" id="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-text">MentorOS</div>
+        <div style="font-size:11.5px;color:#6b7280;line-height:1.2;margin-top:2px;">Mentorluk Programı Yönetim Platformu</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select id="lang" class="compact"><option value="tr">Türkçe</option><option value="en">English</option></select>
+      <button class="sm" id="logoutBtn" data-i18n="logout">Çıkış</button>
+    </div>
+  </div>
+
+  <h1 data-i18n="pageTitle">Anket Yönetimi</h1>
+  <div class="sub" data-i18n="pageSub"></div>
+  <div class="note" data-i18n="note"></div>
+
+  <div class="filters">
+    <div><label for="fType" data-i18n="fType">Anket</label><select id="fType" class="compact"></select></div>
+    <div id="progBox"><label for="fProg" data-i18n="fProg">Program</label><select id="fProg" class="compact"></select></div>
+    <div><label for="fStatus" data-i18n="fStatus">Durum</label><select id="fStatus" class="compact"></select></div>
+    <div class="grow"><label for="fQ" data-i18n="fQ">Ara</label><input type="search" id="fQ" autocomplete="off"></div>
+    <button id="refreshBtn" data-i18n="refresh">Yenile</button>
+  </div>
+
+  <div class="cards">
+    <div class="stat"><div class="v" id="sSent">0</div><div class="l" data-i18n="sSent">Gönderilen</div></div>
+    <div class="stat"><div class="v" id="sDone">0</div><div class="l" data-i18n="sDone">Yanıtlanan</div></div>
+    <div class="stat"><div class="v" id="sWait">0</div><div class="l" data-i18n="sWait">Bekleyen</div></div>
+    <div class="stat"><div class="v" id="sRate">—</div><div class="l" data-i18n="sRate">Yanıt oranı</div></div>
+  </div>
+
+  <div class="actions">
+    <span class="why" id="countLine"></span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="remindSel" disabled></button>
+      <button class="primary" id="remindAll" disabled></button>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" id="selAll" aria-label="select all"></th>
+        <th data-i18n="thType">Anket</th>
+        <th data-i18n="thProg" id="thProg">Program</th>
+        <th data-i18n="thPair">Eşleşme</th>
+        <th data-i18n="thSicil">Sicil No</th>
+        <th data-i18n="thName">Ad Soyad</th>
+        <th data-i18n="thRole">Rol</th>
+        <th data-i18n="thSent">Gönderim</th>
+        <th data-i18n="thStatus">Durum</th>
+        <th data-i18n="thRem">Hatırlatma</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const T = {
+  tr: {
+    pageTitle: "Anket Yönetimi", logout: "Çıkış", refresh: "Yenile",
+    pageSub: "Gönderilen ara dönem ve kapanış anketleri: kimler yanıtladı, kimler henüz yanıtlamadı. Yanıtlamayanlara tek tek ya da toplu hatırlatma gönderebilirsiniz.",
+    note: "Cevapların içeriği burada görünmez (Raporlar → Anket Sonuçları). Hatırlatma kişinin kendi anket bağlantısıyla, Admin → E-postalar'daki hatırlatma metniyle ve anketin gönderildiği dilde gider. Aynı kişiye 24 saatte en fazla bir hatırlatma gönderilir; ara dönem anketi hatırlatması yalnızca eşleşme aktifken gider.",
+    fType: "Anket", fProg: "Program", fStatus: "Durum", fQ: "Ara (sicil no, ad, eşleşme)",
+    tAll: "Tümü", tCheckin: "Ara Dönem Anketi", tClosing: "Kapanış Anketi",
+    pAll: "Tüm programlar", pNone: "Programsız", stAll: "Tümü", stDone: "Yanıtladı", stWait: "Bekliyor",
+    sSent: "Gönderilen", sDone: "Yanıtlanan", sWait: "Bekleyen", sRate: "Yanıt oranı",
+    thType: "Anket", thProg: "Program", thPair: "Eşleşme", thSicil: "Sicil No", thName: "Ad Soyad", thRole: "Rol",
+    thSent: "Gönderim", thStatus: "Durum", thRem: "Hatırlatma",
+    mentor: "Mentor", mentee: "Mentee", member: "Grup üyesi",
+    remindSel: "Seçilenlere hatırlat ({n})", remindAll: "Bekleyen herkese hatırlat ({n})",
+    count: "{n} kayıt gösteriliyor · {r} kişiye şu an hatırlatma gönderilebilir",
+    confirm: "{n} kişiye hatırlatma e-postası gönderilsin mi?",
+    sending: "Gönderiliyor…", none: "Bu filtreyle kayıt yok.", noneAtAll: "Henüz gönderilmiş anket yok.",
+    times: "{n} kez", last: "son", nextAt: "Sonraki: {d}",
+    why: { completed: "", no_email: "E-posta adresi yok", too_soon: "24 saat dolmadı", mentorship_not_active: "Eşleşme aktif değil", mentorship_missing: "Eşleşme silinmiş", not_found: "Bulunamadı" },
+    resSent: "Hatırlatma gönderildi: {n} kişi", resSkipped: "Gönderilmedi ({n}):", resFailed: "Gönderilemedi ({n}):",
+    loadFailed: "Liste yüklenemedi."
+  },
+  en: {
+    pageTitle: "Survey Management", logout: "Log out", refresh: "Refresh",
+    pageSub: "The mid-term and closing surveys sent: who answered and who has not yet. Send reminders to those who have not answered, one by one or all at once.",
+    note: "The answers are not shown here (Reports → Survey Results). A reminder goes with the person's own survey link, the reminder text in Admin → E-mails and the language the survey was sent in. One reminder per person per 24 hours at most; a mid-term survey reminder goes only while the match is active.",
+    fType: "Survey", fProg: "Programme", fStatus: "Status", fQ: "Search (person no., name, match)",
+    tAll: "All", tCheckin: "Mid-Term Survey", tClosing: "Closing Survey",
+    pAll: "All programmes", pNone: "No programme", stAll: "All", stDone: "Answered", stWait: "Waiting",
+    sSent: "Sent", sDone: "Answered", sWait: "Waiting", sRate: "Response rate",
+    thType: "Survey", thProg: "Programme", thPair: "Match", thSicil: "Person No.", thName: "Name", thRole: "Role",
+    thSent: "Sent", thStatus: "Status", thRem: "Reminders",
+    mentor: "Mentor", mentee: "Mentee", member: "Group member",
+    remindSel: "Remind selected ({n})", remindAll: "Remind everyone waiting ({n})",
+    count: "{n} rows shown · {r} people can be reminded now",
+    confirm: "Send a reminder e-mail to {n} people?",
+    sending: "Sending…", none: "No rows for this filter.", noneAtAll: "No survey has been sent yet.",
+    times: "{n}×", last: "last", nextAt: "Next: {d}",
+    why: { completed: "", no_email: "No e-mail address", too_soon: "Within 24 hours", mentorship_not_active: "Match not active", mentorship_missing: "Match deleted", not_found: "Not found" },
+    resSent: "Reminder sent to {n} people", resSkipped: "Not sent ({n}):", resFailed: "Could not be sent ({n}):",
+    loadFailed: "The list could not be loaded."
+  }
+};
+let LANG = localStorage.getItem("mentorAppLang") || "tr";
+if (!T[LANG]) LANG = "tr";
+const t = k => (T[LANG][k] ?? T.tr[k] ?? k);
+
+let ROWS = [], PROGRAMS = [], MAX = 300;
+const SEL = new Set();
+
+function toast(msg, isErr) {
+  const el = $("toast"); el.textContent = msg; el.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => { el.className = "toast"; }, 2800);
+}
+const fmt = iso => iso ? new Date(iso).toLocaleDateString(LANG === "en" ? "en-GB" : "tr-TR") : "";
+const fmtTime = iso => iso ? new Date(iso).toLocaleString(LANG === "en" ? "en-GB" : "tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+const norm = v => String(v ?? "").toLocaleLowerCase("tr");
+
+function fillSelects() {
+  const keep = id => $(id).value;
+  const ty = keep("fType") || "all", pr = keep("fProg") || "all", st = keep("fStatus") || "all";
+  $("fType").innerHTML = `<option value="all">${esc(t("tAll"))}</option><option value="checkin">${esc(t("tCheckin"))}</option><option value="closing">${esc(t("tClosing"))}</option>`;
+  $("fProg").innerHTML = `<option value="all">${esc(t("pAll"))}</option><option value="none">${esc(t("pNone"))}</option>` +
+    PROGRAMS.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+  $("fStatus").innerHTML = `<option value="all">${esc(t("stAll"))}</option><option value="pending">${esc(t("stWait"))}</option><option value="completed">${esc(t("stDone"))}</option>`;
+  $("fType").value = ty; $("fProg").value = [...$("fProg").options].some(o => o.value === pr) ? pr : "all"; $("fStatus").value = st;
+  $("progBox").hidden = !PROGRAMS.length;
+}
+
+function filtered() {
+  const ty = $("fType").value, pr = $("fProg").value, st = $("fStatus").value, q = norm($("fQ").value.trim());
+  return ROWS.filter(r =>
+    (ty === "all" || r.type === ty) &&
+    (pr === "all" || (pr === "none" ? !r.programId : r.programId === pr)) &&
+    (st === "all" || r.status === st) &&
+    (!q || [r.sicilNo, r.name, r.pair, r.programName].some(v => norm(v).includes(q))));
+}
+
+function render() {
+  const list = filtered();
+  const done = list.filter(r => r.status === "completed").length;
+  $("sSent").textContent = list.length; $("sDone").textContent = done; $("sWait").textContent = list.length - done;
+  $("sRate").textContent = list.length ? `${Math.round(done / list.length * 100)}%` : "—";
+  for (const k of [...SEL]) if (!list.some(r => r.key === k && r.canRemind)) SEL.delete(k);
+  const remindable = list.filter(r => r.canRemind);
+  $("countLine").textContent = t("count").replace("{n}", list.length).replace("{r}", remindable.length);
+  $("remindSel").textContent = t("remindSel").replace("{n}", SEL.size);
+  $("remindAll").textContent = t("remindAll").replace("{n}", remindable.length);
+  $("remindSel").disabled = !SEL.size; $("remindAll").disabled = !remindable.length;
+  $("selAll").checked = remindable.length > 0 && remindable.every(r => SEL.has(r.key));
+  $("selAll").disabled = !remindable.length;
+  $("thProg").hidden = !PROGRAMS.length;
+  $("rows").innerHTML = list.map(r => {
+    const role = r.role === "mentor" ? t("mentor") : r.group ? t("member") : t("mentee");
+    const status = r.status === "completed"
+      ? `<span class="badge done">${esc(t("stDone"))}</span><div class="why">${esc(fmt(r.completedAt))}</div>`
+      : `<span class="badge wait">${esc(t("stWait"))}</span>`;
+    const why = r.status === "pending" && r.blocker
+      ? `<div class="why">${esc(t("why")[r.blocker] || r.blocker)}${r.nextReminderAt ? " · " + esc(t("nextAt").replace("{d}", fmtTime(r.nextReminderAt))) : ""}</div>` : "";
+    const rem = r.reminderCount ? `${esc(t("times").replace("{n}", r.reminderCount))}<div class="why">${esc(t("last"))} ${esc(fmt(r.lastRemindedAt))}</div>` : "–";
+    return `<tr>
+      <td><input type="checkbox" data-key="${esc(r.key)}"${SEL.has(r.key) ? " checked" : ""}${r.canRemind ? "" : " disabled"}></td>
+      <td><span class="type">${esc(r.type === "checkin" ? t("tCheckin") : t("tClosing"))}</span></td>
+      <td${PROGRAMS.length ? "" : " hidden"}>${esc(r.programName || "–")}</td>
+      <td>${esc(r.pair)}</td>
+      <td class="nowrap">${esc(r.sicilNo || "–")}</td>
+      <td>${esc(r.name)}</td>
+      <td class="nowrap">${esc(role)}</td>
+      <td class="nowrap">${esc(fmt(r.sentAt))}</td>
+      <td>${status}${why}</td>
+      <td class="nowrap">${rem}</td>
+    </tr>`;
+  }).join("");
+  $("empty").hidden = list.length > 0;
+  $("empty").textContent = ROWS.length ? t("none") : t("noneAtAll");
+  $("rows").querySelectorAll("input[data-key]").forEach(cb => cb.onchange = () => {
+    cb.checked ? SEL.add(cb.dataset.key) : SEL.delete(cb.dataset.key); render();
+  });
+}
+
+async function load() {
+  try {
+    const res = await fetch("/survey-management");
+    if (res.status === 401) { location.href = "/login.html"; return; }
+    if (!res.ok) throw new Error(res.status);
+    const d = await res.json();
+    ROWS = d.rows; PROGRAMS = d.programs; MAX = d.maxPerRequest || 300;
+  } catch { toast(t("loadFailed"), true); }
+  fillSelects(); render();
+}
+
+async function remind(keys) {
+  if (!keys.length || !confirm(t("confirm").replace("{n}", keys.length))) return;
+  const btns = [$("remindSel"), $("remindAll")]; btns.forEach(b => { b.disabled = true; });
+  $("remindAll").textContent = t("sending");
+  const all = { sent: [], skipped: [], failed: [] };
+  try {
+    for (let i = 0; i < keys.length; i += MAX) {
+      const items = keys.slice(i, i + MAX).map(k => { const [type, id] = k.split(":"); return { type, id }; });
+      const res = await fetch("/survey-management/remind", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items }) });
+      if (res.status === 401) { location.href = "/login.html"; return; }
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || res.status);
+      ["sent", "skipped", "failed"].forEach(k => all[k].push(...(d[k] || [])));
+    }
+    const lines = [t("resSent").replace("{n}", all.sent.length)];
+    if (all.skipped.length) lines.push(t("resSkipped").replace("{n}", all.skipped.length) + "\n" +
+      all.skipped.map(x => `${x.name || x.id}: ${t("why")[x.reason] || x.reason}`).join("\n"));
+    if (all.failed.length) lines.push(t("resFailed").replace("{n}", all.failed.length) + "\n" +
+      all.failed.map(x => `${x.name}: ${x.reason}`).join("\n"));
+    alert(lines.join("\n\n"));
+  } catch (e) { toast(e.message, true); }
+  SEL.clear();
+  await load();
+}
+
+$("remindSel").onclick = () => remind([...SEL]);
+$("remindAll").onclick = () => remind(filtered().filter(r => r.canRemind).map(r => r.key));
+$("selAll").onchange = e => { filtered().filter(r => r.canRemind).forEach(r => e.target.checked ? SEL.add(r.key) : SEL.delete(r.key)); render(); };
+["fType", "fProg", "fStatus"].forEach(id => { $(id).onchange = render; });
+$("fQ").oninput = render;
+$("refreshBtn").onclick = load;
+
+function applyLang() {
+  document.documentElement.lang = LANG; document.title = t("pageTitle") + " — MentorOS";
+  $("lang").value = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $("fQ").placeholder = "";
+  fillSelects(); render();
+}
+$("lang").onchange = e => { LANG = e.target.value; localStorage.setItem("mentorAppLang", LANG); applyLang(); };
+$("brand").onclick = () => { location.href = "/index.html?section=admin"; };
+$("logoutBtn").onclick = async () => { await fetch("/company-logout", { method: "POST" }); location.href = "/login.html"; };
+
+applyLang();
+load();
+</script>
+<script src="/assets/company-logo.js" data-staff></script>
+</body>
+</html>

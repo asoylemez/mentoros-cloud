@@ -290,7 +290,7 @@
         menteeRegistrationDesc: "View registered mentees, edit their profiles, and share the invitation link.",
         menteeMatchingTitle: "Mentee–Mentor Matching",
         adminTitle: "Admin",
-        adminDesc: "Programmes, mid-term survey questions, registration forms, e-mails and organisation settings.",
+        adminDesc: "Programmes, mid-term survey questions, registration forms, e-mails, survey management and organisation settings.",
         homeLink: "← Home",
         menteeMatchingDesc: "Find the most suitable mentors based on development needs and goals.",
         hrDashboardTitle: "HR Dashboard",
@@ -305,6 +305,8 @@
         formsTitle: "Registration Forms",
         formsDesc: "Which fields the mentor and mentee forms show, which are required, and their texts.",
         emailsTitle: "E-mails",
+        surveyMgmtTitle: "Survey Management",
+        surveyMgmtDesc: "Mid-term and closing surveys sent: who answered, who has not, and reminders.",
         emailsDesc: "The texts of the e-mails sent to mentors and mentees: invitations, match, surveys and reminders.",
         companySettingsDesc: "Your organisation's logo on screens, e-mails and reports.",
         reportsDesc: "Management report and survey results, as PDF or Excel.",
@@ -327,7 +329,7 @@
         menteeRegistrationDesc: "Kayıtlı mentee'leri görüntüleyin, profillerini düzenleyin ve davet bağlantısını paylaşın.",
         menteeMatchingTitle: "Mentee-Mentor Eşleştirme",
         adminTitle: "Admin",
-        adminDesc: "Programlar, ara dönem anketi soruları, kayıt formları, e-postalar ve firma ayarları.",
+        adminDesc: "Programlar, ara dönem anketi soruları, kayıt formları, e-postalar, anket yönetimi ve firma ayarları.",
         homeLink: "← Ana sayfa",
         menteeMatchingDesc: "Gelişim ihtiyaçları ve hedeflere göre en uygun mentorları bulun.",
         hrDashboardTitle: "HR Dashboard",
@@ -342,6 +344,8 @@
         formsTitle: "Kayıt Formları",
         formsDesc: "Mentor ve mentee formlarında hangi alanlar görünsün, hangileri zorunlu olsun ve alan metinleri.",
         emailsTitle: "E-postalar",
+        surveyMgmtTitle: "Anket Yönetimi",
+        surveyMgmtDesc: "Gönderilen ara dönem ve kapanış anketleri: kim yanıtladı, kim yanıtlamadı ve hatırlatmalar.",
         emailsDesc: "Mentor ve mentee'lere giden e-postaların metinleri: davetler, eşleşme, anketler ve hatırlatmalar.",
         companySettingsDesc: "Firmanızın logosu: ekranlarda, e-postalarda ve raporlarda.",
         reportsDesc: "Yönetim raporu ve anket sonuçları; PDF veya Excel olarak.",
@@ -398,6 +402,7 @@
       ["checkin_questions.html", "checkinTitle", "checkinDesc"],
       ["registration_forms.html", "formsTitle", "formsDesc"],
       ["email_templates.html", "emailsTitle", "emailsDesc"],
+      ["survey_management.html", "surveyMgmtTitle", "surveyMgmtDesc"],
       ["company_settings.html", "companySettingsTitle", "companySettingsDesc"]
     ];
     const ADMIN = urlParams.get("section") === "admin";
@@ -441,6 +446,7 @@
         programsTitle: "Create mentoring programmes with start and end dates. Mentors and mentees are placed into programmes, and matches follow the programme's dates.",
         checkinTitle: "The questions of the mid-term survey. The same set goes to mentors and mentees; you send it whenever you want from the dashboard.",
         formsTitle: "Choose which fields the mentor and mentee registration forms show, which are required, and their TR/EN texts. Fields needed for AI matching stay locked.",
+        surveyMgmtTitle: "Every mid-term and closing survey sent, person by person: answered or waiting, and how many reminders went out. Filter by survey, programme and status, and send reminders to those who have not answered - selected ones or everyone waiting. The answers themselves are in Reports.",
         emailsTitle: "Change the subject, title, text and button of every e-mail sent to mentors and mentees, in Turkish and English, for your organisation only. {name}-style variables are filled in for each person; the personal link is always added. You can go back to the default text at any time.",
         companySettingsTitle: "Your organisation's logo on screens, e-mails and reports, and the default time zone for events."
       },
@@ -456,6 +462,7 @@
         programsTitle: "Başlangıç ve bitiş tarihli mentorluk programları oluşturun. Mentor ve mentee'ler programlara yerleştirilir; eşleşmeler programın tarihlerine göre ilerler.",
         checkinTitle: "Program ortasında gönderilen ara dönem anketinin soruları. Aynı set mentor ve mentee'ye gider; anketi istediğiniz zaman Dashboard'dan gönderirsiniz.",
         formsTitle: "Mentor ve mentee kayıt formlarında hangi alanların görüneceğini, hangilerinin zorunlu olacağını ve TR/EN metinlerini seçin. AI eşleştirmesi için gereken alanlar kilitli kalır.",
+        surveyMgmtTitle: "Gönderilen her ara dönem ve kapanış anketi, kişi bazında: yanıtladı mı, bekliyor mu ve kaç hatırlatma gitti. Anket türü, program ve duruma göre süzün; yanıtlamayanlara seçerek ya da toplu hatırlatma gönderin. Cevapların kendisi Raporlar'dadır.",
         emailsTitle: "Mentor ve mentee'lere giden her e-postanın konusunu, başlığını, metnini ve buton yazısını Türkçe ve İngilizce olarak yalnızca firmanız için değiştirin. {ad} gibi değişkenler her kişi için doldurulur; kişiye özel bağlantı her zaman eklenir. İstediğiniz zaman varsayılan metne dönebilirsiniz.",
         companySettingsTitle: "Firmanızın ekranlarda, e-postalarda ve raporlarda görünen logosu ve etkinlikler için varsayılan saat dilimi."
       }
