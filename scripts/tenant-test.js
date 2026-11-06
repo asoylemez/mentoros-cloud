@@ -526,14 +526,13 @@ async function programmeChecks(server, ids) {
   check("A: mentor placed in two programmes",
         pm.status === 200 && pm.json?.mentor?.programIds?.length === 2, `HTTP ${pm.status}`);
 
-  const engaged = await api(A, "PUT", `/mentees/${menteeA}/program`, { programId: pX });
-  check("A: moving a mentee with an active mentorship warns first (409)",
-        engaged.status === 409 && engaged.json?.code === "mentee_engaged", `HTTP ${engaged.status}`);
-  const forced = await api(A, "PUT", `/mentees/${menteeA}/program?force=true`, { programId: pX });
-  check("A: ... and is placed after confirming", forced.status === 200 && forced.json?.mentee?.programId === pX,
-        `HTTP ${forced.status}`);
+  // V02: a mentee can be in several programmes. ADDING a programme never
+  // warns (menteeA's active mentorship is in no programme and stays so).
+  const engaged = await api(A, "PUT", `/mentees/${menteeA}/programs`, { programIds: [pX] });
+  check("A: adding a programme to a mentee with an active mentorship elsewhere: no warning",
+        engaged.status === 200 && engaged.json?.mentee?.programIds?.join() === pX, `HTTP ${engaged.status}`);
   const free = await api(A, "PUT", `/mentees/${menteeA2}/program`, { programId: pY });
-  check("A: free mentee placed without warning", free.status === 200 && free.json?.mentee?.programId === pY,
+  check("A: older one-programme form still works", free.status === 200 && free.json?.mentee?.programIds?.join() === pY,
         `HTTP ${free.status}`);
 
   const progs = (await api(A, "GET", "/programs")).json || [];
@@ -592,8 +591,8 @@ async function programmeChecks(server, ids) {
   check("A: deletes an empty programme", delX.status === 200, `HTTP ${delX.status}`);
   check("... the mentor is kept, without that programme",
         mentorAfter?.id === mentorA && !mentorAfter.programIds.includes(pX) && mentorAfter.programIds.includes(pY));
-  check("... the mentee is kept, now not assigned", menteeAfter?.id === menteeA && menteeAfter.programId === "",
-        JSON.stringify(menteeAfter?.programId));
+  check("... the mentee is kept, now not assigned", menteeAfter?.id === menteeA && menteeAfter.programIds?.length === 0,
+        JSON.stringify(menteeAfter?.programIds));
 
   return pY;   // an (archived) programme of A, used as "another organisation's programme"
 }
@@ -689,10 +688,13 @@ async function programmeMatchingChecks(server, ids) {
   check("match: a mentee with an active mentorship -> 409", again.status === 409 && again.json?.code === "mentee_already_engaged",
         `HTTP ${again.status}`);
 
-  const dOk = await match(m3, e4, { programId: P2.id /* ignored */ });
+  const notIn = await match(m3, e4, { programId: P2.id });
+  check("match: a programme the mentee is not in -> 400 program_not_assigned",
+        notIn.status === 400 && notIn.json?.code === "program_not_assigned", `HTTP ${notIn.status}`);
+  const dOk = await match(m3, e4);
   const ms4 = dOk.json?.mentorship;
-  check("match: programme taken from the mentee, not the body",
-        dOk.status === 200 && ms4?.programId === P1.id, `HTTP ${dOk.status} ${ms4?.programId === P2.id ? "(body programme used!)" : ""}`);
+  check("match: mentee in one programme, none asked -> that programme",
+        dOk.status === 200 && ms4?.programId === P1.id, `HTTP ${dOk.status}`);
 
   const wsUrl = new URL(r1.json.workspaceUrl);
   const wsData = (await api(null, "GET", `/public/workspace/${wsUrl.searchParams.get("id")}?token=${wsUrl.searchParams.get("token")}`)).json;

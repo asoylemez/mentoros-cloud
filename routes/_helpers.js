@@ -131,15 +131,17 @@ function refuseIfAiOff(res, companyId) {
  * A mentee in a group is matched together with the group, never alone.
  * Writes 409 and returns true when `mentee` is in a group.
  */
-function refuseGroupMember(res, mentee) {
-  if (!mentee || !mentee.groupId) return false;
+function refuseGroupMember(res, mentee, programId = "") {
+  // Only a group of the SAME programme stops an individual match.
+  const group = mentee && (mentee.groups || []).find(g => (g.programId || "") === (programId || ""));
+  if (!group) return false;
   res.status(409).json({
-    error: `This mentee is in the group "${mentee.groupName}" and is matched together with the group, not on their own.`,
+    error: `This mentee is in the group "${group.name}" and is matched together with the group in this programme, not on their own.`,
     action: "Take the mentee out of the group in the Mentee Registry first.",
     code: "mentee_in_group",
     state: "in_group",
-    groupId: mentee.groupId,
-    groupName: mentee.groupName
+    groupId: group.id,
+    groupName: group.name
   });
   return true;
 }

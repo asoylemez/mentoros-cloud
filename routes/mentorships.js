@@ -74,19 +74,19 @@ router.post("/mentorships", requireApiKey, wrap(async (req, res) => {
   if (found) {
     mentee = ownRecord(req, res, found, "Mentee not found");
     if (!mentee) return;
-    if (refuseGroupMember(res, mentee)) return;
   }
 
-  // Programme rule; the programme is taken from the mentee, never from the body.
-  const rule = programForMatch(res, companyId, mentee, mentor);
+  // Programme rule: the requested programme must be one of the mentee's.
+  const rule = programForMatch(res, companyId, mentee, mentor, body.programId);
   if (!rule) return;
+  if (mentee && refuseGroupMember(res, mentee, rule.programId)) return;
 
-  // One mentor per mentee at a time.
+  // One mentor per mentee at a time IN EACH PROGRAMME.
   if (mentee) {
-    const engagement = mentees.engagement(companyId, mentee.id);
+    const engagement = mentees.engagement(companyId, mentee.id, rule.programId);
     if (engagement.state === "matched") {
       return res.status(409).json({
-        error: "This mentee already has an active mentorship.",
+        error: "This mentee already has an active mentorship in this programme.",
         detail: engagement.mentorName ? `Mentor: ${engagement.mentorName}` : undefined,
         action: "Complete or cancel the existing mentorship before creating a new match.",
         code: "mentee_already_engaged",
@@ -160,7 +160,7 @@ function createGroupMentorship(req, res, companyId, mentor, body, lang) {
 
   // Programme rule: the group's programme, the mentor must be in it.
   const rule = programForMatch(res, companyId,
-    { id: group.id, companyId: group.companyId, programId: group.programId }, mentor);
+    { id: group.id, companyId: group.companyId, programIds: group.programId ? [group.programId] : [] }, mentor, group.programId);
   if (!rule) return;
 
   const closingDate = periodEnd(res, rule, body);

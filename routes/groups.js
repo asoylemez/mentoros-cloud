@@ -39,12 +39,13 @@ router.get("/mentee-groups/candidates", requireApiKey, wrap(async (req, res) => 
   }
 
   const list = mentees.listByCompany(companyId)
-    .filter(m => (m.programId || "") === programId)
+    .filter(m => !programId || (m.programIds || []).includes(programId))
     .map(m => {
-      const e = mentees.engagement(companyId, m.id);
+      const e = mentees.engagement(companyId, m.id, programId);
+      const g = (m.groups || []).find(x => (x.programId || "") === programId);   // this programme's group
       return {
         id: m.id, fullName: m.fullName, role: m.role || "", status: m.status,
-        groupId: m.groupId, groupName: m.groupName,
+        groupId: g ? g.id : "", groupName: g ? g.name : "",
         state: e.state, mentorName: e.mentorName || ""
       };
     });

@@ -886,17 +886,24 @@ const mentees = {
    * calisir, tek basina mentee uzerinde degil. Bu yuzden kontrol
    * uygulama katmanindadir.
    */
-  engagement(companyId, menteeId) {
+  /**
+   * programId: null = in ANY programme; a string ('' included) = only in
+   * that programme. A mentee can have one active mentorship per programme.
+   */
+  engagement(companyId, menteeId, programId = null) {
     if (!menteeId) return { engaged: false, state: "available" };
 
     const cid = slugify(companyId);
+    const any = programId === null || programId === undefined;
+    const pid = any ? "" : String(programId);
 
     const mentorship = db.prepare(`
-      SELECT id, mentor_id, mentor_name, created_at
+      SELECT id, mentor_id, mentor_name, created_at, program_id
         FROM mentorships
        WHERE company_id = ? AND mentee_id = ? AND status = 'active'
+         AND (? OR program_id = ?)
        LIMIT 1
-    `).get(cid, menteeId);
+    `).get(cid, menteeId, any ? 1 : 0, pid);
 
     if (mentorship) {
       return {
@@ -905,6 +912,7 @@ const mentees = {
         mentorshipId: mentorship.id,
         mentorId: mentorship.mentor_id,
         mentorName: mentorship.mentor_name || "",
+        programId: mentorship.program_id || "",
         since: mentorship.created_at
       };
     }
@@ -912,12 +920,13 @@ const mentees = {
     // Member of an ACTIVE group mentorship (even if the group itself was
     // deleted since): matched.
     const inGroupMentorship = db.prepare(`
-      SELECT ms.id, ms.mentor_id, ms.mentor_name, ms.group_name, ms.created_at
+      SELECT ms.id, ms.mentor_id, ms.mentor_name, ms.group_name, ms.created_at, ms.program_id
         FROM mentorship_members mm
         JOIN mentorships ms ON ms.id = mm.mentorship_id
        WHERE mm.mentee_id = ? AND ms.company_id = ? AND ms.status = 'active'
+         AND (? OR ms.program_id = ?)
        LIMIT 1
-    `).get(menteeId, cid);
+    `).get(menteeId, cid, any ? 1 : 0, pid);
 
     if (inGroupMentorship) {
       return {
@@ -927,6 +936,7 @@ const mentees = {
         mentorId: inGroupMentorship.mentor_id,
         mentorName: inGroupMentorship.mentor_name || "",
         groupName: inGroupMentorship.group_name || "",
+        programId: inGroupMentorship.program_id || "",
         since: inGroupMentorship.created_at
       };
     }
@@ -934,13 +944,14 @@ const mentees = {
     // A mentee in a group is matched together with the group, never on
     // their own (the rule works both ways: see menteeGroups.checkMembers).
     const group = db.prepare(`
-      SELECT g.id, g.name FROM mentee_group_members gm
+      SELECT g.id, g.name, g.program_id FROM mentee_group_members gm
         JOIN mentee_groups g ON g.id = gm.group_id
        WHERE gm.mentee_id = ? AND g.company_id = ?
-    `).get(menteeId, cid);
+         AND (? OR g.program_id = ?)
+    `).get(menteeId, cid, any ? 1 : 0, pid);
 
     if (group) {
-      return { engaged: true, state: "in_group", groupId: group.id, groupName: group.name };
+      return { engaged: true, state: "in_group", groupId: group.id, groupName: group.name, programId: group.program_id || "" };
     }
 
     return { engaged: false, state: "available" };
@@ -953,11 +964,11 @@ const mentees = {
    * yaninda kiminle mesgul oldugu yazar. Sessizce kaybolmalari IK'yi
    * "kayit nerede?" diye arattirirdi.
    */
-  listSelectable(companyId) {
+  listSelectable(companyId, programId = null) {
     return mentees
       .listByCompany(companyId)
       .filter(m => m.status === "active")
-      .map(m => ({ ...m, engagement: mentees.engagement(companyId, m.id) }));
+      .map(m => ({ ...m, engagement: mentees.engagement(companyId, m.id, programId) }));
   },
 
   // IK, mentee profilini duzenler. Gonderilmeyen alanlar mevcut degerinde kalir.
@@ -1025,14 +1036,20 @@ function hydrateMentee(row) {
   m.formats = parseArray(m.formats);
   m.preferredMentorProfile = parseArray(m.preferredMentorProfile);
   m.kvkkConsent = !!m.kvkkConsent;
-  // The group this mentee is in ('' = none; at most one group).
-  const g = db.prepare(`
-    SELECT g.id, g.name FROM mentee_group_members gm
+  // Programmes this mentee is in (a mentee can be in several).
+  m.programIds = db.prepare(
+    `SELECT program_id FROM program_mentees WHERE mentee_id = ? ORDER BY added_at`
+  ).all(m.id).map(r => r.program_id);
+  delete m.programId;               // old single column, no longer used
+  // Groups: at most one group PER PROGRAMME.
+  m.groups = db.prepare(`
+    SELECT g.id, g.name, g.program_id AS programId FROM mentee_group_members gm
       JOIN mentee_groups g ON g.id = gm.group_id
-     WHERE gm.mentee_id = ?
-  `).get(m.id);
-  m.groupId = g ? g.id : "";
-  m.groupName = g ? g.name : "";
+     WHERE gm.mentee_id = ? ORDER BY g.name COLLATE NOCASE
+  `).all(m.id);
+  // First group, for short labels on screen.
+  m.groupId = m.groups.length ? m.groups[0].id : "";
+  m.groupName = m.groups.map(g => g.name).join(", ");
   return m;
 }
 
@@ -1747,7 +1764,7 @@ const programs = {
     return db.prepare(`
       SELECT p.*,
         (SELECT COUNT(*) FROM program_mentors pm WHERE pm.program_id = p.id) AS mentor_count,
-        (SELECT COUNT(*) FROM mentees me WHERE me.program_id = p.id AND me.company_id = p.company_id) AS mentee_count,
+        (SELECT COUNT(*) FROM program_mentees pe WHERE pe.program_id = p.id) AS mentee_count,
         (SELECT COUNT(*) FROM mentorships ms WHERE ms.program_id = p.id AND ms.status = 'active') AS active_mentorship_count
         FROM programs p
        WHERE p.company_id = ?
@@ -1804,7 +1821,7 @@ const programs = {
    */
   remove(id) {
     const tx = db.transaction(() => {
-      db.prepare(`UPDATE mentees SET program_id = '', updated_at = ? WHERE program_id = ?`).run(now(), id);
+      db.prepare(`DELETE FROM program_mentees WHERE program_id = ?`).run(id);
       db.prepare(`DELETE FROM program_mentors WHERE program_id = ?`).run(id);
       db.prepare(`DELETE FROM programs WHERE id = ?`).run(id);
     });
@@ -1835,10 +1852,33 @@ const programs = {
     return mentors.get(mentorId);
   },
 
-  /** Puts one mentee into one programme ('' = not assigned). */
-  setMenteeProgram(menteeId, programId) {
-    db.prepare(`UPDATE mentees SET program_id = ?, updated_at = ? WHERE id = ?`)
-      .run(programId || "", now(), menteeId);
+  /** Active mentorships of one mentee inside one programme (individual or as a group member). */
+  activeMentorshipsOfMentee(menteeId, programId) {
+    return db.prepare(`
+      SELECT COUNT(*) n FROM mentorships ms
+       WHERE ms.program_id = ? AND ms.status = 'active'
+         AND (ms.mentee_id = ? OR EXISTS (SELECT 1 FROM mentorship_members mm
+                                           WHERE mm.mentorship_id = ms.id AND mm.mentee_id = ?))
+    `).get(programId, menteeId, menteeId).n;
+  },
+
+  /** Replaces the programmes of one mentee (a mentee can be in several). Ids checked by the caller. */
+  setMenteePrograms(companyId, menteeId, programIds) {
+    const cid = slugify(companyId);
+    db.transaction(() => {
+      const keep = new Set(programIds);
+      for (const r of db.prepare(`SELECT program_id FROM program_mentees WHERE mentee_id = ?`).all(menteeId)) {
+        if (!keep.has(r.program_id)) {
+          db.prepare(`DELETE FROM program_mentees WHERE program_id = ? AND mentee_id = ?`).run(r.program_id, menteeId);
+        }
+      }
+      const ts = now();
+      for (const pid of keep) {
+        db.prepare(`INSERT OR IGNORE INTO program_mentees (program_id, mentee_id, company_id, added_at)
+                    VALUES (?, ?, ?, ?)`).run(pid, menteeId, cid, ts);
+      }
+      db.prepare(`UPDATE mentees SET updated_at = ? WHERE id = ?`).run(ts, menteeId);
+    })();
     return mentees.get(menteeId);
   }
 };
@@ -1913,18 +1953,20 @@ const menteeGroups = {
       return { error: `A group has ${GROUP_MIN} to ${GROUP_MAX} members.`, code: "group_size",
                min: GROUP_MIN, max: GROUP_MAX };
     }
-    const wrongProgramme = list.filter(m => (m.programId || "") !== (programId || ""));
+    const wrongProgramme = list.filter(m => programId ? !(m.programIds || []).includes(programId) : false);
     if (wrongProgramme.length) {
       return { error: "Every member must be in the group's programme.", code: "member_wrong_program",
                mentees: wrongProgramme.map(m => m.fullName) };
     }
-    const inOther = list.filter(m => m.groupId && (!group || m.groupId !== group.id));
+    // One group per mentee PER PROGRAMME (another programme's group is fine).
+    const otherGroup = m => (m.groups || []).find(g => (g.programId || "") === (programId || "") && (!group || g.id !== group.id));
+    const inOther = list.filter(otherGroup);
     if (inOther.length) {
-      return { error: "A mentee can be in only one group.", code: "member_in_other_group",
-               mentees: inOther.map(m => `${m.fullName} (${m.groupName})`) };
+      return { error: "A mentee can be in only one group per programme.", code: "member_in_other_group",
+               mentees: inOther.map(m => `${m.fullName} (${otherGroup(m).name})`) };
     }
     const busy = list.filter(m => {
-      const e = mentees.engagement(companyId, m.id);
+      const e = mentees.engagement(companyId, m.id, programId || "");
       return e.state === "matched" || e.state === "pending";
     });
     if (busy.length) {

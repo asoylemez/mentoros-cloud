@@ -135,51 +135,61 @@ router.put("/mentors/:id/programs", requireApiKey, wrap(async (req, res) => {
 }));
 
 /**
- * A mentee's programme: { programId } ('' = not assigned).
+ * A mentee's programmes, replaced as a whole: { programIds: [...] }
+ * (a mentee can be in several programmes, like a mentor).
  *
- * A mentee with an active mentorship or a pending request gets a 409
- * warning first; HR repeats with ?force=true. The existing mentorship
- * is not touched - it stays in the programme it was made in.
+ * Taking a mentee out of a programme:
+ *   - where they are in a group     -> 409 mentee_in_group (take them out of the group first)
+ *   - where they have an active
+ *     mentorship                    -> 409 mentee_engaged, then ?force=true.
+ *     The mentorship is not touched; it stays in its programme.
  */
-router.put("/mentees/:id/program", requireApiKey, wrap(async (req, res) => {
-  const mentee = ownRecord(req, res, mentees.get(req.params.id), "Mentee not found");
-  if (!mentee) return;
+function setMenteePrograms(req, res, mentee, rawIds) {
+  const ids = checkProgramIds(req, res, rawIds, mentee.programIds);
+  if (!ids) return;
+  const removed = (mentee.programIds || []).filter(id => !ids.includes(id));
 
-  const raw = (req.body || {}).programId;
-  if (raw !== undefined && raw !== null && typeof raw !== "string") {
-    return res.status(400).json({ error: "programId must be a programme id or empty.", code: "bad_program_id" });
-  }
-  const programId = raw || "";
-
-  if (programId) {
-    const ok = checkProgramIds(req, res, [programId], mentee.programId ? [mentee.programId] : []);
-    if (!ok) return;
-  }
-
-  // A group member keeps the group's programme: take them out of the
-  // group first (no ?force - a group's members must all share it).
-  if (programId !== (mentee.programId || "") && mentee.groupId) {
+  const grouped = (mentee.groups || []).filter(g => removed.includes(g.programId));
+  if (grouped.length) {
     return res.status(409).json({
-      error: `This mentee is in the group "${mentee.groupName}". Take them out of the group before changing the programme.`,
+      error: `This mentee is in the group "${grouped[0].name}" of a programme being removed. Take them out of the group first.`,
       code: "mentee_in_group",
-      groupName: mentee.groupName
+      groupName: grouped[0].name
     });
   }
 
-  if (programId !== (mentee.programId || "") && req.query.force !== "true") {
-    const engagement = mentees.engagement(mentee.companyId, mentee.id);
-    if (engagement.engaged) {
+  if (req.query.force !== "true") {
+    const busy = removed
+      .map(id => ({ program: programs.get(id), count: programs.activeMentorshipsOfMentee(mentee.id, id) }))
+      .filter(x => x.program && x.count > 0);
+    if (busy.length) {
       return res.status(409).json({
-        error: engagement.state === "matched"
-          ? "This mentee has an active mentorship. It will stay in the programme it was made in."
-          : "This mentee has a pending match request. It will stay in the programme it was made in.",
+        error: "This mentee has an active mentorship in a programme being removed. It will stay in that programme.",
         code: "mentee_engaged",
-        state: engagement.state
+        state: "matched",
+        programs: busy.map(x => ({ id: x.program.id, name: x.program.name }))
       });
     }
   }
 
-  res.json({ success: true, mentee: programs.setMenteeProgram(mentee.id, programId) });
+  res.json({ success: true, mentee: programs.setMenteePrograms(mentee.companyId, mentee.id, ids) });
+}
+
+router.put("/mentees/:id/programs", requireApiKey, wrap(async (req, res) => {
+  const mentee = ownRecord(req, res, mentees.get(req.params.id), "Mentee not found");
+  if (!mentee) return;
+  setMenteePrograms(req, res, mentee, (req.body || {}).programIds);
+}));
+
+/** Older form: one programme { programId } ('' = none) - replaces all of the mentee's programmes. */
+router.put("/mentees/:id/program", requireApiKey, wrap(async (req, res) => {
+  const mentee = ownRecord(req, res, mentees.get(req.params.id), "Mentee not found");
+  if (!mentee) return;
+  const raw = (req.body || {}).programId;
+  if (raw !== undefined && raw !== null && typeof raw !== "string") {
+    return res.status(400).json({ error: "programId must be a programme id or empty.", code: "bad_program_id" });
+  }
+  setMenteePrograms(req, res, mentee, raw ? [raw] : []);
 }));
 
 module.exports = router;

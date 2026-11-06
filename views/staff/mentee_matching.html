@@ -1570,6 +1570,8 @@
             ...payload,
             mentee: undefined,          // arayuze ait, sunucuya gerekmez
             group: undefined,
+            // A mentee can be in several programmes: match in the chosen one.
+            programId: HAS_PROGRAMS ? PROGRAM_ID : undefined,
             language: currentLanguage
           })
         });
@@ -1804,6 +1806,9 @@ function renderResults(mentors) {
         }
         body.closingDate = end;
       }
+
+      // A mentee can be in several programmes: the match is made in the chosen one.
+      if (HAS_PROGRAMS) body.programId = PROGRAM_ID;
 
       if (payload.groupId) {
         // Group: the SERVER takes the members from the group.

@@ -48,8 +48,8 @@ router.get("/matching-candidates", requireApiKey, wrap(async (req, res) => {
   // Alanlar TEK TEK gonderilir (tek bir metin blogu yerine): boylece
   // arayuz mentee'yi de mentor kartlariyla ayni bolumlu duzende
   // gosterebilir. AI'a giden metin yine SUNUCUDA derlenir.
-  const menteeList = mentees.listSelectable(companyId)
-    .filter(m => !program || m.programId === program.id)
+  const menteeList = mentees.listSelectable(companyId, program ? program.id : "")
+    .filter(m => !program || (m.programIds || []).includes(program.id))
     .map(m => ({
     id: m.id,
     fullName: m.fullName,
@@ -153,7 +153,8 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
     // given to the privacy layer as a known name.
     const group = loadMatchableGroup(req, res, companyId, req.body.groupId);
     if (!group) return;
-    record = { id: group.id, companyId: group.companyId, programId: group.programId };
+    record = { id: group.id, companyId: group.companyId, programIds: group.programId ? [group.programId] : [] };
+    req.body.programId = group.programId;
     mentee = {
       fullName: "",
       role: "",
@@ -166,7 +167,6 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
   } else if (req.body.menteeId) {
     record = ownRecord(req, res, mentees.get(req.body.menteeId), "Mentee not found");
     if (!record) return;
-    if (refuseGroupMember(res, record)) return;
 
     const need = composeMenteeNeed(record, language);
 
@@ -208,8 +208,9 @@ router.post("/match", requireApiKey, wrap(async (req, res) => {
 
   // Programme rule: with programmes, only the mentee's programme's
   // mentors are candidates (and only for a registered, placed mentee).
-  const rule = programForMatch(res, companyId, record);
+  const rule = programForMatch(res, companyId, record, null, req.body.programId);
   if (!rule) return;
+  if (req.body.menteeId && refuseGroupMember(res, record, rule.programId)) return;
 
   const activeMentors = rule.programId
     ? mentors.listActiveInProgram(companyId, rule.programId)

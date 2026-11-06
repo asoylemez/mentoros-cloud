@@ -189,6 +189,7 @@ function run() {
   migrateEvents();
   migrateMeetingSlots();
   migrateAiSwitch();
+  migratePeopleV01V02();
 }
 
 /**
@@ -516,8 +517,9 @@ function removeApprovalFlow() {
  *   mentee_groups         a named group, inside one programme ('' when the
  *                         organisation has no programmes). The programme
  *                         cannot be changed after the group is created.
- *   mentee_group_members  who is in it. A mentee is in at most ONE group
- *                         (UNIQUE mentee_id). Deleting a mentee or a group
+ *   mentee_group_members  who is in it. A mentee is in at most one group
+ *                         PER PROGRAMME (checked in the app; V02 removed
+ *                         the old UNIQUE mentee_id). Deleting a mentee or a group
  *                         removes the rows (ON DELETE CASCADE).
  */
 function migrateMenteeGroups() {
@@ -545,7 +547,6 @@ function migrateMenteeGroups() {
       company_id  TEXT NOT NULL,
       added_at    TEXT NOT NULL,
       PRIMARY KEY (group_id, mentee_id),
-      UNIQUE (mentee_id),
       FOREIGN KEY (group_id)  REFERENCES mentee_groups(id) ON DELETE CASCADE,
       FOREIGN KEY (mentee_id) REFERENCES mentees(id)       ON DELETE CASCADE
     );
@@ -637,6 +638,10 @@ function migratePrograms() {
     console.log("  migration: mentorships unique pair-per-programme index added");
   }
 
+}
+
+/** V01 person numbers, V02 several programmes per mentee. Runs LAST (needs every table). */
+function migratePeopleV01V02() {
   // Person number (sicil no): one per person (e-mail) per organisation.
   // Logic in db/sicil.js. Existing records are numbered oldest first.
   if (!columnExists("companies", "sicil_seq")) {
@@ -655,6 +660,63 @@ function migratePrograms() {
       db.exec(`CREATE INDEX ${idx} ON ${table}(company_id, sicil_no)`);
     }
   }
+  // A mentee can be in SEVERAL programmes (V02), like mentors. The old
+  // single mentees.program_id is moved here once and then emptied, so a
+  // programme HR later removes is not brought back on the next start.
+  // (Restoring an older backup moves its values again - as intended.)
+  if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='program_mentees'`).get()) {
+    db.exec(`
+      CREATE TABLE program_mentees (
+        program_id   TEXT NOT NULL,
+        mentee_id    TEXT NOT NULL,
+        company_id   TEXT NOT NULL,
+        added_at     TEXT NOT NULL,
+        PRIMARY KEY (program_id, mentee_id),
+        FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE,
+        FOREIGN KEY (mentee_id)  REFERENCES mentees(id)  ON DELETE CASCADE
+      );
+      CREATE INDEX idx_program_mentees_mentee ON program_mentees(mentee_id);
+    `);
+    console.log("  migration: program_mentees table added");
+  }
+  const moved = db.transaction(() => {
+    const n = db.prepare(`
+      INSERT OR IGNORE INTO program_mentees (program_id, mentee_id, company_id, added_at)
+      SELECT me.program_id, me.id, me.company_id, me.updated_at
+        FROM mentees me JOIN programs p ON p.id = me.program_id AND p.company_id = me.company_id
+       WHERE me.program_id != ''`).run().changes;
+    db.prepare(`UPDATE mentees SET program_id = '' WHERE program_id != ''`).run();
+    return n;
+  })();
+  if (moved) console.log(`  migration: ${moved} mentee programme place(s) moved to program_mentees`);
+
+  // V02: a mentee may be in one group in EACH programme. The old table
+  // had UNIQUE (mentee_id), which SQLite cannot drop: rebuild it once.
+  const gmSql = (db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='mentee_group_members'`).get() || {}).sql || "";
+  if (/UNIQUE\s*\(\s*mentee_id\s*\)/i.test(gmSql)) {
+    db.transaction(() => {
+      db.exec(`
+        CREATE TABLE mentee_group_members_v2 (
+          group_id    TEXT NOT NULL,
+          mentee_id   TEXT NOT NULL,
+          company_id  TEXT NOT NULL,
+          added_at    TEXT NOT NULL,
+          PRIMARY KEY (group_id, mentee_id),
+          FOREIGN KEY (group_id)  REFERENCES mentee_groups(id) ON DELETE CASCADE,
+          FOREIGN KEY (mentee_id) REFERENCES mentees(id)       ON DELETE CASCADE
+        );
+        INSERT INTO mentee_group_members_v2 (group_id, mentee_id, company_id, added_at)
+          SELECT group_id, mentee_id, company_id, added_at FROM mentee_group_members;
+        DROP TABLE mentee_group_members;
+        ALTER TABLE mentee_group_members_v2 RENAME TO mentee_group_members;
+      `);
+    })();
+    console.log("  migration: mentee_group_members - one group per mentee per programme");
+  }
+  if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='index' AND name='idx_group_members_mentee'`).get()) {
+    db.exec(`CREATE INDEX idx_group_members_mentee ON mentee_group_members(mentee_id)`);
+  }
+
   const numbered = require("./sicil").backfill();
   if (numbered) console.log(`  migration: person numbers given to ${numbered} record(s)`);
 }

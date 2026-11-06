@@ -186,6 +186,10 @@
 
   /* Groups */
   .tag.grp { background: #fef3c7; color: #92400e; }
+  .check-list { display: flex; flex-direction: column; gap: 6px; }
+  .check-list label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); cursor: pointer; }
+  .check-list input { width: auto; }
+  .check-list .lock { font-size: 12px; color: var(--warn); }
   .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
   .member-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto;
                  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
@@ -373,9 +377,8 @@
 
     <div class="section-head" data-i18n="secProgram">Program</div>
     <div class="field" id="programField">
-      <label for="f_program" data-i18n="fProgram">Bu mentee'nin programı</label>
-      <select id="f_program"></select>
-      <div class="hint" data-i18n="programOneHint">Bir mentee tek programda olur.</div>
+      <div class="check-list" id="f_programs"></div>
+      <div class="hint" data-i18n="programOneHint">Bir mentee birden fazla programda olabilir.</div>
       <div class="hint" id="programGroupLock" style="display:none;color:var(--warn)"></div>
     </div>
     <div class="hint" id="noProgramsHint" style="display:none;margin-top:0">
@@ -464,12 +467,12 @@ const T = {
     dupEmail: "Bu e-posta adresiyle kayıtlı başka bir mentee var.",
     filterAll: "Tümü", filterActive: "Aktif", filterInactive: "Pasif", refresh: "Yenile",
     thMentee: "Mentee", thRole: "Rol / Departman", thDevAreas: "Gelişim Alanları", thStatus: "Durum", thRegistered: "Kayıt",
-    thProgram: "Program", secProgram: "Program", fProgram: "Bu mentee'nin programı",
-    programOneHint: "Bir mentee tek programda olur.", programAll: "Tüm programlar",
+    thProgram: "Program", secProgram: "Program", fProgram: "Bu mentee'nin programları",
+    programAll: "Tüm programlar",
     programNone: "Programa atanmamış", noProgramsYet: "Henüz program yok.",
     goPrograms: "Programlar sayfasından oluşturun", archivedSuffix: "(arşivlendi)",
     programNotSaved: "Profil kaydedildi; program değiştirilmedi.",
-    engagedMatched: "Bu mentee'nin aktif bir mentorluk ilişkisi var. İlişki kurulduğu programda kalır; mentee'nin programı yine de değiştirilsin mi?",
+    engagedMatched: "Bu mentee'nin çıkarılan programda aktif bir mentorluk ilişkisi var: {names}. İlişki o programda devam eder. Mentee yine de bu programdan çıkarılsın mı?",
     engagedPending: "Bu mentee'nin bekleyen bir eşleşme talebi var. Talep oluşturulduğu programda kalır; mentee'nin programı yine de değiştirilsin mi?",
     groupsTitle: "Mentee Grupları",
     groupsSub: "Bir mentorla birlikte çalışacak 2–10 kişilik gruplar. Bir mentee yalnızca bir grupta olur; gruptaki mentee tek başına eşleştirilmez.",
@@ -493,7 +496,8 @@ const T = {
     g_member_wrong_program: "Bütün üyeler grubun programında olmalı:", g_member_in_other_group: "Bir mentee yalnızca bir grupta olabilir:",
     g_member_engaged: "Bireysel eşleşmesi veya bekleyen talebi olan mentee gruba eklenemez:",
     g_group_program_locked: "Grubun programı değiştirilemez.",
-    inGroupLock: "Bu mentee \"{name}\" grubunda. Programını değiştirmek için önce gruptan çıkarın.",
+    inGroupLock: "\"{name}\" grubunda. Bu programdan çıkarmak için önce gruptan çıkarın.",
+    programOneHint: "Bir mentee birden fazla programda olabilir; her programda en fazla bir aktif eşleşmesi olur.",
     empty: "Henüz mentee kaydı yok. Yukarıdaki davet bağlantısını paylaşın.",
     noResult: "Aramanızla eşleşen mentee yok.",
     badgeActive: "Aktif", badgeInactive: "Pasif",
@@ -533,12 +537,12 @@ const T = {
     dupEmail: "Another mentee is already registered with this e-mail address.",
     filterAll: "All", filterActive: "Active", filterInactive: "Inactive", refresh: "Refresh",
     thMentee: "Mentee", thRole: "Role / Department", thDevAreas: "Development areas", thStatus: "Status", thRegistered: "Registered",
-    thProgram: "Programme", secProgram: "Programme", fProgram: "This mentee's programme",
-    programOneHint: "A mentee is in one programme.", programAll: "All programmes",
+    thProgram: "Programme", secProgram: "Programme", fProgram: "This mentee's programmes",
+    programAll: "All programmes",
     programNone: "Not assigned to a programme", noProgramsYet: "No programmes yet.",
     goPrograms: "Create one on the Programmes page", archivedSuffix: "(archived)",
     programNotSaved: "Profile saved; the programme was not changed.",
-    engagedMatched: "This mentee has an active mentorship. It stays in the programme it was made in. Change the mentee's programme anyway?",
+    engagedMatched: "This mentee has an active mentorship in a programme being removed: {names}. It keeps running there. Remove the mentee from this programme anyway?",
     engagedPending: "This mentee has a pending match request. It stays in the programme it was made in. Change the mentee's programme anyway?",
     groupsTitle: "Mentee Groups",
     groupsSub: "Groups of 2–10 people who work together with one mentor. A mentee is in at most one group; a group member is not matched on their own.",
@@ -562,7 +566,8 @@ const T = {
     g_member_wrong_program: "Every member must be in the group's programme:", g_member_in_other_group: "A mentee can be in only one group:",
     g_member_engaged: "Mentees with an individual mentorship or a pending request cannot join a group:",
     g_group_program_locked: "A group's programme cannot be changed.",
-    inGroupLock: "This mentee is in the group \"{name}\". Take them out of the group before changing the programme.",
+    inGroupLock: "In the group \"{name}\". Take them out of the group to remove this programme.",
+    programOneHint: "A mentee can be in several programmes, with at most one active match in each.",
     empty: "No mentees yet. Share the invitation link above.",
     noResult: "No mentee matches your search.",
     badgeActive: "Active", badgeInactive: "Inactive",
@@ -681,11 +686,11 @@ function renderProgramFilter() {
   sel.value = [...sel.options].some(o => o.value === keep) ? keep : "all";
 }
 function programCell(m) {
-  const p = m.programId && programById(m.programId);
-  const prog = p
-    ? `<span class="tag prog${p.archived ? " archived" : ""}">${esc(p.name)}</span>`
+  const list = (m.programIds || []).map(programById).filter(Boolean);
+  const prog = list.length
+    ? list.map(p => `<span class="tag prog${p.archived ? " archived" : ""}">${esc(p.name)}</span>`).join("")
     : (PROGRAMS.length ? `<span class="unassigned">${esc(t("programNone"))}</span>` : "");
-  const grp = m.groupId ? `<div><span class="tag grp">${esc(t("groupTag"))}: ${esc(m.groupName)}</span></div>` : "";
+  const grp = (m.groups || []).map(g => `<div><span class="tag grp">${esc(t("groupTag"))}: ${esc(g.name)}</span></div>`).join("");
   return (prog + grp) || "–";
 }
 
@@ -702,8 +707,9 @@ function filtered() {
   return MENTEES.filter(m => {
     if (sf === "active" && m.status !== "active") return false;
     if (sf === "inactive" && m.status === "active") return false;
-    if (pf === "none" && m.programId) return false;
-    if (pf !== "all" && pf !== "none" && m.programId !== pf) return false;
+    const ids = m.programIds || [];
+    if (pf === "none" && ids.length) return false;
+    if (pf !== "all" && pf !== "none" && !ids.includes(pf)) return false;
     if (!q) return true;
     const hay = [m.sicilNo, m.fullName, m.email, m.role, m.department,
       ...(m.devFunctionalAreas || []), ...(m.competenciesToDevelop || [])].join(" ").toLowerCase();
@@ -778,14 +784,17 @@ window.openMentee = function (id) {
   const hasPrograms = PROGRAMS.length > 0;
   $("programField").style.display = hasPrograms ? "" : "none";
   $("noProgramsHint").style.display = hasPrograms ? "none" : "block";
-  const options = PROGRAMS.filter(p => !p.archived || p.id === m.programId);
-  $("f_program").innerHTML =
-    `<option value="">${esc(t("programNone"))}</option>` +
-    options.map(p => `<option value="${esc(p.id)}">${esc(programLabel(p))}</option>`).join("");
-  $("f_program").value = m.programId || "";
-  $("f_program").disabled = !!m.groupId;
-  $("programGroupLock").style.display = m.groupId ? "block" : "none";
-  $("programGroupLock").textContent = m.groupId ? t("inGroupLock").replace("{name}", m.groupName) : "";
+  // One box per programme. A programme where the mentee is in a group
+  // stays ticked and locked (take them out of the group first).
+  const mine = m.programIds || [];
+  $("f_programs").innerHTML = PROGRAMS
+    .filter(p => !p.archived || mine.includes(p.id))
+    .map(p => {
+      const g = (m.groups || []).find(x => x.programId === p.id);
+      return `<label><input type="checkbox" value="${esc(p.id)}"${mine.includes(p.id) ? " checked" : ""}${g ? " disabled" : ""}>
+                ${esc(programLabel(p))}${g ? ` <span class="lock">${esc(t("inGroupLock").replace("{name}", g.name))}</span>` : ""}</label>`;
+    }).join("");
+  $("programGroupLock").style.display = "none";
 
   $("modal").classList.add("open");
 };
@@ -810,15 +819,16 @@ $("mSave").onclick = async () => {
     // Programme is saved separately; the server warns first (409) when the
     // mentee has an active mentorship or a pending request.
     let note = t("saved");
-    const programId = $("f_program").value;
-    if (PROGRAMS.length && !EDITING.groupId && programId !== (EDITING.programId || "")) {
-      const put = force => api(`/mentees/${EDITING.id}/program${force ? "?force=true" : ""}`,
-        { method: "PUT", body: JSON.stringify({ programId }) });
+    const chosen = [...$("f_programs").querySelectorAll("input:checked")].map(i => i.value);
+    const before = [...(EDITING.programIds || [])].sort().join(",");
+    if (PROGRAMS.length && chosen.slice().sort().join(",") !== before) {
+      const put = force => api(`/mentees/${EDITING.id}/programs${force ? "?force=true" : ""}`,
+        { method: "PUT", body: JSON.stringify({ programIds: chosen }) });
       try {
         await put(false);
       } catch (e) {
         if (e.data && e.data.code === "mentee_engaged") {
-          const msg = e.data.state === "pending" ? t("engagedPending") : t("engagedMatched");
+          const msg = t("engagedMatched").replace("{names}", (e.data.programs || []).map(p => p.name).join(", "));
           if (confirm(msg)) await put(true);
           else note = t("programNotSaved");
         } else throw e;
