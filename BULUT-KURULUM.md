@@ -189,6 +189,13 @@ Yedekler de **aynı anahtarla şifrelidir**: indirilen dosya
 `DB_ENCRYPTION_KEY` olmadan açılamaz. Geri yüklemede aynı anahtar
 kullanılmalıdır.
 
+**Geri yükleme:** adım adım `GERI-YUKLEME-KILAVUZU.md`. Kısaca:
+yedeği diske koyun, Environment'ta `RESTORE_FILE=<yol>` tanımlayın;
+servis yeniden başlarken yedek, veritabanı açılmadan önce yerine konur
+(mevcut veritabanı `geri-yukleme-oncesi-<zaman>/` klasörüne taşınır).
+Ardından `RESTORE_FILE`'ı silin. İndirilen bir yedeğin açıldığını
+sunucuya dokunmadan sınamak için: `npm run verify-backup -- <dosya>`.
+
 ---
 
 ## 8. Testler

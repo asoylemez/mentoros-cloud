@@ -10,6 +10,8 @@
     "set-admin-password": "node scripts/set-admin-password.js",
     "backup": "node scripts/backup.js",
     "restore": "node scripts/restore.js",
+    "verify-backup": "node scripts/verify-backup.js",
+    "restore-test": "node scripts/restore-test.js",
     "hash-password": "node scripts/hash-password.js",
     "seed": "node scripts/seed-demo.js",
     "tenant-test": "node scripts/tenant-test.js",

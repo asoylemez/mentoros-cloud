@@ -21,6 +21,10 @@ if (config.cloud && !cipher.enabled()) {
     "  Create a key with `npm run db-key`, store it safely and set it in the Environment settings."
   );
 }
+// RESTORE_FILE set: swap in that backup now, before anything opens the
+// database (lib/restoreOnBoot.js). Without the variable nothing happens.
+require("../lib/restoreOnBoot").restoreOnBoot(dbPath);
+
 if (cipher.enabled() && cipher.isPlaintext(dbPath)) {
   cipher.encryptExistingFile(dbPath);
   cipher.deletePlaintextBackups(backupCore.BACKUP_DIR);
