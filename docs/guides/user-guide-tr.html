@@ -1,0 +1,90 @@
+<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>MentorOS Kullanım Kılavuzu</title><style>
+@page { size: A4; margin: 16mm 16mm 18mm 16mm; }
+* { box-sizing: border-box; }
+body { font: 10.5pt/1.55 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #23262d; margin: 0; }
+h1 { font: 700 24pt/1.2 Georgia, "Times New Roman", serif; color: #1a2b5e; margin: 0 0 6px; }
+.meta { color: #6b7280; font-size: 9.5pt; margin-bottom: 10px; }
+.lead { font-size: 11pt; margin: 0 0 8px; }
+h2 { font: 700 15pt/1.25 Georgia, "Times New Roman", serif; color: #1a2b5e; margin: 22px 0 6px; break-after: avoid; }
+h3 { font-size: 11pt; color: #1a2b5e; margin: 12px 0 4px; break-after: avoid; }
+p { margin: 0 0 6px; }
+ol, ul { margin: 2px 0 8px 20px; padding: 0; }
+li { margin: 2px 0; }
+b { color: #1a2b5e; }
+figure { margin: 10px 0 12px; break-inside: avoid; }
+figure img { width: 100%; border: 1px solid #e3e6ec; border-radius: 8px; display: block; }
+figure.narrow img { width: 46%; margin: 0 auto; }
+.note { background: #eef4ff; border: 1px solid #c9d8f5; border-radius: 8px; padding: 8px 11px; margin: 8px 0; font-size: 10pt; break-inside: avoid; }
+.warn { background: #fff8e6; border-color: #f1d79a; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; break-inside: avoid; }
+.cols ul { margin-left: 16px; }
+section { break-inside: auto; }
+</style></head><body>
+<h1>MentorOS Kullanım Kılavuzu</h1>
+<div class="meta">Kasım 2026 · İK ekipleri için</div>
+<p class="lead">MentorOS'u bölüm bölüm kullanın: kişileri kaydedin, eşleştirin, takip edin ve raporlayın. Her kutudaki <b>i</b> ikonunun üzerine gelirseniz o bölümün kısa açıklamasını görürsünüz.</p>
+<section><h2>1. Ana sayfa</h2>
+<p>Giriş yaptıktan sonra tüm bölümler burada. Sağ üstten dili seçin (Türkçe / English) ve <b>Kullanım Kılavuzu</b> ile bu belgeyi açın.</p>
+<ul><li>Bir bölüme girmek için <b>Aç</b>'a basın.</li><li><b>i</b> ikonunun üzerine gelin: o bölümün ne işe yaradığı kısaca çıkar.</li><li>Seyrek değişen ayarlar, <b>E-postalar</b> ve <b>Anket Yönetimi</b> son kutu olan <b>Admin</b>'in içindedir.</li></ul>
+<figure><img src="img/home-tr.jpg" alt=""></figure>
+</section>
+<section><h2>2. Mentor ve mentee kaydı</h2>
+<p>Kişileri siz girmezsiniz; kendileri bir bağlantıdan kayıt olur.</p>
+<ol><li><b>Mentor Kayıtları</b>'nı açın.</li><li>Davet bağlantısını <b>Kopyala</b> ile alıp paylaşın ya da e-posta adreslerini yazıp <b>Gönder</b>'e basın.</li><li>Formu dolduran kişi listede görünür; <b>Aç</b> ile profilini düzenleyebilirsiniz.</li><li>Mentee'ler için aynısını <b>Mentee Kayıtları</b>'nda yapın.</li></ol>
+<figure><img src="img/mentors-tr.jpg" alt=""></figure>
+<h3>Sicil numarası</h3>
+<ul><li>Sistem kayıt olan herkese firmanız içinde <b>0001'den başlayan</b> bir sicil numarası verir; kayıt formunda sicil sorulmaz.</li><li>Kişi e-posta adresiyle tanınır: hem mentor hem mentee olan biri <b>tek bir numara</b> alır.</li><li>Numara hiç değişmez ve silinen bir kişinin numarası başkasına verilmez.</li><li>Aynı e-postayla aynı rolde ikinci kez kayıt olunamaz (mentor olan biri mentee olarak kayıt olabilir).</li></ul>
+<h3>Ad soyad ya da e-posta değişirse</h3>
+<p>Kişiyi <b>Aç</b> ile açıp yeni bilgiyi kaydedin. Sistem değişikliği bağlı kayıtlara da işler ve ekranda kısa bir bilgi gösterir:</p>
+<ul><li><b>Ad soyad</b>: eşleşmelerde (tamamlananlar dahil), anketlerde ve etkinliklerde güncellenir (örneğin evlilikle değişen soyadı).</li><li><b>E-posta</b>: aktif eşleşmelerde, bekleyen anketlerde ve yaklaşan etkinliklerde güncellenir; sonraki e-postalar yeni adrese gider.</li><li>Sicil numarası ve kişisel bağlantılar aynı kalır.</li></ul>
+</section>
+<section><h2>3. Programlar</h2>
+<p>Programları <b>Admin → Programlar</b>'da başlangıç ve bitiş tarihiyle oluşturun. Mentor ve mentee'ler <b>birden fazla programda</b> olabilir.</p>
+<ol><li>Mentee'yi <b>Mentee Kayıtları</b>'nda açın.</li><li>Program kutucuklarından kişinin olacağı programları işaretleyin ve kaydedin.</li></ol>
+<ul><li>Bir mentee'nin <b>her programda en fazla bir aktif eşleşmesi</b> olur; farklı programlarda aynı anda eşleşebilir.</li><li>Bir programda gruptaysa o programın kutucuğu kilitlidir; önce gruptan çıkarın.</li><li>Aktif eşleşmesi olan bir programdan çıkarırken uyarı çıkar; eşleşme o programda devam eder.</li></ul>
+<figure><img src="img/mentee-programs-tr.jpg" alt=""></figure>
+</section>
+<section><h2>4. Eşleştirme</h2>
+<ol><li><b>Mentee-Mentor Eşleştirme</b>'yi açın, <b>programı</b> seçin, sonra mentee'yi (ya da mentee grubunu) seçin.</li><li>Eşleşmenin bitiş tarihi programdan gelir; programsız eşleşmede tarihi siz girersiniz.</li><li><b>AI İle Eşleştir</b>: AI uygun mentorları önerir. <b>Manuel Eşleştir</b>: mentoru listeden kendiniz seçersiniz.</li><li>Eşleştirince mentor ve mentee için ortak bir <b>çalışma sayfası</b> açılır.</li></ol>
+<figure><img src="img/matching-tr.jpg" alt=""></figure>
+<div class="note">AI eşleştirmede isimler, e-postalar ve sicil numaraları AI'ya hiçbir zaman gönderilmez. Ayrıntılar için <b>AI kullanımı ve kişisel veriler</b> bölümüne bakın.</div>
+</section>
+<section><h2>5. HR Dashboard</h2>
+<p>Tüm mentorlukları tek yerden takip edersiniz.</p>
+<ol><li>Yeni eşleşmede <b>Eşleşme e-postasını gönder</b>'e basın: mentor ve mentee (grupta her üye) <b>kendi kişisel çalışma sayfası bağlantısını</b> alır.</li><li><b>Toplantı Takibi</b>'nde kim ne zaman, ne kadar görüştü görürsünüz (konuşulanlar görünmez).</li><li>Program ortasında <b>Ara Dönem Anketi</b> düğmeleriyle mentora, mentee'ye ya da ikisine kısa bir anket gönderin.</li><li>Mentorluk biterken <b>Anket Gönder</b> ile kapanış anketini isteyin.</li></ol>
+<ul><li>Bekleyen bir anketi tekrar göndermek <b>hatırlatma</b> sayılır; aynı kişiye <b>24 saatte en fazla bir</b> hatırlatma gider.</li><li>Daha önce kurulmuş eşleşmelerde kişisel bağlantıların gitmesi için Eşleşme e-postasını bir kez yeniden gönderin.</li></ul>
+<figure><img src="img/dashboard-tr.jpg" alt=""></figure>
+</section>
+<section><h2>6. Anket Yönetimi</h2>
+<p><b>Admin → Anket Yönetimi</b>'nde gönderilen her ara dönem ve kapanış anketini kişi bazında görürsünüz: yanıtladı mı, bekliyor mu, kaç hatırlatma gitti.</p>
+<ol><li>Anket türü, program ve duruma göre süzün ya da sicil no / ad ile arayın.</li><li>Hatırlatmak istediklerinizi işaretleyip <b>Seçilenlere hatırlat</b>'a ya da <b>Bekleyen herkese hatırlat</b>'a basın.</li><li>Hatırlatılamayan satırda nedeni yazar: 24 saat dolmadı, e-posta yok ya da eşleşme aktif değil.</li></ol>
+<figure><img src="img/survey-mgmt-tr.jpg" alt=""></figure>
+<div class="note">Cevapların içeriği burada görünmez; <b>Raporlar → Anket Sonuçları</b>'ndadır.</div>
+</section>
+<section><h2>7. Duyurular ve Etkinlikler</h2>
+<p><b>Duyurular</b>: E-posta yazar gibi konu ve mesajı yazın, alıcıları seçin (mentorlar, mentee'ler, gruplar, programlar ya da istediğiniz adresler), gerekirse dosya ekleyip gönderin. Herkese ayrı e-posta gider; duyuru çalışma sayfalarında da görünür.</p>
+<figure><img src="img/announcements-tr.jpg" alt=""></figure>
+<p><b>Etkinlikler</b>:</p>
+<ol><li><b>+ Yeni etkinlik</b> ile tarih, saat ve yer ya da online bağlantıyı girin.</li><li>Katılımcıları ekleyip davet gönderin; takvim daveti gider ve kişiler kendi bağlantılarından yanıt verir.</li><li>Etkinlikten sonra kimin gerçekten katıldığını işaretleyin.</li></ol>
+<figure><img src="img/events-tr.jpg" alt=""></figure>
+</section>
+<section><h2>8. Raporlar</h2>
+<p>Sekmeyi seçin, tarih aralığını (ve gerekirse programı) girip <b>Uygula</b>'ya basın. <b>PDF indir</b> ya da <b>Excel indir</b> ile kaydedin.</p>
+<ul><li><b>Yönetim Raporu</b>: kişi, eşleşme, toplantı ve kapasite sayıları; program, mentor, mentee, eşleşme, grup ve toplantı tabloları.</li><li><b>Anket Sonuçları</b>: ara dönem ve kapanış anketleri. İsimli cevaplar yalnızca ekranda; dosyalarda kişiler “Katılımcı 1, 2…” olur.</li><li><b>Etkinlikler</b>: davet ve katılım bilgileri.</li><li><b>Kişiye Özel Rapor</b>: sicil no ya da ad yazıp kişiyi seçin. Programları (mentor/mentee rolüyle), eşleştiği kişiler, eşleşmeler, grup ve toplantılar ile kişinin ve eşleştiği kişinin anket cevapları gelir. Anket cevapları yalnızca ekranda görünür.</li><li><b>AI Yönetici Özeti</b>: bkz. sonraki bölüm.</li></ul>
+<figure><img src="img/report-management-tr.jpg" alt=""></figure>
+<figure><img src="img/report-person-tr.jpg" alt=""></figure>
+</section>
+<section><h2>9. AI kullanımı ve kişisel veriler</h2>
+<p>MentorOS yapay zekâyı (AI) şu yerlerde kullanır: <b>AI İle Eşleştir</b>, çalışma sayfasında <b>gelişim planı taslağı</b>, <b>AI Yönetici Özeti</b> ve <b>Kişiye Özel AI Özeti</b>.</p>
+<div class="cols"><div><h3>AI&#x27;ya hiçbir zaman gitmeyenler</h3><ul><li>İsim ve soyadı</li><li>E-posta ve telefon</li><li>Sicil numarası</li><li>Açık uçlu anket cevapları</li><li>Toplantı notlarının içeriği</li></ul></div><div><h3>AI&#x27;ya gidebilenler</h3><ul><li>Sayılar, oranlar ve tarihler</li><li>Program adları</li><li>Puan ve seçenek cevapları (ör. 4/5, Evet)</li><li>Unvan, departman, yetkinlik ve gelişim ihtiyacı gibi profil bilgileri — içindeki isimler maskelenir</li></ul></div></div>
+<ul><li>Özetlerde <b>AI'ya gidecek verileri göster</b> ile göndermeden önce neyin gideceğini görebilirsiniz.</li><li>Son özet saklanır; sayfayı açmak AI'ya istek göndermez. <b>Yeniden oluştur</b> yeni bir istek gönderir.</li><li>AI'nın yazdığı metni sayılarla karşılaştırarak kontrol edin. Kişiye Özel AI Özeti gelişimi desteklemek içindir; kişi hakkında karar vermek için tek başına kullanılmamalıdır.</li><li>AI firmanız için kapatılabilir; kapalıyken hiçbir veri AI'ya gitmez ve AI düğmeleri çalışmaz.</li><li>AI özetleri yalnızca ekranda gösterilir; bir kişi silinince onun AI özeti de silinir.</li></ul>
+<figure><img src="img/report-ai-tr.jpg" alt=""></figure>
+<div class="note warn">KVKK: Kişisel verilerin, isimler gizlenerek, mentorluk sürecinin değerlendirilmesi amacıyla yapay zekâ ile işlenebileceğinin aydınlatma metninizde yer aldığını hukuk danışmanınızla kontrol etmenizi öneririz.</div>
+</section>
+<section><h2>10. Admin</h2>
+<p>Ana sayfadaki son kutu. Bunlar genelde bir kez ayarlanır:</p>
+<ul><li><b>Programlar</b>: programlar ve tarihleri.</li><li><b>Ara Dönem Anketi Soruları</b>: ara dönem anketinde sorulacaklar.</li><li><b>Kayıt Formları</b>: formlarda hangi alanların görüneceği ve zorunlu olacağı.</li><li><b>E-postalar</b>: davet, eşleşme/çalışma sayfası, anket ve hatırlatma e-postalarının konu, başlık, metin ve buton yazısı (Türkçe ve İngilizce ayrı). {ad}, {karşı_taraf}, {firma}, {program}, {dönem} gibi değişkenler her kişi için doldurulur; <b>Önizle</b> ile görün, <b>Varsayılana dön</b> ile geri alın.</li><li><b>Anket Yönetimi</b>: bkz. 6. bölüm.</li><li><b>Firma Ayarları</b>: logo ve varsayılan saat dilimi.</li></ul>
+<figure><img src="img/admin-tr.jpg" alt=""></figure>
+<figure><img src="img/emails-tr.jpg" alt=""></figure>
+</section>
+</body></html>
