@@ -509,6 +509,8 @@ const T = {
     statFree: "boş kapasite",
     statAssigned: "atanmış mentee",
     searchPh: "Sicil no, ad, rol, yetkinliğe göre ara…",
+    syncDone: "Bağlı kayıtlar da güncellendi: ", syncActive: "{n} aktif eşleşmede e-posta", syncNamed: "{n} eşleşmede ad soyad",
+    syncSurveys: "{n} bekleyen ankette e-posta", syncEvents: "{n} yaklaşan etkinlikte e-posta",
     thSicil: "Sicil No",
     sicil: "Sicil No",
     dupEmail: "Bu e-posta adresiyle kayıtlı başka bir mentor var.",
@@ -605,6 +607,8 @@ const T = {
     statFree: "free capacity",
     statAssigned: "assigned mentees",
     searchPh: "Search by person no., name, role, expertise…",
+    syncDone: "Linked records updated too: ", syncActive: "e-mail in {n} active match(es)", syncNamed: "name in {n} match(es)",
+    syncSurveys: "e-mail in {n} waiting survey(s)", syncEvents: "e-mail in {n} upcoming event(s)",
     thSicil: "Person No.",
     sicil: "Person No.",
     dupEmail: "Another mentor is already registered with this e-mail address.",
@@ -729,8 +733,18 @@ function toast(msg, isErr) {
   const el = $("toast");
   el.textContent = msg;
   el.className = "toast show" + (isErr ? " err" : "");
-  setTimeout(() => { el.className = "toast"; }, 2600);
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => { el.className = "toast"; }, msg.length > 60 ? 7000 : 2600);
 }
+
+/* V08: what the server also updated (matches, surveys, events) after a name / e-mail change. */
+function syncNote(s) {
+  if (!s) return "";
+  const parts = [["activeMatches", "syncActive"], ["namedMatches", "syncNamed"], ["pendingSurveys", "syncSurveys"], ["upcomingEvents", "syncEvents"]]
+    .filter(([k]) => s[k] > 0).map(([k, label]) => t(label).replace("{n}", s[k]));
+  return parts.length ? t("syncDone") + parts.join(", ") + "." : "";
+}
+
 
 /* ---------------- DAVET LİNKİ ---------------- */
 
@@ -1047,7 +1061,7 @@ $("mSave").onclick = async () => {
     TEXT_FIELDS.forEach(f => { const v = $("f_" + f).value; body[f] = VOCAB_FIELDS.includes(f) ? MentorOptionLabels.toValue(v, LANG) : v; });
     ARRAY_FIELDS.forEach(f => { body[f] = splitList($("f_" + f).value).map(v => MentorOptionLabels.toValue(v, LANG)); });
 
-    await api(`/mentors/${EDITING.id}`, {
+    const saved = await api(`/mentors/${EDITING.id}`, {
       method: "PATCH",
       body: JSON.stringify(body)
     }).catch(e => {
@@ -1079,7 +1093,8 @@ $("mSave").onclick = async () => {
 
     closeModal();
     await loadMentors();
-    toast(t("saved"));
+    const synced = syncNote(saved && saved.synced);
+    toast(synced ? `${t("saved")} ${synced}` : t("saved"));
 
   } catch (e) {
     toast(e.message, true);

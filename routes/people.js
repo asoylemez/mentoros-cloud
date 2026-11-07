@@ -3,6 +3,7 @@ const { mentors, mentees, companies } = require("../db/repos");
 const { requireApiKey, requireCompany, ownRecord, wrap } = require("./_helpers");
 
 const sicil = require("../db/sicil");
+const { syncPerson } = require("../db/personSync");
 
 const router = express.Router();
 
@@ -79,7 +80,9 @@ router.patch("/mentors/:id", requireApiKey, wrap(async (req, res) => {
     return res.status(404).json({ error: "Mentor not found" });
   }
 
-  res.json({ success: true, message: "Mentor profile updated", mentor: updated });
+  // V08: the new name / e-mail also goes to the copies (matches, surveys, events).
+  const synced = syncPerson(own.companyId, "mentor", own, updated);
+  res.json({ success: true, message: "Mentor profile updated", mentor: updated, synced });
 }));
 
 /**
@@ -156,7 +159,9 @@ router.patch("/mentees/:id", requireApiKey, wrap(async (req, res) => {
 
   const updated = mentees.update(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: "Mentee not found" });
-  res.json({ success: true, message: "Mentee profile updated", mentee: updated });
+  // V08: the new name / e-mail also goes to the copies (matches, surveys, events).
+  const synced = syncPerson(own.companyId, "mentee", own, updated);
+  res.json({ success: true, message: "Mentee profile updated", mentee: updated, synced });
 }));
 
 /** Mentee'yi sil. */
