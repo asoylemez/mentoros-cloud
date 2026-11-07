@@ -88,4 +88,41 @@ router.post("/reports/ai-summary", requireApiKey, wrap(async (req, res) => {
   }
 }));
 
+// ---------------------------------------------------------------------
+// PERSON AI SUMMARY (V09) - lib/aiPersonSummary.js. Screen only.
+// ---------------------------------------------------------------------
+const aiPerson = require("../lib/aiPersonSummary");
+
+router.get("/reports/person/ai-summary", requireApiKey, wrap(async (req, res) => {
+  const companyId = requireCompany(req, res);
+  if (!companyId) return;
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ aiEnabled: companies.aiEnabled(companyId), last: aiPerson.last(companyId, req.query.sicil) });
+}));
+
+/** Exactly what would go to the AI about this person (no names, e-mails, numbers). */
+router.get("/reports/person/ai-summary/input", requireApiKey, wrap(async (req, res) => {
+  const companyId = requireCompany(req, res);
+  if (!companyId) return;
+  res.setHeader("Cache-Control", "no-store");
+  const input = aiPerson.buildInput(companyId, req.query);
+  if (!input) return res.status(404).json({ error: "No person with this person number.", code: "person_not_found" });
+  res.json({ text: input.text });
+}));
+
+/** { sicil, from, to, lang } - a new summary for this person (replaces the last one). */
+router.post("/reports/person/ai-summary", requireApiKey, wrap(async (req, res) => {
+  const companyId = requireCompany(req, res);
+  if (!companyId) return;
+  if (refuseIfAiOff(res, companyId)) return;
+  try {
+    const record = await aiPerson.generate(companyId, req.body || {});
+    if (!record) return res.status(404).json({ error: "No person with this person number.", code: "person_not_found" });
+    res.json({ success: true, summary: record });
+  } catch (error) {
+    if (error.code === "summary_running") return res.status(409).json({ error: error.message, code: error.code });
+    throw error;
+  }
+}));
+
 module.exports = router;

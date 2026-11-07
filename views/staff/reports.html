@@ -156,6 +156,15 @@ const T = {
     person: "Kişi (sicil no ya da ad soyad)", pickPerson: "Raporu görmek için yukarıdan bir kişi seçin (sicil no ya da ad soyad yazın).",
     personNotFound: "Bu sicil numarasıyla kayıtlı kişi bulunamadı.", roleMentor: "Mentor", roleMentee: "Mentee",
     noExportNote: "Yalnızca ekranda", tabPerson: "Kişiye Özel Rapor", tabAi: "AI Yönetici Özeti",
+    pai: {
+      title: "Kişiye Özel AI Özeti", generate: "Özeti oluştur", regenerate: "Yeniden oluştur", generating: "Oluşturuluyor…",
+      warn: "AI tarafından üretildi. Gelişimi desteklemek içindir; kişi hakkında karar vermek için tek başına kullanılmamalıdır. AI'ya isim, e-posta, sicil no, açık uçlu anket cevapları ve toplantı notları gitmez.",
+      off: "AI bu firma için kapalı. Kişiye Özel AI Özeti kullanılamaz.", none: "Bu kişi için henüz özet oluşturulmadı.",
+      created: "Oluşturulma", overview: "Genel durum", engagement: "Katılım ve süreklilik", surveys: "Anket görünümü",
+      attention: "Dikkat edilmesi gerekenler", actions: "İK için önerilen adımlar",
+      showInput: "AI'ya gidecek verileri göster", hideInput: "Gizle",
+      confirm: "Bu kişi için yeni bir özet oluşturulsun mu? (AI'ya bir istek gönderilir)", failed: "Özet oluşturulamadı"
+    },
     ai: {
       title: "AI Yönetici Özeti", generate: "Özeti oluştur", regenerate: "Yeniden oluştur", generating: "Oluşturuluyor… (birkaç saniye sürebilir)",
       intro: "Seçili tarih aralığı ve program için sistemin hesapladığı sayılardan AI kısa bir yönetici özeti yazar. AI'ya isim, e-posta, sicil no, eşleşme bilgisi ve açık uçlu anket cevapları gitmez; yalnızca sayılar, oranlar ve program adları gider.",
@@ -186,6 +195,15 @@ const T = {
     person: "Person (person no. or name)", pickPerson: "Choose a person above to see the report (type a person number or a name).",
     personNotFound: "No person with this person number.", roleMentor: "Mentor", roleMentee: "Mentee",
     noExportNote: "On screen only", tabPerson: "Person Report", tabAi: "AI Executive Summary",
+    pai: {
+      title: "Person AI Summary", generate: "Generate summary", regenerate: "Generate again", generating: "Generating…",
+      warn: "Written by AI. It is meant to support development; do not use it on its own to decide about the person. No names, e-mails, person numbers, free-text survey answers or meeting notes go to the AI.",
+      off: "AI is turned off for this organisation. The Person AI Summary cannot be used.", none: "No summary for this person yet.",
+      created: "Created", overview: "Overall", engagement: "Engagement and continuity", surveys: "Survey picture",
+      attention: "Points that need attention", actions: "Suggested next steps for HR",
+      showInput: "Show what goes to the AI", hideInput: "Hide",
+      confirm: "Generate a new summary for this person? (a request is sent to the AI)", failed: "The summary could not be generated"
+    },
     ai: {
       title: "AI Executive Summary", generate: "Generate summary", regenerate: "Generate again", generating: "Generating… (this can take a few seconds)",
       intro: "The AI writes a short executive summary from the figures the system works out for the chosen date range and programme. No names, e-mails, person numbers, matches or free-text survey answers go to the AI; only numbers, rates and programme names.",
@@ -282,6 +300,8 @@ function render() {
   let html = `<div class="report-head"><h2>${esc(d.title)}</h2><div class="range">${esc(d.subtitle)}</div></div>`;
   html += (d.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("");
   if (d.summary.length) html += `<div class="cards">${d.summary.map(s => `<div class="stat"><div class="v">${esc(s.value)}</div><div class="l">${esc(s.label)}</div></div>`).join("")}</div>`;
+  // V09: the person's AI summary sits above the tables (screen only).
+  if (REPORT === "person" && d.person) html += `<div id="personAiBox"></div>`;
   for (const tb of d.tables) {
     const closed = tb.detail && !OPEN.has(tb.key);
     const rows = tb.rows;
@@ -301,6 +321,70 @@ function render() {
     </div>`;
   }
   $("report").innerHTML = html;
+  if (REPORT === "person" && d.person) loadPersonAi(d.person.sicilNo);
+}
+
+/* ---------------- Person AI summary (V09) - screen only ---------------- */
+let PAI = null, PAI_INPUT = "";
+const PA = k => (T[LANG].pai[k] ?? T.tr.pai[k] ?? k);
+async function loadPersonAi(sicil) {
+  if (!PAI || PAI.sicil !== sicil) {
+    PAI_INPUT = "";
+    try {
+      const res = await fetch(`/reports/person/ai-summary?sicil=${encodeURIComponent(sicil)}`);
+      const d = res.ok ? await res.json() : { aiEnabled: false, last: null };
+      PAI = { sicil, ...d };
+    } catch { PAI = { sicil, aiEnabled: false, last: null }; }
+  }
+  renderPersonAi();
+}
+function renderPersonAi() {
+  const box = document.getElementById("personAiBox");
+  if (!box || !PAI) return;
+  const L = PAI.last;
+  let inner = `<div class="note" style="margin:0 0 10px">⚠ ${esc(PA("warn"))}</div>`;
+  if (!PAI.aiEnabled) {
+    inner = `<div class="note err" style="margin:0">${esc(PA("off"))}</div>`;
+  } else {
+    inner += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button id="paiGen" class="primary">${esc(L ? PA("regenerate") : PA("generate"))}</button>
+        <button id="paiInput" class="ghost">${esc(PAI_INPUT ? PA("hideInput") : PA("showInput"))}</button></div>`;
+    if (PAI_INPUT) inner += `<pre style="white-space:pre-wrap;background:#f7f8fa;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-size:12.5px;max-height:320px;overflow:auto">${esc(PAI_INPUT)}</pre>`;
+    if (!L) inner += `<div class="empty" style="padding:12px 0">${esc(PA("none"))}</div>`;
+    else {
+      const S = L.summary, para = (h, txt) => txt ? `<h4 style="margin:12px 0 4px;color:var(--navy)">${esc(h)}</h4><p style="margin:0;line-height:1.6">${esc(txt)}</p>` : "";
+      const lst = (h, arr) => arr.length ? `<h4 style="margin:12px 0 4px;color:var(--navy)">${esc(h)}</h4><ul style="margin:0 0 0 18px">${arr.map(x => `<li style="margin:3px 0">${esc(x)}</li>`).join("")}</ul>` : "";
+      inner += `<div class="range" style="margin-bottom:4px">${esc(PA("created"))}: ${esc(new Date(L.createdAt).toLocaleString(LANG === "en" ? "en-GB" : "tr-TR"))}` +
+               `${L.filters.from || L.filters.to ? ` · ${esc(L.filters.from || "…")} – ${esc(L.filters.to || "…")}` : ""}</div>` +
+               para(PA("overview"), S.overview) + para(PA("engagement"), S.engagement) + para(PA("surveys"), S.surveys) +
+               lst(PA("attention"), S.attention) + lst(PA("actions"), S.actions);
+    }
+  }
+  box.innerHTML = `<div class="block"><div class="block-head"><h3>✨ ${esc(PA("title"))}</h3>
+      <span class="count">🔒 ${esc(t("noExportNote"))}</span></div><div style="padding:12px 16px">${inner}</div></div>`;
+  const g = document.getElementById("paiGen"); if (g) g.onclick = generatePersonAi;
+  const i = document.getElementById("paiInput"); if (i) i.onclick = togglePersonAiInput;
+}
+async function togglePersonAiInput() {
+  if (PAI_INPUT) { PAI_INPUT = ""; return renderPersonAi(); }
+  try {
+    const res = await fetch(`/reports/person/ai-summary/input?${query()}`);   // query() carries sicil
+    PAI_INPUT = res.ok ? (await res.json()).text : "";
+  } catch { PAI_INPUT = ""; }
+  renderPersonAi();
+}
+async function generatePersonAi() {
+  if (PAI.last && !confirm(PA("confirm"))) return;
+  const btn = document.getElementById("paiGen"); btn.disabled = true; btn.textContent = PA("generating");
+  try {
+    const res = await fetch("/reports/person/ai-summary", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sicil: PAI.sicil, from: $("from").value, to: $("to").value, lang: LANG }) });
+    if (res.status === 401) { location.href = "/login.html"; return; }
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error([d.error || res.status, d.detail, d.action].filter(Boolean).join("\n"));
+    PAI.last = d.summary;
+  } catch (e) { alert(`${PA("failed")}:\n${e.message}`); }
+  renderPersonAi();
 }
 
 function toggleDetail(key) {

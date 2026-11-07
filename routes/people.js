@@ -113,6 +113,7 @@ router.delete("/mentors/:id", requireApiKey, wrap(async (req, res) => {
   }
 
   mentors.remove(req.params.id);
+  require("../lib/aiPersonSummary").forget(mentor.companyId, mentor.sicilNo);   // V09
 
   res.json({
     success: true,
@@ -169,6 +170,7 @@ router.delete("/mentees/:id", requireApiKey, wrap(async (req, res) => {
   const mentee = ownRecord(req, res, mentees.get(req.params.id), "Mentee not found");
   if (!mentee) return;
   mentees.remove(req.params.id);
+  require("../lib/aiPersonSummary").forget(mentee.companyId, mentee.sicilNo);   // V09
   res.json({ success: true, message: "Mentee deleted" });
 }));
 

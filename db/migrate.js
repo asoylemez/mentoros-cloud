@@ -193,6 +193,7 @@ function run() {
   migrateV03Mail();
   migrateV06AiSummary();
   migrateV07Workspace();
+  migrateV09PersonAi();
 }
 
 /**
@@ -794,6 +795,22 @@ function migrateV07Workspace() {
       db.exec(`ALTER TABLE ${table} ADD COLUMN next_meeting_location TEXT NOT NULL DEFAULT ''`);
       console.log(`  migration: ${table}.next_meeting_location added`);
     }
+  }
+}
+
+/** V09: the last AI summary per person (lib/aiPersonSummary.js). */
+function migrateV09PersonAi() {
+  if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='ai_person_summaries'`).get()) {
+    db.exec(`
+      CREATE TABLE ai_person_summaries (
+        company_id  TEXT NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
+        sicil_no    TEXT NOT NULL,
+        record      TEXT NOT NULL,
+        created_at  TEXT NOT NULL,
+        PRIMARY KEY (company_id, sicil_no)
+      );
+    `);
+    console.log("  migration: ai_person_summaries table added");
   }
 }
 
