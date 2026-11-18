@@ -111,6 +111,7 @@
     font-size: 11px; background: #eef1f6; color: var(--navy); margin: 1px 2px 1px 0;
   }
   .badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .imp { display: inline-block; font-size: 10.5px; font-weight: 600; color: #3730a3; background: #e0e7ff; border-radius: 999px; padding: 1px 7px; margin-left: 4px; vertical-align: 1px; cursor: help; }
   .badge.active   { background: #dcfce7; color: #15803d; }
   .badge.inactive { background: #f3f4f6; color: #6b7280; }
   .badge.full     { background: #fef3c7; color: #92400e; }
@@ -503,6 +504,7 @@ const T = {
     empty: "Henüz mentee kaydı yok. Yukarıdaki davet bağlantısını paylaşın.",
     noResult: "Aramanızla eşleşen mentee yok.",
     badgeActive: "Aktif", badgeInactive: "Pasif",
+    imported: "İçeri aktarıldı", importedTip: "Excel ile içeri aktarıldı; profil bilgileri eksik olabilir.",
     view: "Aç", registered: "Kayıt",
     secBasic: "Temel Bilgiler", secDevelopment: "Gelişim İhtiyacı", secGoals: "Hedefler",
     secPreferences: "Tercihler", secManager: "Durum", commaSep: "(virgülle ayırın)",
@@ -575,6 +577,7 @@ const T = {
     empty: "No mentees yet. Share the invitation link above.",
     noResult: "No mentee matches your search.",
     badgeActive: "Active", badgeInactive: "Inactive",
+    imported: "Imported", importedTip: "Imported from Excel; the profile may be incomplete.",
     view: "Open", registered: "Registered",
     secBasic: "Basic information", secDevelopment: "Development needs", secGoals: "Goals",
     secPreferences: "Preferences", secManager: "Status", commaSep: "(comma-separated)",
@@ -756,7 +759,7 @@ function render() {
     return `
       <tr>
         <td class="sicil">${esc(m.sicilNo || "–")}</td>
-        <td><div class="name">${esc(m.fullName)}</div><div class="email">${esc(m.email)}</div></td>
+        <td><div class="name">${esc(m.fullName)}${m.source === "import" ? ` <span class="imp" title="${esc(t("importedTip"))}">${esc(t("imported"))}</span>` : ""}</div><div class="email">${esc(m.email)}</div></td>
         <td>${esc(m.role || "–")}${m.department ? `<div class="email">${esc(m.department)}</div>` : ""}</td>
         <td>${programCell(m)}</td>
         <td>${areas.map(e => `<span class="tag">${esc(MentorOptionLabels.label(e, LANG))}</span>`).join("") || "–"}</td>

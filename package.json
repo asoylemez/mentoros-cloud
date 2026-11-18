@@ -27,7 +27,8 @@
     "ai-summary-test": "node scripts/ai-summary-test.js",
     "workspace-test": "node scripts/workspace-test.js",
     "person-sync-test": "node scripts/person-sync-test.js",
-    "person-ai-test": "node scripts/person-ai-test.js"
+    "person-ai-test": "node scripts/person-ai-test.js",
+    "people-import-test": "node scripts/people-import-test.js"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.27.0",

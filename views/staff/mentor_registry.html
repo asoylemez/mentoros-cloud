@@ -114,6 +114,7 @@
   .badge.active   { background: #dcfce7; color: #15803d; }
   .badge.inactive { background: #f3f4f6; color: #6b7280; }
   .badge.full     { background: #fef3c7; color: #92400e; }
+  .imp { display: inline-block; font-size: 10.5px; font-weight: 600; color: #3730a3; background: #e0e7ff; border-radius: 999px; padding: 1px 7px; margin-left: 4px; vertical-align: 1px; cursor: help; }
 
   .cap-bar { width: 62px; height: 5px; background: #eceef1; border-radius: 3px; margin-top: 4px; }
   .cap-fill { height: 100%; border-radius: 3px; background: var(--copper); }
@@ -358,6 +359,10 @@
         <label data-i18n="fTenure">Kıdem</label>
         <input id="f_tenure">
       </div>
+      <div class="field">
+        <label data-i18n="fDepartment">Departman</label>
+        <input id="f_department">
+      </div>
     </div>
 
     <div class="section-head" data-i18n="secExpertise">Uzmanlık</div>
@@ -546,6 +551,9 @@ const T = {
     fRole: "Rol / Unvan",
     fBand: "Kademe",
     fTenure: "Kıdem",
+    fDepartment: "Departman",
+    imported: "İçeri aktarıldı",
+    importedTip: "Excel ile içeri aktarıldı; profil bilgileri eksik olabilir.",
     fLocation: "Lokasyon",
     fFunctional: "Fonksiyonel alanlar",
     fIndustries: "Sektörler",
@@ -644,6 +652,9 @@ const T = {
     fRole: "Role / Title",
     fBand: "Band",
     fTenure: "Tenure",
+    fDepartment: "Department",
+    imported: "Imported",
+    importedTip: "Imported from Excel; the profile may be incomplete.",
     fLocation: "Location",
     fFunctional: "Functional areas",
     fIndustries: "Industries",
@@ -939,7 +950,7 @@ function render() {
       <tr>
         <td class="sicil">${esc(m.sicilNo || "–")}</td>
         <td>
-          <div class="name">${esc(m.fullName)}</div>
+          <div class="name">${esc(m.fullName)}${m.source === "import" ? ` <span class="imp" title="${esc(t("importedTip"))}">${esc(t("imported"))}</span>` : ""}</div>
           <div class="email">${esc(m.email)}</div>
         </td>
         <td>
@@ -983,7 +994,7 @@ const ARRAY_FIELDS = [
 /** Text boxes that hold a fixed choice (shown translated, saved as the value). */
 const VOCAB_FIELDS = ["tenure", "availability"];
 const TEXT_FIELDS = [
-  "fullName", "email", "role", "band", "tenure",
+  "fullName", "email", "role", "band", "tenure", "department",
   "careerBio", "mentorProfile", "additionalCompetencies",
   "functionalAreasExtra", "industriesExtra",
   "hoursPerMonth", "availability", "messageToMentee"

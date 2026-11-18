@@ -194,6 +194,7 @@ function run() {
   migrateV06AiSummary();
   migrateV07Workspace();
   migrateV09PersonAi();
+  migrateV11Import();
 }
 
 /**
@@ -811,6 +812,50 @@ function migrateV09PersonAi() {
       );
     `);
     console.log("  migration: ai_person_summaries table added");
+  }
+}
+
+/**
+ * V11 - PEOPLE IMPORT (Admin -> Import people).
+ *
+ * Only ADDS: three columns on mentors, two on mentees, one new table.
+ * Existing rows are not changed: the new columns are empty for them
+ * ('' = registered through the form / added by HR as before).
+ *
+ *   mentors.department          the template has a department for mentors too
+ *   mentors.source / mentees.source     'import' for people added from Excel
+ *   mentors.import_id / mentees.import_id   which upload added them
+ *   people_imports              one row per upload: when, counts, and HR's
+ *                               statement that the people were informed (KVKK)
+ */
+function migrateV11Import() {
+  const add = (table, col, def) => {
+    if (!columnExists(table, col)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+      console.log(`  migration: ${table}.${col} added`);
+    }
+  };
+  add("mentors", "department", "TEXT NOT NULL DEFAULT ''");
+  add("mentors", "source", "TEXT NOT NULL DEFAULT ''");
+  add("mentors", "import_id", "TEXT NOT NULL DEFAULT ''");
+  add("mentees", "source", "TEXT NOT NULL DEFAULT ''");
+  add("mentees", "import_id", "TEXT NOT NULL DEFAULT ''");
+
+  if (!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='people_imports'`).get()) {
+    db.exec(`
+      CREATE TABLE people_imports (
+        id              TEXT PRIMARY KEY,
+        company_id      TEXT NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
+        file_name       TEXT NOT NULL DEFAULT '',
+        existing_mode   TEXT NOT NULL DEFAULT 'skip',
+        program_id      TEXT NOT NULL DEFAULT '',
+        kvkk_attested   INTEGER NOT NULL DEFAULT 0,
+        counts          TEXT NOT NULL DEFAULT '{}',
+        created_at      TEXT NOT NULL
+      );
+      CREATE INDEX idx_people_imports_company ON people_imports(company_id, created_at);
+    `);
+    console.log("  migration: people_imports table added");
   }
 }
 

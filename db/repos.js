@@ -616,7 +616,7 @@ const mentors = {
       "fullName", "email", "role", "band", "country", "location", "region",
       "tenure", "careerBio", "additionalCompetencies", "competencyDescription",
       "mentorProfile", "hoursPerMonth", "availability", "messageToMentee",
-      "functionalAreasExtra", "industriesExtra"
+      "functionalAreasExtra", "industriesExtra", "department"
     ];
     const COLUMN = {
       fullName: "full_name", email: "email", role: "role", band: "band",
@@ -626,7 +626,8 @@ const mentors = {
       competencyDescription: "competency_description",
       mentorProfile: "mentor_profile", hoursPerMonth: "hours_per_month",
       availability: "availability", messageToMentee: "message_to_mentee",
-      functionalAreasExtra: "functional_areas_extra", industriesExtra: "industries_extra"
+      functionalAreasExtra: "functional_areas_extra", industriesExtra: "industries_extra",
+      department: "department"     // V11 (the import template has it)
     };
     const ARRAY_COLUMN = {
       functionalAreas: "functional_areas", industries: "industries",
